@@ -157,15 +157,21 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
 
           {role === 'TEACHER' && (<>
             <NavLink href="/dashboard/teacher" label="My Classes" icon={<BookOpen size={20} />} exact />
-            <NavLink href="/dashboard/teacher/attendance" label="Attendance" icon={<CheckSquare size={20} />} />
-            <NavLink href="/dashboard/teacher/messages" label="Messages" icon={<MessageSquare size={20} />} />
+            <NavLink href="/dashboard/teacher/grading" label="AI Marking & Grader" icon={<Sparkles size={20} />} />
+            <NavLink href="/dashboard/teacher/buzzer" label="Live Speed Buzzer" icon={<Sparkles size={20} />} />
+            <NavLink href="/dashboard/teacher/forum" label="Discussion Forums" icon={<MessageSquare size={20} />} />
+            <NavLink href="/dashboard/teacher/performance" label="Mark Analytics" icon={<Layers size={20} />} />
+            <NavLink href="/dashboard/teacher/attendance" label="Attendance Roll Call" icon={<CheckSquare size={20} />} />
+            <NavLink href="/dashboard/teacher/messages" label="Messages & Inbox" icon={<MessageSquare size={20} />} />
           </>)}
 
           {role === 'STUDENT' && (<>
             <NavLink href="/dashboard/student" label="Dashboard" icon={<LayoutDashboard size={20} />} exact />
-            <NavLink href="/dashboard/student/quizzes" label="Quizzes" icon={<CheckSquare size={20} />} />
-            <NavLink href="/dashboard/student/messages" label="Messages" icon={<MessageSquare size={20} />} />
-            <NavLink href="/dashboard/student/buzzer" label="Buzzer Quiz" icon={<Sparkles size={20} />} />
+            <NavLink href="/dashboard/student/quizzes" label="Quizzes & Exams" icon={<CheckSquare size={20} />} />
+            <NavLink href="/dashboard/student/buzzer" label="Speed Buzzer Quiz" icon={<Sparkles size={20} />} />
+            <NavLink href="/dashboard/student/grading" label="AI Marking & Feedback" icon={<Sparkles size={20} />} />
+            <NavLink href="/dashboard/student/forum" label="Discussion Forums" icon={<MessageSquare size={20} />} />
+            <NavLink href="/dashboard/student/messages" label="Messages & Inbox" icon={<MessageSquare size={20} />} />
           </>)}
 
           {role === 'PARENT' && (<>
