@@ -33,7 +33,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       orderBy: { classDate: 'desc' }
     })
 
-    return NextResponse.json({ recordings })
+    const sanitizedRecordings = recordings.map(r => {
+      if (session.user.role === 'STUDENT') {
+        const { videoUrl, ...rest } = r
+        return rest
+      }
+      return r
+    })
+
+    return NextResponse.json({ recordings: sanitizedRecordings })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

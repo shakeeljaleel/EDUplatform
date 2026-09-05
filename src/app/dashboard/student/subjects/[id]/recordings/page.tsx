@@ -14,15 +14,35 @@ function getDeviceId(): string {
   return `dev_${Math.abs(hash).toString(16)}`
 }
 
+import SecureVideoPlayer from '@/components/SecureVideoPlayer'
+
 export default function StudentRecordingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [recordings, setRecordings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [watchingId, setWatchingId] = useState<string | null>(null)
+  const [activeStreamUrl, setActiveStreamUrl] = useState('')
   const [watchError, setWatchError] = useState('')
+  const [studentInfo, setStudentInfo] = useState<{ name: string; email: string }>({ name: 'Enrolled Student', email: 'student@helix.edu' })
 
-  useEffect(() => { fetchRecordings() }, [])
+  useEffect(() => {
+    fetchRecordings()
+    fetchStudentProfile()
+  }, [])
+
+  const fetchStudentProfile = async () => {
+    try {
+      const res = await fetch('/api/student/profile')
+      if (res.ok) {
+        const data = await res.json()
+        setStudentInfo({
+          name: data.user?.name || data.name || 'Enrolled Student',
+          email: data.user?.email || data.email || 'student@helix.edu'
+        })
+      }
+    } catch (e) {}
+  }
 
   const fetchRecordings = async () => {
     try {
@@ -38,44 +58,20 @@ export default function StudentRecordingsPage({ params }: { params: Promise<{ id
 
   const startWatch = async (recordingId: string) => {
     setWatchError('')
-    const deviceId = getDeviceId()
 
-    // Get geolocation
-    let lat: number | null = null
-    let lng: number | null = null
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
-      })
-      lat = pos.coords.latitude
-      lng = pos.coords.longitude
-    } catch {
-      // Geolocation denied or unavailable — allow but log
+      const res = await fetch(`/api/recordings/${recordingId}/stream`)
+      if (res.ok) {
+        const data = await res.json()
+        setActiveStreamUrl(data.signedStreamUrl)
+        setWatchingId(recordingId)
+      } else {
+        const d = await res.json()
+        setWatchError(d.error || 'Access denied. Recording streaming failed.')
+      }
+    } catch (err: any) {
+      setWatchError(err.message || 'Stream authorization failed.')
     }
-
-    const res = await fetch(`/api/recordings/${recordingId}/watch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId, lat, lng, completed: false })
-    })
-
-    if (res.ok) {
-      setWatchingId(recordingId)
-    } else {
-      const d = await res.json()
-      setWatchError(d.error || 'Access denied')
-    }
-  }
-
-  const markComplete = async (recordingId: string) => {
-    const deviceId = getDeviceId()
-    await fetch(`/api/recordings/${recordingId}/watch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId, completed: true })
-    })
-    setWatchingId(null)
-    fetchRecordings() // refresh to show completed status
   }
 
   if (loading) return <div className="pulse">Loading recordings...</div>
@@ -85,7 +81,7 @@ export default function StudentRecordingsPage({ params }: { params: Promise<{ id
       <div style={{ marginBottom: '2rem' }}>
         <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600 }}>← Back to Dashboard</Link>
         <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '1rem' }}>Class Recordings</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>Recordings are available for <strong>one-time watch only</strong>. Streaming is protected — no downloads or sharing.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Protected forward-only video player. Dynamic watermark & position tracking enabled.</p>
       </div>
 
       {error && (
@@ -105,46 +101,16 @@ export default function StudentRecordingsPage({ params }: { params: Promise<{ id
         </div>
       )}
 
-      {watchingId && (
-        <div className="card fade-in" style={{ marginBottom: '2rem', border: '2px solid var(--accent-primary)', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Now Watching</h3>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: 700, background: 'rgba(239,68,68,0.1)', padding: '0.25rem 0.75rem', borderRadius: '99px' }}>🔴 LIVE STREAM</span>
-              <button onClick={() => markComplete(watchingId)} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }}>
-                Mark as Finished ✓
-              </button>
-            </div>
-          </div>
-
-          {(() => {
-            const rec = recordings.find(r => r.id === watchingId)
-            if (!rec) return null
-            const url = rec.videoUrl
-
-            // Detect embed type
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-              const ytId = url.match(/(?:youtu\.be\/|v=)([^&\n?#]+)/)?.[1]
-              return <iframe src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`} style={{ width: '100%', aspectRatio: '16/9', borderRadius: '12px', border: 'none' }} allowFullScreen />
-            }
-            if (url.includes('vimeo.com')) {
-              const vId = url.match(/vimeo\.com\/(\d+)/)?.[1]
-              return <iframe src={`https://player.vimeo.com/video/${vId}?dnt=1`} style={{ width: '100%', aspectRatio: '16/9', borderRadius: '12px', border: 'none' }} allowFullScreen />
-            }
-            // For Zoom/direct links — show in restricted iframe
-            return (
-              <div style={{ background: '#000', borderRadius: '12px', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'white', gap: '1rem' }}>
-                <div style={{ fontSize: '2rem' }}>🎥</div>
-                <p style={{ textAlign: 'center', maxWidth: '400px', fontSize: '0.9rem', color: '#ccc' }}>This recording is hosted on Zoom Cloud. Click below to open in a secure viewer.</p>
-                <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary">Open Secure Recording ↗</a>
-              </div>
-            )
-          })()}
-
-          <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>⚠️</span>
-            <span>Recording is streaming-only. Screen recording, downloading, or sharing this link is a violation of our terms. Sessions are monitored.</span>
-          </div>
+      {watchingId && activeStreamUrl && (
+        <div style={{ marginBottom: '2rem' }}>
+          <SecureVideoPlayer
+            recordingId={watchingId}
+            recordingTitle={recordings.find(r => r.id === watchingId)?.title || 'Class Recording'}
+            streamUrl={activeStreamUrl}
+            studentName={studentInfo.name}
+            studentEmail={studentInfo.email}
+            onClose={() => setWatchingId(null)}
+          />
         </div>
       )}
 

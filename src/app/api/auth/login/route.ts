@@ -258,6 +258,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
+    // Check if account is disabled by admin
+    if (user.accountDisabled) {
+      return NextResponse.json({ error: 'Your account has been suspended by the administrator.' }, { status: 403 })
+    }
+
     // Block teachers pending approval or rejected by super admin
     if (user.role === 'TEACHER' && user.approvalStatus === 'PENDING') {
       return NextResponse.json({ error: 'Your account is pending approval by the administrator.' }, { status: 403 })
@@ -266,35 +271,59 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Your account application has been rejected. Please contact the administrator.' }, { status: 403 })
     }
 
-    const sessionToken = await createSession({
-      id: user.id,
-      role: user.role,
-      name: user.name,
+    // Check for suspicious login (new device/IP)
+    const { headers } = await import('next/headers')
+    const headersList = await headers()
+    const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    const userAgent = headersList.get('user-agent') || 'unknown'
+
+    const previousLogin = await prisma.loginAuditLog.findFirst({
+      where: { userId: user.id }
     })
 
-    // Bind user to single active session to prevent account sharing
-    try {
-      const { headers } = await import('next/headers')
-      const headersList = await headers()
-      const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    if (previousLogin && (previousLogin.ipAddress !== ipAddress || previousLogin.userAgent !== userAgent)) {
+      const { sendSecurityAlertEmail } = await import('@/lib/email')
+      sendSecurityAlertEmail(user.email, {
+        ip: ipAddress,
+        device: userAgent,
+        time: new Date().toLocaleString()
+      }).catch(err => console.error('Alert email error:', err))
 
-      await prisma.activeSession.upsert({
-        where: { userId: user.id },
-        create: {
+      // Create Security Alert in database
+      await prisma.securityAlert.create({
+        data: {
           userId: user.id,
-          token: sessionToken,
-          ipAddress
-        },
-        update: {
-          token: sessionToken,
-          ipAddress
+          type: 'UNUSUAL_LOCATION',
+          message: `Suspicious login detected from new device/IP (${ipAddress}) for account ${user.email}.`
         }
-      })
-    } catch (e) {
-      console.error('Active session record error:', e)
+      }).catch(() => {})
     }
 
-    return NextResponse.json({ success: true, role: user.role })
+    // Generate 6-digit OTP code (expires in 5 mins)
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
+
+    await prisma.loginOtp.upsert({
+      where: { email: user.email },
+      create: {
+        email: user.email,
+        code: otpCode,
+        expiresAt
+      },
+      update: {
+        code: otpCode,
+        expiresAt
+      }
+    })
+
+    const { sendOtpEmail } = await import('@/lib/email')
+    await sendOtpEmail(user.email, otpCode)
+
+    return NextResponse.json({
+      requireOtp: true,
+      email: user.email,
+      message: `A verification code was sent to ${user.email}. Check your inbox.`
+    })
   } catch (error: any) {
     console.error('Login error:', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
