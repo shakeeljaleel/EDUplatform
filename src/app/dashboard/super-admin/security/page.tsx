@@ -31,7 +31,9 @@ export default function SecurityAlertsPage() {
     UNUSUAL_LOCATION: { bg: 'rgba(245,158,11,0.1)', color: '#b45309', icon: '📍' },
     UNKNOWN_DEVICE: { bg: 'rgba(239,68,68,0.1)', color: '#b91c1c', icon: '💻' },
     MULTI_SESSION: { bg: 'rgba(124,58,237,0.1)', color: '#6d28d9', icon: '🔄' },
-    SHARE_ATTEMPT: { bg: 'rgba(239,68,68,0.15)', color: '#991b1b', icon: '🔗' }
+    SHARE_ATTEMPT: { bg: 'rgba(239,68,68,0.15)', color: '#991b1b', icon: '🔗' },
+    ACCOUNT_SHARING_ATTEMPT: { bg: 'rgba(239,68,68,0.15)', color: '#991b1b', icon: '🚫' },
+    PROFANITY_VIOLATION: { bg: 'rgba(234,179,8,0.15)', color: '#ca8a04', icon: '🤬' }
   }
 
   if (loading) return <div className="pulse">Loading security alerts...</div>

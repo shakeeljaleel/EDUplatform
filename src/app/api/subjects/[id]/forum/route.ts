@@ -2,12 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-// Basic profanity filter
-const PROFANITY_LIST = ['badword1', 'badword2', 'idiot', 'stupid', 'damn'] // Simplified for demo
-const containsProfanity = (text: string) => {
-  const lower = text.toLowerCase()
-  return PROFANITY_LIST.some(word => lower.includes(word))
-}
+import { containsProfanity } from '@/lib/profanity'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
@@ -46,8 +41,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { title, content, type, postId } = await request.json()
 
-    if (containsProfanity(title || '') || containsProfanity(content)) {
-      return NextResponse.json({ error: 'Message blocked by profanity filter.' }, { status: 400 })
+    const titleCheck = containsProfanity(title || '')
+    const contentCheck = containsProfanity(content || '')
+
+    if (titleCheck.hasProfanity || contentCheck.hasProfanity) {
+      const flaggedWords = Array.from(new Set([...titleCheck.matchedWords, ...contentCheck.matchedWords])).join(', ')
+      // Log Security Alert for admin tracking
+      await prisma.securityAlert.create({
+        data: {
+          userId: session.user.id,
+          type: 'PROFANITY_VIOLATION',
+          message: `User attempt to post profane content on ${subject.name} forum. Flagged term(s): "${flaggedWords}"`
+        }
+      })
+      return NextResponse.json({ 
+        error: `Message blocked by anti-profanity filter. Inappropriate language detected: (${flaggedWords}). Please keep communication professional.` 
+      }, { status: 400 })
     }
 
     if (type === 'REPLY' && postId) {
