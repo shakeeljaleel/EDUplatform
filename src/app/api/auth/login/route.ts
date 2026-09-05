@@ -299,30 +299,49 @@ export async function POST(request: Request) {
       }).catch(() => {})
     }
 
-    // Generate 6-digit OTP code (expires in 5 mins)
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
+    // Generate single-active-session token
+    const sessionToken = await createSession({
+      id: user.id,
+      role: user.role,
+      name: user.name
+    })
 
-    await prisma.loginOtp.upsert({
-      where: { email: user.email },
+    // Force invalidation of any previous active session for this user
+    await prisma.activeSession.upsert({
+      where: { userId: user.id },
       create: {
-        email: user.email,
-        code: otpCode,
-        expiresAt
+        userId: user.id,
+        token: sessionToken,
+        deviceId: userAgent || 'unknown_device',
+        ipAddress
       },
       update: {
-        code: otpCode,
-        expiresAt
+        token: sessionToken,
+        deviceId: userAgent || 'unknown_device',
+        ipAddress
       }
     })
 
-    const { sendOtpEmail } = await import('@/lib/email')
-    await sendOtpEmail(user.email, otpCode)
+    // Log login event in audit history
+    await prisma.loginAuditLog.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        ipAddress,
+        userAgent,
+        deviceType: userAgent || 'unknown_device'
+      }
+    })
 
     return NextResponse.json({
-      requireOtp: true,
-      email: user.email,
-      message: `A verification code was sent to ${user.email}. Check your inbox.`
+      success: true,
+      role: user.role,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
     })
   } catch (error: any) {
     console.error('Login error:', error)

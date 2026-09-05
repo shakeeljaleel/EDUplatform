@@ -299,9 +299,9 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <span className="spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                    Sending Verification Code...
+                    Signing in...
                   </>
-                ) : 'Continue to 2FA →'}
+                ) : 'Sign In →'}
               </button>
             </form>
           ) : (
