@@ -9,6 +9,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] as string,
+    url: process.env["DATABASE_URL"] || process.env["POSTGRES_PRISMA_URL"] || process.env["POSTGRES_URL"] || "postgres://postgres:postgres@localhost:5432/eduplatform",
   },
 });
