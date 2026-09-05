@@ -266,11 +266,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Your account application has been rejected. Please contact the administrator.' }, { status: 403 })
     }
 
-    await createSession({
+    const sessionToken = await createSession({
       id: user.id,
       role: user.role,
       name: user.name,
     })
+
+    // Bind user to single active session to prevent account sharing
+    try {
+      const { headers } = await import('next/headers')
+      const headersList = await headers()
+      const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+
+      await prisma.activeSession.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          token: sessionToken,
+          ipAddress
+        },
+        update: {
+          token: sessionToken,
+          ipAddress
+        }
+      })
+    } catch (e) {
+      console.error('Active session record error:', e)
+    }
 
     return NextResponse.json({ success: true, role: user.role })
   } catch (error: any) {

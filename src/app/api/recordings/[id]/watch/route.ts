@@ -26,7 +26,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const profile = await prisma.studentProfile.findUnique({ where: { userId: session.user.id } })
     if (!profile || profile.paymentStatus !== 'Paid') {
-      return NextResponse.json({ error: 'Payment required' }, { status: 403 })
+      return NextResponse.json({ error: 'Payment required. Recording access is restricted to enrolled students with active tuition payments.' }, { status: 403 })
+    }
+
+    // Active session validation: block concurrent streaming & shared password sessions
+    if (session.sessionToken) {
+      const activeSession = await prisma.activeSession.findUnique({
+        where: { userId: session.user.id }
+      })
+      if (activeSession && activeSession.token !== session.sessionToken) {
+        await prisma.securityAlert.create({
+          data: {
+            userId: session.user.id,
+            type: 'ACCOUNT_SHARING_ATTEMPT',
+            message: `Student "${session.user.name}" attempted recording access from a concurrent/secondary session. Potential credential sharing detected from IP: ${ipAddress}`
+          }
+        })
+        return NextResponse.json({ error: 'Concurrent login or active session mismatch detected. Recording access blocked to prevent account sharing. Admin has been alerted.' }, { status: 403 })
+      }
     }
 
     // Check existing access record
