@@ -24,8 +24,7 @@ async function ensureDefaultUsersAndData() {
         create: {
           id: branchId,
           name: 'Main Campus',
-          code: 'MC-01',
-          address: '123 Academic Way',
+          location: '123 Academic Way',
         },
       })
 
@@ -123,16 +122,28 @@ async function ensureDefaultUsersAndData() {
         },
       })
 
-      // 3. Create Subject
+      // 3. Create Subject & Teacher Link
       const subject = await prisma.subject.upsert({
         where: { id: biologyId },
         update: {},
         create: {
           id: biologyId,
           name: 'Advanced Biology',
-          code: 'BIO-301',
-          teacherId: teacher.id,
           batchId: batch.id,
+        },
+      })
+
+      await prisma.subjectTeacher.upsert({
+        where: {
+          subjectId_userId: {
+            subjectId: subject.id,
+            userId: teacher.id,
+          },
+        },
+        update: {},
+        create: {
+          subjectId: subject.id,
+          userId: teacher.id,
         },
       })
 

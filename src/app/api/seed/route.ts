@@ -18,8 +18,7 @@ export async function GET() {
       create: {
         id: branchId,
         name: 'Main Campus',
-        code: 'MC-01',
-        address: '123 Academic Way',
+        location: '123 Academic Way',
       },
     })
 
@@ -114,16 +113,28 @@ export async function GET() {
       },
     })
 
-    // 3. Subject
+    // 3. Subject & Teacher Link
     const subject = await prisma.subject.upsert({
       where: { id: biologyId },
       update: {},
       create: {
         id: biologyId,
         name: 'Advanced Biology',
-        code: 'BIO-301',
-        teacherId: teacher.id,
         batchId: batch.id,
+      },
+    })
+
+    await prisma.subjectTeacher.upsert({
+      where: {
+        subjectId_userId: {
+          subjectId: subject.id,
+          userId: teacher.id,
+        },
+      },
+      update: {},
+      create: {
+        subjectId: subject.id,
+        userId: teacher.id,
       },
     })
 
