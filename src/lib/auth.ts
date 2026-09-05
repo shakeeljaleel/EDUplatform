@@ -19,12 +19,28 @@ export async function decrypt(input: string): Promise<any> {
   return payload
 }
 
+import { prisma } from '@/lib/prisma'
+
 export async function getSession() {
   const cookieStore = await cookies()
   const session = cookieStore.get('session')?.value
   if (!session) return null
   try {
-    return await decrypt(session)
+    const payload = await decrypt(session)
+    if (payload?.user?.id && payload?.sessionToken) {
+      const active = await prisma.activeSession.findUnique({
+        where: { userId: payload.user.id }
+      })
+      if (active && active.token !== payload.sessionToken) {
+        return null
+      }
+      const u = await prisma.user.findUnique({
+        where: { id: payload.user.id },
+        select: { accountDisabled: true }
+      })
+      if (u?.accountDisabled) return null
+    }
+    return payload
   } catch (error) {
     return null
   }

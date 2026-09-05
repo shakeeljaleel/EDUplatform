@@ -47,6 +47,13 @@ model User {
   subjectTeachings   SubjectTeacher[]
   studentChangeRequests StudentChangeRequest[] @relation("RequestedStudent")
   teacherRequests       StudentChangeRequest[] @relation("RequestingTeacher")
+  recordingAccessRevoked Boolean            @default(false)
+  accountDisabled        Boolean            @default(false)
+  loginLogs              LoginAuditLog[]
+  recordingProgresses    RecordingProgress[]
+  recordingStreamLogs    RecordingStreamLog[]
+  recordingFocusLogs     RecordingFocusLog[]
+  recordingTermsAcceptances RecordingTermsAcceptance[]
 }
 
 model StudentProfile {
@@ -357,6 +364,10 @@ model Recording {
   uploadedBy   User              @relation("UploadedRecordings", fields: [uploadedById], references: [id], onDelete: Cascade)
   subject      Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   accesses     RecordingAccess[]
+  progresses   RecordingProgress[]
+  streamLogs   RecordingStreamLog[]
+  focusLogs    RecordingFocusLog[]
+  termsAcceptances RecordingTermsAcceptance[]
 }
 
 model RecordingAccess {
@@ -558,5 +569,81 @@ model AuditLog {
   targetUserId String?
   details      String?
   createdAt    DateTime @default(now())
+}
+
+model LoginOtp {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model LoginAuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  email      String
+  ipAddress  String
+  userAgent  String?
+  deviceType String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecordingProgress {
+  id                         String    @id @default(uuid())
+  userId                     String
+  recordingId                String
+  maxReachedSeconds          Int       @default(0)
+  lastSessionPositionSeconds Int       @default(0)
+  firstAccessedAt            DateTime  @default(now())
+  lastUpdatedAt              DateTime  @updatedAt
+  isCompleted                Boolean   @default(false)
+  recording                  Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recordingId, userId])
+}
+
+model RecordingStreamLog {
+  id           String    @id @default(uuid())
+  recordingId  String
+  userId       String
+  sessionToken String
+  ipAddress    String
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  recording    Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecordingFocusLog {
+  id           String    @id @default(uuid())
+  recordingId  String
+  userId       String
+  durationAway Int       @default(0)
+  createdAt    DateTime  @default(now())
+  recording    Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RecordingTermsAcceptance {
+  id          String    @id @default(uuid())
+  recordingId String
+  userId      String
+  acceptedAt  DateTime  @default(now())
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recordingId, userId])
+}
+
+model AdminProgressResetLog {
+  id          String   @id @default(uuid())
+  adminId     String
+  userId      String
+  recordingId String
+  reason      String
+  createdAt   DateTime @default(now())
 }
 
