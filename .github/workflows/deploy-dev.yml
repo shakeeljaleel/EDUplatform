@@ -1,0 +1,34 @@
+name: Deploy to Development Domain
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    name: Deploy to Linode Dev Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LINODE_SERVER_IP }}
+          username: ${{ secrets.LINODE_SERVER_USER }}
+          key: ${{ secrets.LINODE_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.LINODE_SSH_PORT || 22 }}
+          script: |
+            set -e
+            echo "Starting deployment to Dev Domain..."
+            cd ${{ secrets.DEV_PATH || '/home/nginx/domains/dev.yourdomain.com/public' }}
+            git pull origin develop
+            npm ci
+            npx prisma generate
+            npx prisma db push
+            npm run build
+            pm2 reload eduplatform-dev || pm2 start npm --name "eduplatform-dev" -- start -- -p 3001
+            echo "Dev Domain deployment successful!"

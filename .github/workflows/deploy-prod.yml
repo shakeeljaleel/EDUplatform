@@ -1,0 +1,34 @@
+name: Deploy to Production Domain
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Linode Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LINODE_SERVER_IP }}
+          username: ${{ secrets.LINODE_SERVER_USER }}
+          key: ${{ secrets.LINODE_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.LINODE_SSH_PORT || 22 }}
+          script: |
+            set -e
+            echo "Starting deployment to Production Domain..."
+            cd ${{ secrets.PROD_PATH || '/home/nginx/domains/yourdomain.com/public' }}
+            git pull origin main
+            npm ci
+            npx prisma generate
+            npx prisma db push
+            npm run build
+            pm2 reload eduplatform-prod || pm2 start npm --name "eduplatform-prod" -- start -- -p 3000
+            echo "Production Domain deployment successful!"
