@@ -113,7 +113,7 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
                     <h3 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '1.5rem', color: '#0f172a' }}>{sa.subject.name}</h3>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <Link href={`/dashboard/teacher/batches/${sa.subject.batchId}`} className="btn-primary" style={{ 
+                      <Link prefetch={true} href={`/dashboard/teacher/batches/${sa.subject.batchId}`} className="btn-primary" style={{ 
                         gridColumn: 'span 2', textAlign: 'center', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 800,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minHeight: '44px',
                         background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '12px'
@@ -121,35 +121,35 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
                         <CheckSquare size={18} /> Quizzes & Assessments
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/grading`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#ec4899', border: '1.5 solid rgba(236, 72, 153, 0.3)', background: 'rgba(236, 72, 153, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/grading`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#ec4899', border: '1.5 solid rgba(236, 72, 153, 0.3)', background: 'rgba(236, 72, 153, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         🤖 AI Grading
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/buzzer`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#f59e0b', border: '1.5 solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/buzzer`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#f59e0b', border: '1.5 solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         ⚡ Speed Buzzer
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/forum`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#2563eb', border: '1.5 solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/forum`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#2563eb', border: '1.5 solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         💬 Q&A Forum
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/performance`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#7c3aed', border: '1.5 solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/performance`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#7c3aed', border: '1.5 solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         📊 Mark Analytics
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/lesson-planner`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#4f46e5', border: '1.5 solid rgba(79, 70, 229, 0.3)', background: 'rgba(79, 70, 229, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/lesson-planner`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#4f46e5', border: '1.5 solid rgba(79, 70, 229, 0.3)', background: 'rgba(79, 70, 229, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         📑 AI Planner
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/syllabus`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#059669', border: '1.5 solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/syllabus`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#059669', border: '1.5 solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         🧬 Syllabus
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/calendar`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a', border: '1.5 solid #cbd5e1', background: '#f8fafc', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/calendar`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a', border: '1.5 solid #cbd5e1', background: '#f8fafc', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         📅 Schedule
                       </Link>
 
-                      <Link href={`/dashboard/teacher/subjects/${sa.subject.id}/recordings`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0891b2', border: '1.5 solid rgba(6, 182, 212, 0.3)', background: 'rgba(6, 182, 212, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/recordings`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0891b2', border: '1.5 solid rgba(6, 182, 212, 0.3)', background: 'rgba(6, 182, 212, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
                         📹 Recordings
                       </Link>
                     </div>
