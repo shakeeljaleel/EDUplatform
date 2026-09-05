@@ -37,6 +37,7 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
     return (
       <Link
         href={href}
+        prefetch={true}
         onClick={() => onClose && onClose()}
         className={`nav-link ${active ? 'active' : ''}`}
         style={{
