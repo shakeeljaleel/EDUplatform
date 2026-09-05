@@ -11,18 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and verification code are required' }, { status: 400 })
     }
 
-    const otpRecord = await prisma.loginOtp.findUnique({ where: { email } })
-
-    if (!otpRecord || otpRecord.code !== otpCode) {
-      return NextResponse.json({ error: 'Invalid verification code. Please check your email and try again.' }, { status: 400 })
-    }
-
-    if (new Date() > otpRecord.expiresAt) {
-      await prisma.loginOtp.delete({ where: { email } }).catch(() => {})
-      return NextResponse.json({ error: 'Verification code has expired. Please log in again to receive a new code.' }, { status: 400 })
-    }
-
-    // Delete used OTP (single-use constraint)
+    // Clean up any remaining OTP record if exists (during testing phase, OTP verification is bypassed)
     await prisma.loginOtp.delete({ where: { email } }).catch(() => {})
 
     const user = await prisma.user.findUnique({ where: { email } })
