@@ -2,15 +2,18 @@ const fs = require('fs')
 const path = require('path')
 
 const dbUrl =
-  process.env.DATABASE_URL ||
   process.env.POSTGRES_PRISMA_URL ||
+  process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
   process.env.VERCEL_POSTGRES_URL ||
   'postgres://postgres:postgres@localhost:5432/eduplatform'
 
+process.env.POSTGRES_PRISMA_URL = dbUrl
+process.env.DATABASE_URL = dbUrl
+
 console.log('Preparing build environment variables...')
 
-const envContent = `DATABASE_URL="${dbUrl}"\nPOSTGRES_PRISMA_URL="${dbUrl}"\n`
+const envContent = `POSTGRES_PRISMA_URL="${dbUrl}"\nDATABASE_URL="${dbUrl}"\n`
 const envPath = path.join(__dirname, '..', '.env')
 
 fs.writeFileSync(envPath, envContent)
