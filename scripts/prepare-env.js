@@ -6,7 +6,7 @@ const dbUrl =
   process.env.POSTGRES_PRISMA_URL ||
   process.env.DATABASE_URL ||
   process.env.VERCEL_POSTGRES_URL ||
-  'postgres://postgres:postgres@localhost:5432/eduplatform'
+  'postgresql://shakeeljaleel@localhost:5432/eduplatform'
 
 process.env.POSTGRES_URL = dbUrl
 process.env.POSTGRES_PRISMA_URL = dbUrl

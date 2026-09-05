@@ -3,12 +3,17 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { createSession } from '@/lib/auth'
 
+let isSeeded = false
+
 async function ensureDefaultUsersAndData() {
+  if (isSeeded) return
   try {
     const userCount = await prisma.user.count()
     const subjectCount = await prisma.subject.count()
-
-    if (userCount === 0 || subjectCount === 0) {
+    if (userCount > 0 && subjectCount > 0) {
+      isSeeded = true
+      return
+    }
       console.log('Seeding full demo academic platform data...')
       const adminHash = await bcrypt.hash('admin123', 10)
       const studentHash = await bcrypt.hash('password123', 10)
@@ -222,7 +227,7 @@ async function ensureDefaultUsersAndData() {
       })
 
       console.log('Full demo data seeding completed successfully!')
-    }
+      isSeeded = true
   } catch (err) {
     console.error('Full demo seed check failed:', err)
   }

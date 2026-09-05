@@ -1,12 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import Link from 'next/link'
+import ParentChildSwitcher from '@/components/ParentChildSwitcher'
 
 export default async function ParentDashboard() {
   const session = await getSession()
   if (!session) return null
 
-  // Fetch parent profile and included children with their user data
+  // Fetch parent profile and included children with stats
   const parentProfile = await prisma.parentProfile.findUnique({
     where: { userId: session.user.id },
     include: {
@@ -18,48 +18,54 @@ export default async function ParentDashboard() {
     }
   })
 
+  const childrenData = await Promise.all(
+    (parentProfile?.children || []).map(async (child) => {
+      const [attendance, exams, unreadMsgs] = await Promise.all([
+        prisma.attendanceRecord.findMany({
+          where: { userId: child.userId },
+          select: { status: true }
+        }),
+        prisma.examRecord.count({
+          where: { userId: child.userId }
+        }),
+        prisma.directMessage.count({
+          where: { recipientId: session.user.id, read: false }
+        })
+      ])
+
+      const totalClass = attendance.length
+      const presentClass = attendance.filter(a => a.status !== 'ABSENT').length
+      const attendanceRate = totalClass > 0 ? Math.round((presentClass / totalClass) * 100) : 100
+
+      return {
+        id: child.id,
+        userId: child.userId,
+        paymentStatus: child.paymentStatus || 'Pending',
+        stars: child.stars || 0,
+        medals: child.medals || 0,
+        user: {
+          id: child.user.id,
+          name: child.user.name,
+          email: child.user.email
+        },
+        attendanceCount: totalClass,
+        attendanceRate,
+        recentExamCount: exams,
+        unreadMessages: unreadMsgs
+      }
+    })
+  )
+
   return (
-    <div>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>My Children</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        {parentProfile?.children.map((child) => (
-          <div key={child.id} className="card">
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>{child.user.name}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Email:</span>
-                <div style={{ fontWeight: 500 }}>{child.user.email}</div>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Payment Status:</span>
-                <div style={{ 
-                  display: 'inline-block',
-                  marginTop: '0.25rem',
-                  padding: '0.25rem 0.75rem', 
-                  borderRadius: 'var(--radius-full)', 
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  backgroundColor: child.paymentStatus === 'Paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                  color: child.paymentStatus === 'Paid' ? 'var(--success)' : 'var(--warning)'
-                }}>
-                  {child.paymentStatus || 'Pending'}
-                </div>
-              </div>
-            </div>
-            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link href={`/dashboard/parent/children/${child.userId}`} className="btn-primary" style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem', textAlign: 'center' }}>
-                📊 View Academic Report
-              </Link>
-              <Link href={`/dashboard/parent/children/${child.userId}/calendar`} className="btn-secondary" style={{ width: '100%', padding: '0.5rem', fontSize: '0.875rem', textAlign: 'center' }}>
-                📅 View Lesson Plan
-              </Link>
-            </div>
-          </div>
-        ))}
-        {(!parentProfile || parentProfile.children.length === 0) && (
-          <p style={{ color: 'var(--text-secondary)' }}>No children profiles linked to your account.</p>
-        )}
+    <div className="content-wrapper fade-in">
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em' }}>Parent Portal</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', fontWeight: 600 }}>
+          Track and support your child's academic journey.
+        </p>
       </div>
+
+      <ParentChildSwitcher childrenData={childrenData} />
     </div>
   )
 }
