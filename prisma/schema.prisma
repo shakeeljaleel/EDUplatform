@@ -14,6 +14,9 @@ model User {
   passwordHash       String
   role               String
   approvalStatus     String              @default("APPROVED")
+  subjectArea        String?
+  bio                String?
+  qualifications     String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   activeSession      ActiveSession?
@@ -546,3 +549,14 @@ model ExamSession {
 
   @@unique([subjectId, title])
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  adminId      String
+  adminName    String
+  action       String
+  targetUserId String?
+  details      String?
+  createdAt    DateTime @default(now())
+}
+

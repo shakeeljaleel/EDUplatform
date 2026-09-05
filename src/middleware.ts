@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { jwtVerify } from 'jose'
+
+const secretKey = process.env.JWT_SECRET || 'fallback-secret-for-development'
+const key = new TextEncoder().encode(secretKey)
+
+async function getSessionFromRequest(request: NextRequest) {
+  const token = request.cookies.get('session')?.value
+  if (!token) return null
+  try {
+    const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] })
+    return payload as any
+  } catch (error) {
+    return null
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
@@ -11,7 +25,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const session = await getSession()
+  const session = await getSessionFromRequest(request)
 
   if (!session) {
     if (path !== '/login') {

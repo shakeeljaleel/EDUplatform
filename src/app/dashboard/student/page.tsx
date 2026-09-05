@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { SyllabusIcon, RoughFilter } from '@/components/HandDrawnIcons'
+import EmptyState from '@/components/EmptyState'
+import { BookOpen, CheckSquare, Star, Award, Clock, TrendingUp, Sparkles, ChevronRight, MessageSquare } from '@/components/Icons'
 
 export default async function StudentDashboard() {
   const session = await getSession()
@@ -93,32 +94,36 @@ export default async function StudentDashboard() {
     })
 
     const studentIds = batchStudents.map(s => s.userId)
-    const allStats = await Promise.all(studentIds.map(async (id) => {
-      const [u, p, q, e] = await Promise.all([
-        prisma.user.findUnique({ where: { id }, select: { name: true } }),
-        prisma.studentProfile.findUnique({ where: { userId: id }, select: { stars: true, medals: true } }),
-        prisma.quizAttempt.findMany({ 
-          where: { userId: id, status: 'GRADED' }, 
-          select: { score: true, quiz: { include: { questions: { select: { points: true } } } } } 
-        }),
-        prisma.examRecord.findMany({ where: { userId: id }, select: { marks: true, maxMarks: true } })
-      ])
-      
-      const qAvg = q.length > 0 ? q.reduce((sum, attempt) => {
+    const usersData = await prisma.user.findMany({
+      where: { id: { in: studentIds } },
+      select: {
+        id: true,
+        name: true,
+        profile: { select: { stars: true, medals: true } },
+        quizAttempts: {
+          where: { status: 'GRADED' },
+          select: { score: true, quiz: { select: { questions: { select: { points: true } } } } }
+        },
+        examRecords: { select: { marks: true, maxMarks: true } }
+      }
+    })
+
+    const allStats = usersData.map(u => {
+      const qAvg = u.quizAttempts.length > 0 ? u.quizAttempts.reduce((sum, attempt) => {
         const max = attempt.quiz?.questions?.reduce((s: number, ques: any) => s + (ques.points || 0), 0) || 1
         return sum + (attempt.score / max) * 100
-      }, 0) / q.length : 0
-      
-      const eAvg = e.length > 0 ? e.reduce((s, x) => s + (x.marks / (x.maxMarks || 1)) * 100, 0) / e.length : 0
-      
-      return { 
-        id, 
-        name: u?.name || 'Anonymous Student', 
-        stars: p?.stars || 0,
-        medals: p?.medals || 0,
-        score: Math.round((p?.stars || 0) * 10 + qAvg + eAvg) 
+      }, 0) / u.quizAttempts.length : 0
+
+      const eAvg = u.examRecords.length > 0 ? u.examRecords.reduce((s, x) => s + (x.marks / (x.maxMarks || 1)) * 100, 0) / u.examRecords.length : 0
+
+      return {
+        id: u.id,
+        name: u.name || 'Anonymous Student',
+        stars: u.profile?.stars || 0,
+        medals: u.profile?.medals || 0,
+        score: Math.round((u.profile?.stars || 0) * 10 + qAvg + eAvg)
       }
-    }))
+    })
 
     allStats.sort((a, b) => b.score - a.score)
     myRank = allStats.findIndex(s => s.id === studentUserId) + 1
@@ -126,59 +131,89 @@ export default async function StudentDashboard() {
     leaderboard = allStats.map((s, idx) => ({ ...s, rank: idx + 1 }))
   }
 
-  // Calculate comparative analytics for Exams
-  const examStats = await Promise.all(exams.map(async (e) => {
-    const allRecords = await prisma.examRecord.findMany({
-      where: { subjectId: e.subjectId, title: e.title },
-      select: { marks: true, maxMarks: true }
-    })
-    const avg = allRecords.length > 0 
-      ? allRecords.reduce((sum, r) => sum + (r.marks / (r.maxMarks || 1)) * 100, 0) / allRecords.length 
-      : 0
-    return {
-      id: `exam_${e.id}`,
-      title: e.title,
-      subject: e.subject.name,
-      date: e.date,
-      pct: (e.marks / (e.maxMarks || 1)) * 100,
-      classAvg: avg
-    }
+  // Calculate comparative analytics for Exams using single batch query
+  const allExamRecords = await prisma.examRecord.findMany({
+    where: { subjectId: { in: subjectIds } },
+    select: { subjectId: true, title: true, marks: true, maxMarks: true }
+  })
+  const examAvgMap = new Map<string, number>()
+  const examGroups = new Map<string, { total: number; count: number }>()
+  allExamRecords.forEach(r => {
+    const key = `${r.subjectId}_${r.title}`
+    const curr = examGroups.get(key) || { total: 0, count: 0 }
+    curr.total += (r.marks / (r.maxMarks || 1)) * 100
+    curr.count += 1
+    examGroups.set(key, curr)
+  })
+  examGroups.forEach((v, k) => {
+    examAvgMap.set(k, v.count > 0 ? v.total / v.count : 0)
+  })
+
+  const examStats = exams.map(e => ({
+    id: `exam_${e.id}`,
+    title: e.title,
+    subject: e.subject.name,
+    date: e.date,
+    pct: (e.marks / (e.maxMarks || 1)) * 100,
+    classAvg: examAvgMap.get(`${e.subjectId}_${e.title}`) || 0
   }))
 
-  // Calculate comparative analytics for Quizzes
-  const quizStats = await Promise.all(quizzes.map(async (q) => {
-    // Get total possible points for this quiz
-    const quizQuestions = await prisma.question.findMany({
-      where: { quizId: q.quizId },
-      select: { points: true }
+  // Calculate comparative analytics for Quizzes using single batch query
+  const quizIds = quizzes.map(q => q.quizId)
+  const [allQuestions, allAttempts] = await Promise.all([
+    prisma.question.findMany({
+      where: { quizId: { in: quizIds } },
+      select: { quizId: true, points: true }
+    }),
+    prisma.quizAttempt.findMany({
+      where: { quizId: { in: quizIds }, status: 'GRADED' },
+      select: { quizId: true, score: true, answers: { select: { pointsAwarded: true } } }
     })
-    const maxPoints = quizQuestions.reduce((sum, q) => sum + (q.points || 0), 0) || 1
+  ])
 
-    const allAttempts = await prisma.quizAttempt.findMany({
-      where: { quizId: q.quizId, status: 'GRADED' },
-      select: { score: true, answers: { select: { pointsAwarded: true } } }
-    })
+  const quizMaxPoints = new Map<string, number>()
+  allQuestions.forEach(q => {
+    quizMaxPoints.set(q.quizId, (quizMaxPoints.get(q.quizId) || 0) + (q.points || 0))
+  })
 
-    const calculateScorePct = (attempt: any) => {
-      const awarded = attempt.score > 0 ? attempt.score : attempt.answers.reduce((s: number, ans: any) => s + (ans.pointsAwarded || 0), 0)
-      return (awarded / maxPoints) * 100
-    }
+  const quizAvgMap = new Map<string, number>()
+  const quizAttemptGroups = new Map<string, { totalPct: number; count: number }>()
+  allAttempts.forEach(a => {
+    const max = quizMaxPoints.get(a.quizId) || 1
+    const score = a.score > 0 ? a.score : a.answers.reduce((s, ans) => s + (ans.pointsAwarded || 0), 0)
+    const pct = (score / max) * 100
+    const curr = quizAttemptGroups.get(a.quizId) || { totalPct: 0, count: 0 }
+    curr.totalPct += pct
+    curr.count += 1
+    quizAttemptGroups.set(a.quizId, curr)
+  })
+  quizAttemptGroups.forEach((v, k) => {
+    quizAvgMap.set(k, v.count > 0 ? v.totalPct / v.count : 0)
+  })
 
-    const avgPct = allAttempts.length > 0
-      ? allAttempts.reduce((sum, a) => sum + calculateScorePct(a), 0) / allAttempts.length
-      : 0
-    
-    const myScorePct = calculateScorePct(q)
-    
+  const quizStats = quizzes.map(q => {
+    const max = quizMaxPoints.get(q.quizId) || 1
+    const myScore = q.score > 0 ? q.score : q.answers.reduce((s, ans) => s + (ans.pointsAwarded || 0), 0)
     return {
       id: `quiz_${q.id}`,
       title: q.quiz.title,
       subject: q.quiz.subject?.name || 'General',
       date: q.updatedAt,
-      pct: myScorePct,
-      classAvg: avgPct
+      pct: (myScore / max) * 100,
+      classAvg: quizAvgMap.get(q.quizId) || 0
     }
-  }))
+  })
+
+  // Calculate Syllabus Progress Indicator
+  let totalObjCount = 0
+  let completedObjCount = 0
+  subjectsWithObjectives.forEach(s => {
+    s.syllabusObjectives.forEach(obj => {
+      totalObjCount++
+      if (obj.classes && obj.classes.length > 0) completedObjCount++
+    })
+  })
+  const syllabusProgressPct = totalObjCount > 0 ? Math.round((completedObjCount / totalObjCount) * 100) : 0
 
   const examData = examStats.slice().reverse().slice(-10)
   const quizData = quizStats.slice().reverse().slice(-10)
@@ -198,10 +233,73 @@ export default async function StudentDashboard() {
 
   return (
     <div className="content-wrapper">
-      {/* Redundant header removed - global header in layout.tsx is used */}
+      {/* Breadcrumb Navigation */}
+      <nav aria-label="Breadcrumb" style={{ marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+        <ol style={{ display: 'flex', gap: '0.5rem', listStyle: 'none', padding: 0, margin: 0 }}>
+          <li><Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Dashboard</Link></li>
+          <li>/</li>
+          <li aria-current="page" style={{ color: 'var(--text-primary)' }}>Overview</li>
+        </ol>
+      </nav>
+
+      {/* Pending Tasks & Quick Resume Section */}
+      <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.08) 100%)', borderLeft: '8px solid var(--accent-primary)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--accent-primary)' }}>⚡ Active Learning Stream</span>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '0.25rem' }}>Pending Tasks & Upcoming Lessons</h2>
+          </div>
+          {upcomingClasses.length > 0 && (
+            <Link href={`/dashboard/student/subjects/${upcomingClasses[0].subjectId}`} className="btn-primary" style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem' }}>
+              ▶ Resume Lesson: {upcomingClasses[0].title}
+            </Link>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.7)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Upcoming Session</span>
+            <div style={{ fontWeight: 800, fontSize: '1rem', marginTop: '0.25rem' }}>
+              {upcomingClasses.length > 0 ? upcomingClasses[0].title : 'No sessions scheduled'}
+            </div>
+            {upcomingClasses.length > 0 && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
+                {new Date(upcomingClasses[0].scheduledDate).toLocaleDateString()} at {new Date(upcomingClasses[0].scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.7)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Recent Announcements</span>
+            <div style={{ fontWeight: 800, fontSize: '1rem', marginTop: '0.25rem' }}>
+              {announcements.length > 0 ? announcements[0].title : 'No new announcements'}
+            </div>
+            {announcements.length > 0 && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                {announcements[0].subject.name}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+        <div className="premium-card-v2 stagger-1">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Syllabus Completed</h3>
+            <span style={{ fontSize: '1.5rem' }}>🎯</span>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--dna-blue)', lineHeight: 1 }}>
+            {syllabusProgressPct}%
+          </div>
+          <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.08)', borderRadius: '4px', marginTop: '1rem', overflow: 'hidden' }}>
+            <div style={{ width: `${syllabusProgressPct}%`, height: '100%', background: 'var(--dna-blue)', transition: 'width 0.5s ease' }}></div>
+          </div>
+          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+            {completedObjCount} of {totalObjCount} objectives mastered
+          </p>
+        </div>
         <div className="premium-card-v2 stagger-1">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Overall Attendance</h3>
@@ -287,7 +385,7 @@ export default async function StudentDashboard() {
 
       <div style={{ marginBottom: '3rem' }}>
         <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <SyllabusIcon size={28} color="var(--accent-primary)" />
+          <BookOpen size={28} color="#10b981" />
           Academic Roadmap (Upcoming Classes)
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
@@ -328,8 +426,14 @@ export default async function StudentDashboard() {
             </div>
           ))}
           {upcomingClasses.length === 0 && (
-            <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-              No upcoming classes scheduled. Enjoy your break! 🌴
+            <div style={{ gridColumn: '1/-1' }}>
+              <EmptyState 
+                icon={<BookOpen size={36} color="var(--accent-primary)" />}
+                title="No Upcoming Classes Scheduled" 
+                description="You are all caught up! There are no pending live sessions or class deadlines scheduled right now."
+                actionLabel="Explore Quizzes & Materials"
+                actionHref="/dashboard/student/quizzes"
+              />
             </div>
           )}
         </div>
@@ -496,7 +600,6 @@ export default async function StudentDashboard() {
           )
         })}
       </div>
-      <RoughFilter />
     </div>
   )
 }

@@ -1,15 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Forgot password modal state
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotStatus, setForgotStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [forgotLoading, setForgotLoading] = useState(false)
+
   const router = useRouter()
+
+  useEffect(() => {
+    // Prefetch main role dashboards on mount for instant navigation after login
+    router.prefetch('/dashboard/student')
+    router.prefetch('/dashboard/teacher')
+    router.prefetch('/dashboard/parent')
+    router.prefetch('/dashboard/super-admin')
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,7 +36,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Login failed')
+      if (!res.ok) throw new Error(data.error || 'Login failed. Please check your credentials.')
+      
       const role = data.role
       if (role === 'SUPER_ADMIN') router.push('/dashboard/super-admin')
       else if (role === 'TEACHER')   router.push('/dashboard/teacher')
@@ -31,56 +46,70 @@ export default function LoginPage() {
       else if (role === 'ASSISTANT') router.push('/dashboard/assistant')
       else router.push('/')
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'An error occurred during sign in.')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotLoading(true)
+    setForgotStatus(null)
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setForgotStatus({ type: 'success', message: data.message || 'Instructions to reset your password have been sent to your email.' })
+      } else {
+        setForgotStatus({ type: 'error', message: data.error || 'Failed to request password reset.' })
+      }
+    } catch (err) {
+      setForgotStatus({ type: 'error', message: 'Network error. Please try again.' })
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', overflow: 'hidden', background: 'var(--bg-base)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden', background: 'var(--bg-base)' }}>
       
       {/* ── Background Particles ───────────────────────── */}
-      <div className="bio-particle" style={{ width: '600px', height: '600px', background: 'var(--accent-primary)', top: '-10%', left: '-10%', opacity: 0.2 }}></div>
-      <div className="bio-particle" style={{ width: '500px', height: '500px', background: 'var(--dna-blue)', bottom: '-10%', right: '-10%', opacity: 0.15 }}></div>
-      <div className="bio-particle" style={{ width: '400px', height: '400px', background: 'var(--dna-purple)', top: '30%', right: '10%', opacity: 0.1, animationDelay: '-7s' }}></div>
+      <div className="bio-particle" style={{ width: '600px', height: '600px', background: 'var(--accent-primary)', top: '-10%', left: '-10%', opacity: 0.15 }}></div>
+      <div className="bio-particle" style={{ width: '500px', height: '500px', background: 'var(--dna-blue)', bottom: '-10%', right: '-10%', opacity: 0.12 }}></div>
 
-      <div className="dna-container" style={{ top: '10%', right: '10%', opacity: 0.2 }}>
-        {[...Array(8)].map((_, i) => <div key={i} className="dna-dot"></div>)}
-      </div>
-      <div className="dna-container" style={{ bottom: '10%', left: '10%', opacity: 0.2, transform: 'rotate(180deg)' }}>
-        {[...Array(8)].map((_, i) => <div key={i} className="dna-dot"></div>)}
-      </div>
-
-      {/* ── Left panel — branding ───────────────────────── */}
-      <div style={{
+      {/* ── Left panel — branding (hidden on mobile) ───────────────────────── */}
+      <div className="desktop-only-left-panel" style={{
         flex: 1,
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '4rem',
+        padding: '3rem',
         zIndex: 10
       }}>
-        <div style={{ maxWidth: '440px', textAlign: 'center', animation: 'slide-up 0.8s var(--ease-out-expo)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h1 style={{ 
-            fontSize: '4.5rem', 
-            fontWeight: 900, 
-            background: 'linear-gradient(135deg, var(--accent-primary), var(--dna-blue))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(4px 4px 0 var(--text-primary))',
-            letterSpacing: '-0.06em',
-            lineHeight: 1
-          }}>
-            HELIX
-          </h1>
-          <p style={{ fontWeight: 900, color: 'var(--text-primary)', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.75rem' }}>
-            Bio-Digital Academic OS
-          </p>
-        </div>
+        <div style={{ maxWidth: '440px', textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h1 style={{ 
+              fontSize: '4.5rem', 
+              fontWeight: 900, 
+              background: 'linear-gradient(135deg, var(--accent-primary), var(--dna-blue))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.06em',
+              lineHeight: 1
+            }}>
+              HELIX
+            </h1>
+            <p style={{ fontWeight: 900, color: 'var(--text-primary)', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.75rem' }}>
+              Bio-Digital Academic OS
+            </p>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {[
@@ -106,75 +135,175 @@ export default function LoginPage() {
 
       {/* ── Right panel — login form ────────────────────── */}
       <div style={{
-        width: '560px',
-        background: 'rgba(255, 255, 255, 0.6)',
-        backdropFilter: 'blur(40px)',
-        WebkitBackdropFilter: 'blur(40px)',
+        width: '100%',
+        maxWidth: '560px',
+        background: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(30px)',
+        WebkitBackdropFilter: 'blur(30px)',
         borderLeft: '1px solid rgba(255, 255, 255, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '4rem',
+        padding: '2rem 1.5rem',
         zIndex: 20
       }}>
-        <div style={{ width: '100%', maxWidth: '380px', animation: 'slide-up 1s var(--ease-out-expo)' }}>
-          <div style={{ marginBottom: '3rem', animation: 'slide-up 0.8s var(--ease-out-expo)', position: 'relative' }}>
-            <div className="dna-container" style={{ position: 'absolute', right: '0', top: '-20px', height: '100px', opacity: 0.15 }}>
-              {[...Array(4)].map((_, i) => <div key={i} className="dna-dot"></div>)}
-            </div>
-            <h4 style={{ color: 'var(--accent-primary)', marginBottom: '0.75rem' }}>Secure Login</h4>
-            <h2 style={{ marginBottom: '0.5rem' }}>Welcome Back</h2>
-            <p>Access your academic portal</p>
+        <div style={{ width: '100%', maxWidth: '400px' }}>
+          
+          <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+            <h4 style={{ color: 'var(--accent-primary)', marginBottom: '0.5rem', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>Secure Portal Access</h4>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.25rem' }}>Welcome Back</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Sign in to access your academic dashboard</p>
           </div>
 
           {error && (
-            <div style={{ 
-              padding: '1rem', 
-              background: 'rgba(239, 68, 68, 0.05)', 
-              border: '1px solid rgba(239, 68, 68, 0.1)', 
+            <div role="alert" style={{ 
+              padding: '0.875rem 1rem', 
+              background: 'rgba(239, 68, 68, 0.08)', 
+              border: '1px solid rgba(239, 68, 68, 0.25)', 
               borderRadius: '12px', 
-              color: 'var(--error)', 
+              color: '#dc2626', 
               fontSize: '0.875rem', 
               fontWeight: 600,
-              marginBottom: '2rem',
+              marginBottom: '1.5rem',
               display: 'flex',
               gap: '0.75rem',
               alignItems: 'center'
             }}>
-              <span>🚫</span> {error}
+              <span>🚫</span> <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Email Address</label>
-              <input type="email" className="input-field" placeholder="name@school.com" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Password</label>
-              <input type="password" className="input-field" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+              <label htmlFor="login-email" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Email Address</label>
+              <input 
+                id="login-email"
+                type="email" 
+                className="input-field" 
+                placeholder="name@school.com" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                autoComplete="email"
+                required 
+                style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
+              />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', padding: '1.25rem', marginTop: '1rem' }}>
-              {loading ? 'Authenticating...' : 'Sign In to Portal →'}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label htmlFor="login-password" style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Password</label>
+                <button 
+                  type="button" 
+                  onClick={() => setShowForgot(true)}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '4px' }}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <input 
+                id="login-password"
+                type="password" 
+                className="input-field" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                autoComplete="current-password"
+                required 
+                style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              disabled={loading} 
+              style={{ width: '100%', minHeight: '48px', padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                  Authenticating...
+                </>
+              ) : 'Sign In to Portal →'}
             </button>
           </form>
 
-          <div style={{ marginTop: '3rem', textAlign: 'center' }}>
-            <p style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>New educator joining us?</p>
-            <a href="/register" style={{ fontWeight: 800, color: 'var(--accent-primary)', textDecoration: 'underline' }}>Request Teacher Credentials</a>
+          {/* Registration Links */}
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.08)', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Don't have an account yet?</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <a href="/register?role=student" style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.875rem' }}>Student Register</a>
+              <span style={{ color: 'var(--text-secondary)' }}>•</span>
+              <a href="/register?role=teacher" style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.875rem' }}>Teacher Application</a>
+              <span style={{ color: 'var(--text-secondary)' }}>•</span>
+              <a href="/register?role=parent" style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.875rem' }}>Parent Portal</a>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* ── Forgot Password Modal ────────────────────── */}
+      {showForgot && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '420px', padding: '2rem', position: 'relative' }}>
+            <button 
+              onClick={() => { setShowForgot(false); setForgotStatus(null); }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Reset Password</h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Enter your email address and we'll process a password reset request.
+            </p>
+
+            {forgotStatus && (
+              <div style={{
+                padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600,
+                background: forgotStatus.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                color: forgotStatus.type === 'success' ? '#059669' : '#dc2626',
+                border: `1px solid ${forgotStatus.type === 'success' ? '#059669' : '#dc2626'}`
+              }}>
+                {forgotStatus.message}
+              </div>
+            )}
+
+            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem' }}>Account Email</label>
+                <input 
+                  type="email" 
+                  className="input-field" 
+                  required 
+                  value={forgotEmail} 
+                  onChange={e => setForgotEmail(e.target.value)} 
+                  placeholder="your@email.com" 
+                  style={{ minHeight: '44px', width: '100%' }}
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={forgotLoading}
+                style={{ width: '100%', minHeight: '44px', padding: '0.75rem' }}
+              >
+                {forgotLoading ? 'Processing...' : 'Send Reset Request'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(-5deg); }
-          50% { transform: translateY(-20px) rotate(-2deg); }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         @media (max-width: 1024px) {
-          div[style*="flex: 1"] { display: none; }
-          div[style*="width: 560px"] { width: 100% !important; border-left: none; }
+          .desktop-only-left-panel { display: none !important; }
         }
       `}</style>
     </div>
