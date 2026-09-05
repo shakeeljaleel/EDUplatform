@@ -3,23 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-// Helper device fingerprint
-function getDeviceId(): string {
-  if (typeof window === 'undefined') return 'server'
-  const key = ['ua', navigator.userAgent, navigator.language, screen.width, screen.height, Intl.DateTimeFormat().resolvedOptions().timeZone].join('|')
-  let hash = 0
-  for (let i = 0; i < key.length; i++) {
-    hash = ((hash << 5) - hash) + key.charCodeAt(i)
-    hash |= 0
-  }
-  return `dev_${Math.abs(hash).toString(16)}`
-}
-
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [step, setStep] = useState<'CREDENTIALS' | 'OTP'>('CREDENTIALS')
   const [error, setError] = useState('')
   const [infoMessage, setInfoMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -61,51 +47,18 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Login failed. Please check your credentials.')
-      
-      if (data.requireOtp) {
-        setStep('OTP')
-        setInfoMessage(data.message || `A verification code was sent to ${email}. Check your inbox.`)
-        return
-      }
 
-      const role = data.role
-      if (role === 'SUPER_ADMIN') router.push('/dashboard/super-admin')
-      else if (role === 'TEACHER')   router.push('/dashboard/teacher')
-      else if (role === 'STUDENT')   router.push('/dashboard/student')
-      else if (role === 'PARENT')    router.push('/dashboard/parent')
-      else if (role === 'ASSISTANT') router.push('/dashboard/assistant')
-      else router.push('/')
+      const role = data.role || data.user?.role
+      let target = '/'
+      if (role === 'SUPER_ADMIN') target = '/dashboard/super-admin'
+      else if (role === 'TEACHER')   target = '/dashboard/teacher'
+      else if (role === 'STUDENT')   target = '/dashboard/student'
+      else if (role === 'PARENT')    target = '/dashboard/parent'
+      else if (role === 'ASSISTANT') target = '/dashboard/assistant'
+
+      window.location.href = target
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const deviceId = getDeviceId()
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otpCode, deviceId }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Verification failed.')
-
-      const role = data.role
-      if (role === 'SUPER_ADMIN') router.push('/dashboard/super-admin')
-      else if (role === 'TEACHER')   router.push('/dashboard/teacher')
-      else if (role === 'STUDENT')   router.push('/dashboard/student')
-      else if (role === 'PARENT')    router.push('/dashboard/parent')
-      else if (role === 'ASSISTANT') router.push('/dashboard/assistant')
-      else router.push('/')
-    } catch (err: any) {
-      setError(err.message || 'Failed to verify OTP code.')
-    } finally {
       setLoading(false)
     }
   }
@@ -249,105 +202,60 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === 'CREDENTIALS' ? (
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label htmlFor="login-email" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Email Address</label>
-                <input 
-                  id="login-email"
-                  type="email" 
-                  className="input-field" 
-                  placeholder="name@school.com" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  autoComplete="email"
-                  required 
-                  style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
-                />
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <label htmlFor="login-email" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Email Address</label>
+              <input 
+                id="login-email"
+                type="email" 
+                className="input-field" 
+                placeholder="name@school.com" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                autoComplete="email"
+                required 
+                style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
+              />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label htmlFor="login-password" style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Password</label>
+                <button 
+                  type="button" 
+                  onClick={() => setShowForgot(true)}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '4px' }}
+                >
+                  Forgot Password?
+                </button>
               </div>
+              <input 
+                id="login-password"
+                type="password" 
+                className="input-field" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                autoComplete="current-password"
+                required 
+                style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
+              />
+            </div>
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <label htmlFor="login-password" style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Password</label>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowForgot(true)}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', padding: '4px' }}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <input 
-                  id="login-password"
-                  type="password" 
-                  className="input-field" 
-                  placeholder="••••••••" 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  autoComplete="current-password"
-                  required 
-                  style={{ minHeight: '46px', width: '100%', padding: '0.75rem 1rem', fontSize: '1rem', borderRadius: '10px' }}
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={loading} 
-                style={{ width: '100%', minHeight: '48px', padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                    Signing in...
-                  </>
-                ) : 'Sign In →'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#334155' }}>
-                A 6-digit verification code was sent to <strong>{email}</strong>. Check your inbox.
-              </div>
-
-              <div>
-                <label htmlFor="login-otp" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>6-Digit Security Code</label>
-                <input 
-                  id="login-otp"
-                  type="text" 
-                  className="input-field" 
-                  placeholder="123456" 
-                  value={otpCode} 
-                  onChange={e => setOtpCode(e.target.value)} 
-                  maxLength={6}
-                  required 
-                  style={{ minHeight: '52px', width: '100%', padding: '0.75rem 1rem', fontSize: '1.5rem', letterSpacing: '8px', textAlign: 'center', fontWeight: 900, borderRadius: '10px' }}
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={loading} 
-                style={{ width: '100%', minHeight: '48px', padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                    Verifying Code...
-                  </>
-                ) : 'Verify & Access Portal →'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setStep('CREDENTIALS'); setOtpCode(''); }}
-                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', textAlign: 'center' }}
-              >
-                ← Back to Login Credentials
-              </button>
-            </form>
-          )}
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              disabled={loading} 
+              style={{ width: '100%', minHeight: '48px', padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                  Signing in...
+                </>
+              ) : 'Sign In →'}
+            </button>
+          </form>
 
           {/* Registration Links */}
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.08)', textAlign: 'center' }}>
