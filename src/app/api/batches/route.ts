@@ -7,6 +7,12 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const batches = await prisma.batch.findMany({
+    include: {
+      branch: true,
+      _count: {
+        select: { enrollments: true, subjects: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   })
   
@@ -19,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { name, academicLevel } = await request.json()
+  const { name, academicLevel, branchId } = await request.json()
 
   if (!name || !academicLevel) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -29,6 +35,10 @@ export async function POST(request: Request) {
     data: {
       name,
       academicLevel,
+      ...(branchId ? { branchId } : {})
+    },
+    include: {
+      branch: true
     }
   })
 

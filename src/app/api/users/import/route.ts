@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { parse } from 'csv-parse/sync'
 import bcrypt from 'bcryptjs'
+import { parseStudentImportFile } from '@/lib/studentImportParser'
 
 export async function POST(request: Request) {
   const session = await getSession()
@@ -19,24 +19,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File and batchId are required' }, { status: 400 })
     }
 
-    const text = await file.text()
-    // Expected CSV format: name, email, password, address, phone
-    const records = parse(text, {
-      columns: true,
-      skip_empty_lines: true
-    }) as any[]
+    const records = await parseStudentImportFile(file)
+
+    if (records.length === 0) {
+      return NextResponse.json({ error: 'No valid student records with email addresses found in the uploaded file.' }, { status: 400 })
+    }
 
     let successCount = 0
 
-    // Sequential insert to avoid overload and handle bcrypt safely
-    for (const record of records) {
-      if (!record.email || !record.name || !record.password) continue
+    // Fetch subjects of target batch to auto-enroll
+    const subjects = await prisma.subject.findMany({ where: { batchId } })
 
-      const passwordHash = await bcrypt.hash(record.password, 10)
+    for (const record of records) {
+      if (!record.email || !record.name) continue
+
+      const initialPassword = record.password || 'Student2026!'
+      const passwordHash = await bcrypt.hash(initialPassword, 10)
 
       const user = await prisma.user.upsert({
         where: { email: record.email },
-        update: {},
+        update: {
+          name: record.name,
+        },
         create: {
           email: record.email,
           name: record.name,
@@ -67,12 +71,30 @@ export async function POST(request: Request) {
         }
       })
 
+      // Auto-enroll in batch subjects
+      for (const subject of subjects) {
+        await prisma.subjectEnrollment.upsert({
+          where: {
+            subjectId_userId: {
+              subjectId: subject.id,
+              userId: user.id
+            }
+          },
+          update: { status: 'APPROVED' },
+          create: {
+            subjectId: subject.id,
+            userId: user.id,
+            status: 'APPROVED'
+          }
+        })
+      }
+
       successCount++
     }
 
-    return NextResponse.json({ success: true, count: successCount })
-  } catch (error) {
-    console.error('CSV import error:', error)
-    return NextResponse.json({ error: 'Failed to import students' }, { status: 500 })
+    return NextResponse.json({ success: true, count: successCount, totalParsed: records.length })
+  } catch (error: any) {
+    console.error('Student import error:', error)
+    return NextResponse.json({ error: error?.message || 'Failed to import students' }, { status: 500 })
   }
 }

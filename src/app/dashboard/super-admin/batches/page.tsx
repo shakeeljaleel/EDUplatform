@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export default function BatchesPage() {
   const [batches, setBatches] = useState<any[]>([])
+  const [branches, setBranches] = useState<any[]>([])
   const [name, setName] = useState('')
   const [academicLevel, setAcademicLevel] = useState('O Level')
+  const [branchId, setBranchId] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetchBatches()
+    fetchBranches()
   }, [])
 
   const fetchBatches = async () => {
@@ -20,17 +24,26 @@ export default function BatchesPage() {
     }
   }
 
+  const fetchBranches = async () => {
+    const res = await fetch('/api/branches')
+    if (res.ok) {
+      const data = await res.json()
+      setBranches(data.branches || [])
+    }
+  }
+
   const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     const res = await fetch('/api/batches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, academicLevel })
+      body: JSON.stringify({ name, academicLevel, branchId: branchId || undefined })
     })
     
     if (res.ok) {
       setName('')
+      setBranchId('')
       fetchBatches()
     }
     setLoading(false)
@@ -64,6 +77,19 @@ export default function BatchesPage() {
                 <option value="A Level">A Level</option>
               </select>
             </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Assign Branch (Optional)</label>
+              <select 
+                className="input-field" 
+                value={branchId} 
+                onChange={e => setBranchId(e.target.value)}
+              >
+                <option value="">No Branch / Global</option>
+                {branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+            </div>
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Creating...' : 'Create Batch'}
             </button>
@@ -77,6 +103,7 @@ export default function BatchesPage() {
               <thead>
                 <tr>
                   <th>Batch Name</th>
+                  <th>Branch</th>
                   <th>Academic Level</th>
                   <th>Created At</th>
                   <th>Actions</th>
@@ -85,17 +112,28 @@ export default function BatchesPage() {
               <tbody>
                 {batches.map(batch => (
                   <tr key={batch.id}>
-                    <td>{batch.name}</td>
+                    <td style={{ fontWeight: 600 }}>{batch.name}</td>
+                    <td>
+                      {batch.branch ? (
+                        <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>
+                          📍 {batch.branch.name}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Global</span>
+                      )}
+                    </td>
                     <td><span style={{ backgroundColor: 'var(--bg-tertiary)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem' }}>{batch.academicLevel}</span></td>
                     <td>{new Date(batch.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <button className="btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }}>Manage</button>
+                      <Link href={`/dashboard/super-admin/batches/${batch.id}`} className="btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', textDecoration: 'none', display: 'inline-block' }}>
+                        Manage
+                      </Link>
                     </td>
                   </tr>
                 ))}
                 {batches.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No batches found</td>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No batches found</td>
                   </tr>
                 )}
               </tbody>
