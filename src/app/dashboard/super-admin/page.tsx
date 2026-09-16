@@ -37,11 +37,11 @@ export default async function SuperAdminDashboard() {
         </p>
       </div>
 
-      {/* 5 STAT CARDS GRID (Light 1px border + 3px colored top accent) */}
+      {/* 5 STAT CARDS GRID (Light 1px border + 4px colored top accent) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
         
         {/* Total Students */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '3px solid #10b981', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
             <GraduationCap size={18} color="#10b981" />
@@ -53,7 +53,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Total Teachers */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '3px solid #3b82f6', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #3b82f6', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
             <Users size={18} color="#3b82f6" />
@@ -65,7 +65,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Total Parents */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '3px solid #8b5cf6', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
             <Users size={18} color="#8b5cf6" />
@@ -77,7 +77,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Active Enrollments */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '3px solid #ec4899', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #ec4899', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
             <Layers size={18} color="#ec4899" />
@@ -89,7 +89,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Recent Sign-ups */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '3px solid #f59e0b', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #f59e0b', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
             <TrendingUp size={18} color="#f59e0b" />
@@ -105,9 +105,10 @@ export default async function SuperAdminDashboard() {
           href="/dashboard/super-admin/users" 
           className="btn-secondary" 
           style={{ 
-            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 800, 
+            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            textAlign: 'center', width: '100%', border: '1.5px solid #cbd5e1', background: '#ffffff', color: '#0f172a'
+            textAlign: 'center', width: '100%', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a',
+            borderRadius: '10px'
           }}
         >
           <Users size={18} color="#10b981" />
@@ -119,9 +120,10 @@ export default async function SuperAdminDashboard() {
           href="/dashboard/super-admin/branches" 
           className="btn-secondary" 
           style={{ 
-            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 800, 
+            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            textAlign: 'center', width: '100%', border: '1.5px solid #cbd5e1', background: '#ffffff', color: '#0f172a'
+            textAlign: 'center', width: '100%', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a',
+            borderRadius: '10px'
           }}
         >
           <Building2 size={18} color="#3b82f6" />
@@ -130,35 +132,38 @@ export default async function SuperAdminDashboard() {
         </Link>
       </div>
 
-      {/* ADMINISTRATIVE AUDIT LOG TERMINAL */}
-      <div className="card" style={{ padding: '1.75rem', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+      {/* ADMINISTRATIVE AUDIT LOG TERMINAL SECTION (CLEAN LIGHT CARD DESIGN) */}
+      <div className="card" style={{ padding: '1.75rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <ShieldAlert size={22} color="#10b981" />
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Administrative audit log terminal</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', margin: 0 }}>Administrative audit log terminal</h3>
               <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.15rem' }}>Immutable record of administrator actions and system modifications</p>
             </div>
           </div>
-          <span className="badge" style={{ fontSize: '0.75rem', background: '#f0fdf4', color: '#059669', border: '1px solid #10b981', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontWeight: 800 }}>
+          <span className="badge" style={{ fontSize: '0.75rem', background: '#f0fdf4', color: '#059669', border: '1px solid #10b981', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontWeight: 700 }}>
             Audit active
           </span>
         </div>
 
-        <div style={{ background: '#020617', color: '#10b981', padding: '1.25rem 1.5rem', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', overflowX: 'auto' }}>
+        <div style={{ background: '#f9fafb', color: '#334155', border: '1px solid #e2e8f0', padding: '1.25rem 1.5rem', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', overflowX: 'auto' }}>
           {auditLogs.map((log) => (
-            <div key={log.id} style={{ marginBottom: '0.65rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>[{new Date(log.createdAt).toLocaleString()}]</span>{' '}
-              <strong style={{ color: '#3b82f6' }}>{log.adminName}</strong> executed{' '}
-              <span style={{ color: '#f59e0b' }}>{log.action}</span>
-              {log.details && <span style={{ color: '#e2e8f0' }}> — {log.details}</span>}
+            <div key={log.id} style={{ marginBottom: '0.65rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+              <span style={{ color: '#64748b' }}>[{new Date(log.createdAt).toLocaleString()}]</span>{' '}
+              <strong style={{ color: '#2563eb', fontWeight: 700 }}>{log.adminName}</strong> executed{' '}
+              <span style={{ color: '#d97706', fontWeight: 700 }}>{log.action}</span>
+              {log.details && <span style={{ color: '#0f172a' }}> — {log.details}</span>}
             </div>
           ))}
           {auditLogs.length === 0 && (
-            <div style={{ color: '#94a3b8' }}>No administrative audit events recorded yet. System initial state clean.</div>
+            <div style={{ color: '#64748b' }}>No administrative audit events recorded yet. System initial state clean.</div>
           )}
         </div>
       </div>
     </div>
   )
 }
+
+
+
