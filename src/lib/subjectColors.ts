@@ -21,8 +21,9 @@ export function getSubjectColor(subjectName: string = '', index: number = 0): st
 
 export function getAcademicLevelColor(level: string = ''): string {
   const normalized = level.trim().toUpperCase()
-  if (normalized.includes('A LEVEL') || normalized === 'A') return '#aa00ff'
-  if (normalized.includes('AS LEVEL') || normalized === 'AS') return '#2979ff'
-  if (normalized.includes('O LEVEL') || normalized === 'O') return '#00c853'
-  return '#ff6d00'
+  if (normalized.includes('A2') || normalized.includes('A LEVEL') || normalized.includes('A-LEVEL') || normalized === 'A') return '#aa00ff'
+  if (normalized.includes('AS')) return '#2979ff'
+  if (normalized.includes('O LEVEL') || normalized.includes('O-LEVEL') || normalized.includes('IGCSE') || normalized === 'O') return '#00c853'
+  if (normalized.includes('11') || normalized.includes('GRADE')) return '#ff6d00'
+  return '#aa00ff'
 }

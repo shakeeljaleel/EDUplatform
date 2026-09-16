@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { showToast } from '@/components/ToastContainer'
 import { Users, BookOpen, Building2, Plus, ArrowLeft, Check, Layers, Settings, Trash2, Edit, MoreVertical, X, Sparkles } from '@/components/Icons'
 import { getSubjectColor, getAcademicLevelColor } from '@/lib/subjectColors'
+import DnaHelixLogo from '@/components/DnaHelixLogo'
 
 export default function SuperAdminBatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: batchId } = use(params)
@@ -340,60 +341,111 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
       </div>
 
       {/* Batch Header Banner */}
-      <div className="card" style={{ padding: '2rem', marginBottom: '2rem', background: '#ffffff', borderLeft: `8px solid ${levelColor}` }}>
+      <div className="card" style={{ 
+        padding: '2rem', 
+        marginBottom: '2rem', 
+        background: levelColor, 
+        color: '#ffffff',
+        border: '3px solid #1a1a2e',
+        borderRadius: '20px',
+        boxShadow: '6px 6px 0px #1a1a2e' 
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <span className="badge" style={{ backgroundColor: levelColor, color: '#ffffff', fontWeight: 800, textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <span className="badge" style={{ 
+                backgroundColor: '#ffffff', 
+                color: levelColor, 
+                fontWeight: 900, 
+                border: '2px solid #1a1a2e',
+                boxShadow: '2px 2px 0px #1a1a2e',
+                textTransform: 'uppercase',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '50px',
+                fontSize: '0.85rem'
+              }}>
                 {batch?.academicLevel || 'Batch'}
               </span>
               {batch?.branch && (
-                <span className="badge" style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #3b82f6', fontWeight: 800 }}>
+                <span className="badge" style={{ 
+                  backgroundColor: '#ffffff', 
+                  color: '#1a1a2e', 
+                  border: '2px solid #1a1a2e', 
+                  boxShadow: '2px 2px 0px #1a1a2e',
+                  fontWeight: 800,
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '50px',
+                  fontSize: '0.85rem'
+                }}>
                   📍 {batch.branch.name}
                 </span>
               )}
             </div>
-            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>{batch?.name}</h1>
-            <p style={{ color: '#64748b', fontWeight: 600, fontSize: '0.95rem', marginTop: '0.25rem' }}>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: 0 }}>{batch?.name}</h1>
+            <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontWeight: 700, fontSize: '1rem', marginTop: '0.35rem' }}>
               {subjects.length} Subjects • {enrolledStudents.length} Students • {assignedTeachersList.length} Teachers
             </p>
           </div>
         </div>
       </div>
 
-      {/* FOUR COMIC PILL TABS */}
+      {/* FOUR COMIC PILL TABS WITH CIRCLE BADGES */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
         {[
-          { id: 'SUBJECTS', label: `Subjects (${subjects.length})`, icon: <BookOpen size={18} /> },
-          { id: 'STUDENTS', label: `Students (${enrolledStudents.length})`, icon: <Users size={18} /> },
-          { id: 'TEACHERS', label: `Teachers (${assignedTeachersList.length})`, icon: <Building2 size={18} /> },
-          { id: 'SETTINGS', label: 'Settings', icon: <Settings size={18} /> },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`tab-pill ${activeTab === tab.id ? 'active' : ''}`}
-            style={{
-              background: activeTab === tab.id ? '#1a1a2e' : '#ffffff',
-              color: activeTab === tab.id ? '#ffffff' : '#1a1a2e',
-              border: '3px solid #1a1a2e',
-              boxShadow: '3px 3px 0px #1a1a2e',
-              borderRadius: '50px',
-              padding: '0.65rem 1.5rem',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              minHeight: '44px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+          { id: 'SUBJECTS', label: 'Subjects', count: subjects.length, defaultColor: '#00c853', icon: <BookOpen size={18} /> },
+          { id: 'STUDENTS', label: 'Students', count: enrolledStudents.length, defaultColor: '#2979ff', icon: <Users size={18} /> },
+          { id: 'TEACHERS', label: 'Teachers', count: assignedTeachersList.length, defaultColor: '#aa00ff', icon: <Building2 size={18} /> },
+          { id: 'SETTINGS', label: 'Settings', count: null, defaultColor: null, icon: <Settings size={18} /> },
+        ].map(tab => {
+          const isSelected = activeTab === tab.id
+          const badgeColor = tab.count === 0 ? '#f50057' : (tab.defaultColor || '#00c853')
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`tab-pill ${isSelected ? 'active' : ''}`}
+              style={{
+                background: isSelected ? '#1a1a2e' : '#ffffff',
+                color: isSelected ? '#ffffff' : '#1a1a2e',
+                border: '3px solid #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                borderRadius: '50px',
+                padding: '0.65rem 1.25rem',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                minHeight: '44px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+              {tab.count !== null && (
+                <span style={{
+                  backgroundColor: badgeColor,
+                  color: '#ffffff',
+                  fontSize: '0.75rem',
+                  fontWeight: 900,
+                  minWidth: '22px',
+                  height: '22px',
+                  padding: '0 6px',
+                  borderRadius: '50px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1.5px solid #1a1a2e',
+                  lineHeight: 1
+                }}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* TAB 1: SUBJECTS */}
@@ -406,7 +458,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
               onClick={() => setShowAddSubjectModal(true)}
               style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <Plus size={18} /> + Add Subject
+              <Plus size={18} /> + Add subject
             </button>
           </div>
 
@@ -521,10 +573,42 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
             })}
 
             {subjects.length === 0 && (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', background: '#ffffff', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
-                <BookOpen size={36} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#475569' }}>No subjects added yet</h3>
-                <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Click "+ Add Subject" above to create subjects for this batch.</p>
+              <div style={{
+                gridColumn: '1/-1',
+                textAlign: 'center',
+                padding: '4rem 2rem',
+                background: `${levelColor}1a`,
+                borderRadius: '24px',
+                border: '3px dashed #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '1.25rem'
+              }}>
+                <DnaHelixLogo style={{ width: '56px', height: '80px' }} />
+                <div>
+                  <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>No subjects yet</h3>
+                  <p style={{ fontSize: '1rem', color: '#475569', fontWeight: 700, marginTop: '0.35rem' }}>
+                    Add your first subject to get started
+                  </p>
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={() => setShowAddSubjectModal(true)}
+                  style={{
+                    padding: '0.75rem 1.75rem',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}
+                >
+                  <Plus size={20} /> + Add subject
+                </button>
               </div>
             )}
           </div>

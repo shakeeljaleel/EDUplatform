@@ -156,7 +156,7 @@ export default function TeacherBatchPage({ params }: { params: Promise<{ id: str
             {s.name}
           </button>
         ))}
-        <button onClick={() => setShowAddSubject(true)} className="sketch-button-v2" style={{ background: 'var(--dna-blue)', padding: '10px 20px', fontSize: '0.8rem' }}>+ Add Subject</button>
+        <button onClick={() => setShowAddSubject(true)} className="sketch-button-v2" style={{ background: 'var(--dna-blue)', padding: '10px 20px', fontSize: '0.8rem' }}>+ Add subject</button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>

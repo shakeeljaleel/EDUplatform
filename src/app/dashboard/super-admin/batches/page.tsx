@@ -168,11 +168,12 @@ export default function BatchesPage() {
                           router.push(`/dashboard/super-admin/batches/${batch.id}?tab=subjects`)
                         }}
                         style={{
-                          background: '#f0fdf4',
-                          color: '#059669',
-                          border: '1.5px solid #10b981',
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
+                          background: subjectCount === 0 ? '#fff0f0' : '#f0fff4',
+                          color: subjectCount === 0 ? '#f50057' : '#00c853',
+                          border: subjectCount === 0 ? '2px solid #f50057' : '2px solid #00c853',
+                          boxShadow: '3px 3px 0px #1a1a2e',
+                          borderRadius: '50px',
+                          padding: '0.35rem 0.85rem',
                           fontWeight: 800,
                           fontSize: '0.85rem',
                           cursor: 'pointer',

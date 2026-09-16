@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { RoughFilter } from './HandDrawnIcons'
+import { Bell } from './Icons'
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([])
@@ -51,17 +52,32 @@ export default function NotificationBell() {
         onClick={toggleDropdown}
         className="notification-bell-btn" 
         aria-label="Notifications"
+        style={{
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          background: '#ffffff',
+          color: '#1a1a2e',
+          border: '2px solid #1a1a2e',
+          boxShadow: '3px 3px 0px #1a1a2e',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 0,
+          cursor: 'pointer',
+          position: 'relative'
+        }}
       >
-        <span style={{ fontSize: '1.2rem' }}>🔔</span>
+        <Bell size={20} color="#1a1a2e" />
         {unreadCount > 0 && (
-          <span style={{ 
+          <span className="pulse-red-badge" style={{ 
             position: 'absolute', top: '-4px', right: '-4px', 
             background: '#f50057', color: 'white', 
             fontSize: '0.65rem', fontWeight: 900, 
             width: '20px', height: '20px', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '2px solid #1a1a2e',
-            boxShadow: '0 0 6px rgba(245, 0, 87, 0.6)'
+            boxShadow: '0 0 6px rgba(245, 0, 87, 0.8)'
           }}>
             {unreadCount}
           </span>
