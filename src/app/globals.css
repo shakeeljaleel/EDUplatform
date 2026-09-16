@@ -130,6 +130,23 @@ body {
   transition: all 0.2s ease !important;
 }
 
+.stat-card {
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+  filter: none !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-card, .stat-card *, .stat-card span, .stat-card div, .stat-card p, .stat-card svg {
+  color: #ffffff !important;
+}
+
 .card:hover, .premium-card:hover, .premium-card-v2:hover {
   transform: translateY(-2px) !important;
 }

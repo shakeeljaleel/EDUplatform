@@ -40,7 +40,6 @@ export default async function SuperAdminDashboard() {
           Welcome back, Super 👋
         </h1>
         <p style={{ color: '#334155', fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem', margin: 0 }}>
-          Ready to explore your academic hub today?
         </p>
       </div>
 
@@ -51,12 +50,14 @@ export default async function SuperAdminDashboard() {
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #00c853, #69f0ae)',
           borderRadius: '16px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)'
+          border: 'none',
+          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
+            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
             <GraduationCap size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, marginTop: '0.5rem', color: '#ffffff' }}>{studentsCount}</div>
@@ -69,12 +70,14 @@ export default async function SuperAdminDashboard() {
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
           borderRadius: '16px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)'
+          border: 'none',
+          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
+            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
             <Users size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{teachersCount}</div>
@@ -87,12 +90,14 @@ export default async function SuperAdminDashboard() {
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
           borderRadius: '16px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)'
+          border: 'none',
+          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
+            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
             <Users size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{parentsCount}</div>
@@ -105,12 +110,14 @@ export default async function SuperAdminDashboard() {
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
           borderRadius: '16px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)'
+          border: 'none',
+          boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)',
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
+            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
             <Layers size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{enrollmentsCount}</div>
@@ -123,12 +130,14 @@ export default async function SuperAdminDashboard() {
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #f50057, #ff80ab)',
           borderRadius: '16px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(245, 0, 87, 0.3)'
+          border: 'none',
+          boxShadow: '0 8px 24px rgba(245, 0, 87, 0.3)',
+          transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
+            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
             <TrendingUp size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{recentSignupsCount}</div>

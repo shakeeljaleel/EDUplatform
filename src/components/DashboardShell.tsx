@@ -83,7 +83,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         <div className="content-wrapper" style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <header className="desktop-dashboard-header" style={{ 
             display: 'flex', 
-            justifyContent: 'flex-end', 
+            justifyContent: 'space-between', 
             alignItems: 'center', 
             marginBottom: '1.5rem',
             paddingBottom: '1rem',
@@ -91,6 +91,42 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
             position: 'relative',
             zIndex: 20
           }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'rgba(15, 23, 42, 0.06)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: '#0f172a',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                aria-label="Toggle menu"
+                title="Toggle sidebar navigation"
+              >
+                ☰
+              </button>
+
+              <div style={{ 
+                fontFamily: 'var(--font-display)', 
+                fontWeight: 900, 
+                fontSize: '1.5rem', 
+                background: 'linear-gradient(135deg, #10b981, #3b82f6)', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.03em'
+              }}>
+                HELIX
+              </div>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
               <NotificationBell />
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
