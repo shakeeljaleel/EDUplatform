@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import DnaHelixLogo from '@/components/DnaHelixLogo'
 
 function RegisterForm() {
   const router = useRouter()
@@ -147,8 +148,9 @@ function RegisterForm() {
         ) : (
           <>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                Create Helix Account
+              <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <DnaHelixLogo />
+                <span>Create Helix Account</span>
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Join the bio-digital academic platform</p>
             </div>

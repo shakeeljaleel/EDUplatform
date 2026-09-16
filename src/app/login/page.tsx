@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import DnaHelixLogo from '@/components/DnaHelixLogo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -109,13 +110,21 @@ export default function LoginPage() {
             <h1 style={{ 
               fontSize: '4.5rem', 
               fontWeight: 900, 
-              background: 'linear-gradient(135deg, var(--accent-primary), var(--dna-blue))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.06em',
-              lineHeight: 1
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem'
             }}>
-              HELIX
+              <DnaHelixLogo style={{ width: '56px', height: '70px' }} />
+              <span style={{
+                background: 'linear-gradient(135deg, var(--accent-primary), var(--dna-blue))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                HELIX
+              </span>
             </h1>
             <p style={{ fontWeight: 900, color: 'var(--text-primary)', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.75rem' }}>
               Bio-Digital Academic OS

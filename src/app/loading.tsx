@@ -1,5 +1,7 @@
 'use client'
 
+import DnaHelixLogo from '@/components/DnaHelixLogo'
+
 export default function RootLoading() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020617' }}>
@@ -8,13 +10,21 @@ export default function RootLoading() {
           fontFamily: 'sans-serif',
           fontSize: '2.5rem',
           fontWeight: 900,
-          background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
           marginBottom: '1rem',
-          letterSpacing: '-0.05em'
+          letterSpacing: '-0.05em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.6rem'
         }}>
-          HELIX
+          <DnaHelixLogo style={{ width: '40px', height: '50px' }} />
+          <span style={{
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
+            HELIX
+          </span>
         </div>
         <div style={{
           width: '48px',

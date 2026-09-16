@@ -17,6 +17,7 @@ import {
   LogOut,
   X
 } from '@/components/Icons'
+import DnaHelixLogo from '@/components/DnaHelixLogo'
 
 interface SidebarProps {
   role: string
@@ -110,7 +111,9 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         
         {/* Brand Header & Collapse Toggle */}
         <div style={{ padding: '0.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: isCollapsed ? 'center' : 'space-between', alignItems: 'center' }}>
-          {!isCollapsed && (
+          {isCollapsed ? (
+            <DnaHelixLogo />
+          ) : (
             <div>
               <div style={{
                 fontFamily: 'var(--font-display)',
@@ -118,8 +121,12 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
                 fontWeight: 900,
                 color: 'white',
                 lineHeight: 1,
-                letterSpacing: '-0.05em'
+                letterSpacing: '-0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem'
               }}>
+                <DnaHelixLogo />
                 <span style={{
                   background: 'linear-gradient(135deg, #10b981, #3b82f6)',
                   WebkitBackgroundClip: 'text',

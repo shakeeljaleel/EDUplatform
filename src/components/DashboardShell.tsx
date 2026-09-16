@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import NotificationBell from '@/components/NotificationBell'
 import ToastContainer from '@/components/ToastContainer'
+import DnaHelixLogo from '@/components/DnaHelixLogo'
 
 interface DashboardShellProps {
   user: {
@@ -62,8 +63,11 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
           ☰
         </button>
 
-        <div style={{ fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          HELIX
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>
+          <DnaHelixLogo />
+          <span style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            HELIX
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
