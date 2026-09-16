@@ -245,9 +245,15 @@ export async function POST(request: Request) {
     // 1. Audit Environment Variables Upfront
     const envValidation = validateEnv()
     if (!envValidation.valid) {
-      console.error('[VERCEL_AUTH_ERROR] Environment validation failed:', envValidation.errors)
+      console.error('[VERCEL_AUTH_ERROR] Environment validation failed!')
+      console.error('[VERCEL_AUTH_ERROR] Missing variables:', envValidation.details.missingVars)
+      console.error('[VERCEL_AUTH_ERROR] Validation errors:', envValidation.errors)
       return NextResponse.json(
-        { error: 'Server configuration error: Required environment variables are missing or invalid.', details: envValidation.errors },
+        {
+          error: 'Server configuration error: Required environment variables are missing or invalid.',
+          missingVariables: envValidation.details.missingVars,
+          details: envValidation.errors
+        },
         { status: 500 }
       )
     }
@@ -273,17 +279,34 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase()
 
-    // Auto-seed demo academic platform data on fresh databases
-    await ensureDefaultUsersAndData()
+    // 4. Safely Query Database (with explicit DB connection error catch)
+    let user = null
+    try {
+      // Auto-seed demo academic platform data on fresh databases
+      await ensureDefaultUsersAndData()
 
-    // 4. Query User from Database
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    })
+      user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      })
+    } catch (dbErr: any) {
+      console.error('[VERCEL_DB_CONNECTION_ERROR] Failed to query PostgreSQL database:', {
+        message: dbErr?.message,
+        code: dbErr?.code,
+        meta: dbErr?.meta
+      })
+      return NextResponse.json(
+        {
+          error: 'Database connection failure: Unable to reach database server. Please verify your DATABASE_URL / POSTGRES_URL connection strings in Vercel settings.',
+          details: dbErr?.message || 'Database query failed'
+        },
+        { status: 500 }
+      )
+    }
 
     if (!user || !user.passwordHash) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
+
 
     const passwordMatch = await bcrypt.compare(password, user.passwordHash)
 
