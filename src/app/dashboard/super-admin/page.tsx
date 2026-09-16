@@ -48,101 +48,101 @@ export default async function SuperAdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
         
         {/* Total Students - Vivid Green */}
-        <div className="stat-card" style={{
+        <div style={{
           background: 'linear-gradient(135deg, #00c853, #69f0ae)',
           borderRadius: '16px',
           padding: '1.5rem',
-          color: '#ffffff',
           border: 'none',
+          color: 'white',
           boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
-            <GraduationCap size={20} color="#ffffff" />
+            <span style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
+            <GraduationCap size={20} color="white" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, marginTop: '0.5rem', color: '#ffffff' }}>{studentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={14} color="#ffffff" /> Active learner roster
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, marginTop: '0.5rem', color: 'white' }}>{studentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="white" /> Active learner roster
           </div>
         </div>
 
         {/* Total Teachers - Electric Blue */}
-        <div className="stat-card" style={{
+        <div style={{
           background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
           borderRadius: '16px',
           padding: '1.5rem',
-          color: '#ffffff',
           border: 'none',
+          color: 'white',
           boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
-            <Users size={20} color="#ffffff" />
+            <span style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
+            <Users size={20} color="white" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{teachersCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={14} color="#ffffff" /> Instructors & staff
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: 'white', marginTop: '0.5rem' }}>{teachersCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="white" /> Instructors & staff
           </div>
         </div>
 
         {/* Total Parents - Vibrant Purple */}
-        <div className="stat-card" style={{
+        <div style={{
           background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
           borderRadius: '16px',
           padding: '1.5rem',
-          color: '#ffffff',
           border: 'none',
+          color: 'white',
           boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
-            <Users size={20} color="#ffffff" />
+            <span style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
+            <Users size={20} color="white" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{parentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={14} color="#ffffff" /> Guardian accounts
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: 'white', marginTop: '0.5rem' }}>{parentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="white" /> Guardian accounts
           </div>
         </div>
 
         {/* Active Enrollments - Energetic Orange */}
-        <div className="stat-card" style={{
+        <div style={{
           background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
           borderRadius: '16px',
           padding: '1.5rem',
-          color: '#ffffff',
           border: 'none',
+          color: 'white',
           boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
-            <Layers size={20} color="#ffffff" />
+            <span style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
+            <Layers size={20} color="white" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{enrollmentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={14} color="#ffffff" /> Batch seats allocated
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: 'white', marginTop: '0.5rem' }}>{enrollmentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="white" /> Batch seats allocated
           </div>
         </div>
 
         {/* Recent Sign-ups - Hot Pink */}
-        <div className="stat-card" style={{
+        <div style={{
           background: 'linear-gradient(135deg, #f50057, #ff80ab)',
           borderRadius: '16px',
           padding: '1.5rem',
-          color: '#ffffff',
           border: 'none',
+          color: 'white',
           boxShadow: '0 8px 24px rgba(245, 0, 87, 0.3)',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
-            <TrendingUp size={20} color="#ffffff" />
+            <span style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
+            <TrendingUp size={20} color="white" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{recentSignupsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700 }}>+ new sign-ups this week</div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: 'white', marginTop: '0.5rem' }}>{recentSignupsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700 }}>+ new sign-ups this week</div>
         </div>
       </div>
 
