@@ -247,7 +247,7 @@ export default async function StudentDashboard() {
       <StudentBatchHeaderBanner currentBatch={enrollment?.batch || null} />
 
       {/* Pending Tasks & Quick Resume Section */}
-      <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.08) 100%)', borderLeft: '8px solid var(--accent-primary)' }}>
+      <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '5px 5px 0px #1a1a2e', borderLeft: '8px solid var(--accent-primary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--accent-primary)' }}>⚡ Active Learning Stream</span>
@@ -289,17 +289,18 @@ export default async function StudentDashboard() {
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
-        {/* Card 1 - Syllabus Completed - Vivid Green */}
-        <div style={{
-          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
-          borderRadius: '20px',
+        {/* Card 1 - Syllabus Completed - Solid Vivid Green */}
+        <div className="stat-card" style={{
+          background: '#00c853',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Syllabus Completed</h3>
+            <h3 style={{ fontSize: '0.9rem', color: '#ffffff', fontWeight: 800 }}>Syllabus Completed</h3>
             <span style={{ fontSize: '1.5rem' }}>🎯</span>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
@@ -308,41 +309,43 @@ export default async function StudentDashboard() {
           <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.3)', borderRadius: '4px', marginTop: '1rem', overflow: 'hidden' }}>
             <div style={{ width: `${syllabusProgressPct}%`, height: '100%', background: '#ffffff', transition: 'width 0.5s ease' }}></div>
           </div>
-          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700 }}>
+          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#ffffff', fontWeight: 700 }}>
             {completedObjCount} of {totalObjCount} objectives mastered
           </p>
         </div>
 
-        {/* Card 2 - Overall Attendance - Electric Teal */}
-        <div style={{
-          background: 'linear-gradient(135deg, #00b4d8, #0077b6)',
-          borderRadius: '20px',
+        {/* Card 2 - Overall Attendance - Solid Teal */}
+        <div className="stat-card" style={{
+          background: '#00bcd4',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(0, 180, 216, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Overall Attendance</h3>
+            <h3 style={{ fontSize: '1rem', color: '#ffffff', fontWeight: 800 }}>Overall Attendance</h3>
             <span style={{ fontSize: '1.5rem' }}>📋</span>
           </div>
           <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             {attendanceRate}%
           </div>
-          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>{presentCount} sessions of {totalClasses}</p>
+          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700, color: '#ffffff' }}>{presentCount} sessions of {totalClasses}</p>
         </div>
 
-        {/* Card 3 - Student Status - Electric Blue */}
-        <div style={{
-          background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
-          borderRadius: '20px',
+        {/* Card 3 - Student Status - Solid Electric Blue */}
+        <div className="stat-card" style={{
+          background: '#2979ff',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Student Status</h3>
+            <h3 style={{ fontSize: '1rem', color: '#ffffff', fontWeight: 800 }}>Student Status</h3>
             <span style={{ fontSize: '1.5rem' }}>💎</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -365,23 +368,24 @@ export default async function StudentDashboard() {
           </div>
         </div>
 
-        {/* Card 4 - Class Rank - Vibrant Purple */}
-        <div style={{
-          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
-          borderRadius: '20px',
+        {/* Card 4 - Class Rank - Solid Vibrant Purple */}
+        <div className="stat-card" style={{
+          background: '#aa00ff',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Class Rank</h3>
+            <h3 style={{ fontSize: '1rem', color: '#ffffff', fontWeight: 800 }}>Class Rank</h3>
             <span style={{ fontSize: '1.5rem' }}>🏆</span>
           </div>
           <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             #{myRank || '--'}
           </div>
-          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.95)' }}>Top {Math.max(1, 100 - (myPercentile || 0))}% of batch</p>
+          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900, color: '#ffffff' }}>Top {Math.max(1, 100 - (myPercentile || 0))}% of batch</p>
         </div>
       </div>
 

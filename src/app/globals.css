@@ -142,7 +142,7 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-ui);
-  background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
+  background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 50%, #fdf4ff 100%);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
@@ -150,22 +150,28 @@ body {
   position: relative;
 }
 
-/* Global Card & Button Lift Transitions */
+/* Global Card & Button Comic Book Fills & Shadows */
 .card, .premium-card, .premium-card-v2 {
-  transition: all 0.2s ease !important;
+  border: 3px solid #1a1a2e !important;
+  border-radius: 16px !important;
+  box-shadow: 5px 5px 0px #1a1a2e !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  filter: none !important;
 }
 
 .stat-card {
   border-radius: 16px !important;
   padding: 1.5rem !important;
-  border: none !important;
-  transition: all 0.2s ease !important;
+  border: 3px solid #1a1a2e !important;
+  box-shadow: 5px 5px 0px #1a1a2e !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
   filter: none !important;
 }
 
 .stat-card:hover {
   animation: bob 0.8s ease-in-out infinite !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2) !important;
+  transform: translate(-3px, -3px) !important;
+  box-shadow: 8px 8px 0px #1a1a2e !important;
 }
 
 .stat-card, .stat-card *, .stat-card span, .stat-card div, .stat-card p, .stat-card svg {
@@ -173,7 +179,58 @@ body {
 }
 
 .card:hover, .premium-card:hover, .premium-card-v2:hover {
-  transform: translateY(-2px) !important;
+  transform: translate(-3px, -3px) !important;
+  box-shadow: 8px 8px 0px #1a1a2e !important;
+}
+
+/* Comic Book Pill Buttons */
+button,
+.btn-primary,
+.btn-secondary,
+.sketch-button-v2,
+.sketch-button,
+a.btn-primary,
+a.btn-secondary,
+a.sketch-button-v2,
+a.action-btn,
+.action-btn,
+a[class*="btn"],
+button[class*="btn"] {
+  border-radius: 50px !important;
+  border: 3px solid #1a1a2e !important;
+  box-shadow: 4px 4px 0px #1a1a2e !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary, button.btn-primary, a.btn-primary {
+  background: #00c853 !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary, button.btn-secondary, a.btn-secondary {
+  background: #ffffff !important;
+  color: #1a1a2e !important;
+}
+
+/* Comic Book Tabs */
+.tab-pill, .tab-btn {
+  border: 3px solid #1a1a2e !important;
+  border-radius: 50px !important;
+  padding: 0.5rem 1.25rem !important;
+  font-weight: 700 !important;
+  box-shadow: 3px 3px 0px #1a1a2e !important;
+  transition: all 0.2s ease !important;
+}
+
+.tab-pill.active, .tab-btn.active {
+  background: #1a1a2e !important;
+  color: #ffffff !important;
+}
+
+.tab-pill:not(.active), .tab-btn:not(.active) {
+  background: #ffffff !important;
+  color: #1a1a2e !important;
 }
 
 /* Universal Button Bob Animation on Hover */

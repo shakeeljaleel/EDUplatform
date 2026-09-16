@@ -157,10 +157,8 @@ export default function LoginPage() {
       <div style={{
         width: '100%',
         maxWidth: '560px',
-        background: 'rgba(255, 255, 255, 0.75)',
-        backdropFilter: 'blur(30px)',
-        WebkitBackdropFilter: 'blur(30px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.5)',
+        background: '#ffffff',
+        borderLeft: '3px solid #1a1a2e',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

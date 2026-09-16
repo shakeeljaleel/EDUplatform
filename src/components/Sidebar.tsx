@@ -98,8 +98,8 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
       )}
 
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`} style={{
-        borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-        background: 'linear-gradient(180deg, #0f0c29, #302b63, #24243e)',
+        borderRight: '3px solid #1a1a2e',
+        background: '#1a1a2e',
         display: 'flex',
         flexDirection: 'column',
         padding: '1.5rem 0.75rem',

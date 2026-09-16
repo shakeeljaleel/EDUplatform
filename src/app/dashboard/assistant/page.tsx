@@ -31,11 +31,11 @@ export default async function AssistantDashboard() {
     <div className="content-wrapper fade-in" style={{ paddingBottom: '4rem' }}>
       {/* Header Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #e0f7fa, #e8f5e9)',
+        background: '#e0f7fa',
         padding: '1.5rem 2rem',
         borderRadius: '16px',
-        border: '1px solid rgba(0, 200, 83, 0.2)',
-        boxShadow: '0 4px 20px rgba(0, 200, 83, 0.08)',
+        border: '3px solid #1a1a2e',
+        boxShadow: '5px 5px 0px #1a1a2e',
         marginBottom: '2rem'
       }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
@@ -46,58 +46,61 @@ export default async function AssistantDashboard() {
         </p>
       </div>
 
-      {/* STAT CARDS WITH VIVID GRADIENTS */}
+      {/* STAT CARDS WITH SOLID FLAT COLOURS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         
         {/* Card 1 - Flagged Posts (Vivid Red) */}
-        <div style={{
-          background: 'linear-gradient(135deg, #ff1744, #ff5252)',
-          borderRadius: '20px',
+        <div className="stat-card" style={{
+          background: '#f50057',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(255, 23, 68, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Flagged Posts</span>
+            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Flagged Posts</span>
             <ShieldAlert size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{flaggedCount}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Requires moderation review</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Requires moderation review</p>
         </div>
 
-        {/* Card 2 - Pinned Announcements (Electric Gold/Amber) */}
-        <div style={{
-          background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
-          borderRadius: '20px',
+        {/* Card 2 - Pinned Announcements (Electric Amber/Orange) */}
+        <div className="stat-card" style={{
+          background: '#ff6d00',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Pinned Threads</span>
+            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Pinned Threads</span>
             <Sparkles size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{pinnedCount}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Highlighted community posts</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Highlighted community posts</p>
         </div>
 
         {/* Card 3 - Total Community Discussions (Electric Blue) */}
-        <div style={{
-          background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
-          borderRadius: '20px',
+        <div className="stat-card" style={{
+          background: '#2979ff',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total Discussions</span>
+            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total Discussions</span>
             <MessageSquare size={20} color="#ffffff" />
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{totalPosts}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Across all batch channels</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Across all batch channels</p>
         </div>
       </div>
 

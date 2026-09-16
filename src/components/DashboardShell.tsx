@@ -27,7 +27,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
                      pathname === '/dashboard/parent'
 
   return (
-    <div className="dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%)' }}>
+    <div className="dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 50%, #fdf4ff 100%)' }}>
       <ToastContainer />
 
       {/* Mobile Header Bar */}
@@ -36,9 +36,9 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0.875rem 1.25rem',
-        background: 'linear-gradient(180deg, #0f0c29, #302b63, #24243e)',
+        background: '#1a1a2e',
         color: 'white',
-        borderBottom: '2px solid #00c853',
+        borderBottom: '3px solid #1a1a2e',
         position: 'sticky',
         top: 0,
         zIndex: 990

@@ -49,54 +49,57 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
     <div>
       {/* AT-A-GLANCE SUMMARY CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div style={{
-          background: 'linear-gradient(135deg, #00b4d8, #0077b6)',
-          borderRadius: '20px',
+        <div className="stat-card" style={{
+          background: '#00bcd4',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(0, 180, 216, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
-          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Assigned Subjects
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{subjectAssignments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Active teaching modules</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Active teaching modules</p>
         </div>
 
-        <div style={{
-          background: 'linear-gradient(135deg, #2979ff, #448aff)',
-          borderRadius: '20px',
+        <div className="stat-card" style={{
+          background: '#2979ff',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
-          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Assigned Batches
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{batchEnrollments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Active student intakes</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Active student intakes</p>
         </div>
 
-        <div style={{
-          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
-          borderRadius: '20px',
+        <div className="stat-card" style={{
+          background: '#aa00ff',
+          borderRadius: '16px',
           padding: '1.5rem',
           color: '#ffffff',
-          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
-          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Total Roster Students
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{allStudents.length}</div>
-          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Enrolled across all classes</p>
+          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Enrolled across all classes</p>
         </div>
       </div>
 
       {/* TABS NAVIGATION */}
-      <div style={{ display: 'flex', gap: '2.5rem', borderBottom: '1px solid #e2e8f0', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
         {[
           { id: 'SUBJECTS', label: 'My Subjects', icon: <BookOpen size={20} /> },
           { id: 'STUDENTS', label: 'Student Directory & Filtering', icon: <Users size={20} /> }
@@ -104,18 +107,26 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
+            className={`tab-pill ${activeTab === tab.id ? 'active' : ''}`}
             style={{
-              background: 'none', border: 'none', padding: '1rem 0.5rem', cursor: 'pointer',
-              fontSize: '1rem', fontWeight: 800, color: activeTab === tab.id ? '#10b981' : '#475569',
-              position: 'relative', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.65rem',
-              minHeight: '44px'
+              background: activeTab === tab.id ? '#1a1a2e' : '#ffffff',
+              color: activeTab === tab.id ? '#ffffff' : '#1a1a2e',
+              border: '3px solid #1a1a2e',
+              boxShadow: '3px 3px 0px #1a1a2e',
+              borderRadius: '50px',
+              padding: '0.65rem 1.5rem',
+              cursor: 'pointer',
+              fontSize: '0.95rem',
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              minHeight: '44px',
+              transition: 'all 0.2s ease'
             }}
           >
             <span>{tab.icon}</span>
             {tab.label}
-            {activeTab === tab.id && (
-              <div style={{ position: 'absolute', bottom: '-1px', left: 0, width: '100%', height: '3px', backgroundColor: '#10b981', borderRadius: '2px' }} />
-            )}
           </button>
         ))}
       </div>

@@ -27,13 +27,13 @@ export default async function SuperAdminDashboard() {
 
   return (
     <div className="content-wrapper fade-in" style={{ paddingBottom: '4rem' }}>
-      {/* Soft Teal to Mint Banner Header */}
+      {/* Soft Teal Banner Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #e0f7fa, #e8f5e9)',
+        background: '#e0f7fa',
         padding: '1.5rem 2rem',
         borderRadius: '16px',
-        border: '1px solid rgba(0, 200, 83, 0.2)',
-        boxShadow: '0 4px 20px rgba(0, 200, 83, 0.08)',
+        border: '3px solid #1a1a2e',
+        boxShadow: '5px 5px 0px #1a1a2e',
         marginBottom: '2rem'
       }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
@@ -44,17 +44,17 @@ export default async function SuperAdminDashboard() {
         </p>
       </div>
 
-      {/* 5 VIVID GRADIENT STAT CARDS GRID */}
+      {/* 5 SOLID FLAT COLOUR STAT CARDS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
         
         {/* Total Students - Vivid Green */}
         <div className="stat-card" style={{
-          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+          background: '#00c853',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: 'none',
+          border: '3px solid #1a1a2e',
           color: 'white',
-          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -69,12 +69,12 @@ export default async function SuperAdminDashboard() {
 
         {/* Total Teachers - Electric Blue */}
         <div className="stat-card" style={{
-          background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
+          background: '#2979ff',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: 'none',
+          border: '3px solid #1a1a2e',
           color: 'white',
-          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -89,12 +89,12 @@ export default async function SuperAdminDashboard() {
 
         {/* Total Parents - Vibrant Purple */}
         <div className="stat-card" style={{
-          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
+          background: '#aa00ff',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: 'none',
+          border: '3px solid #1a1a2e',
           color: 'white',
-          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -109,12 +109,12 @@ export default async function SuperAdminDashboard() {
 
         {/* Active Enrollments - Energetic Orange */}
         <div className="stat-card" style={{
-          background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
+          background: '#ff6d00',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: 'none',
+          border: '3px solid #1a1a2e',
           color: 'white',
-          boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -129,12 +129,12 @@ export default async function SuperAdminDashboard() {
 
         {/* Recent Sign-ups - Hot Pink */}
         <div className="stat-card" style={{
-          background: 'linear-gradient(135deg, #f50057, #ff80ab)',
+          background: '#f50057',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: 'none',
+          border: '3px solid #1a1a2e',
           color: 'white',
-          boxShadow: '0 8px 24px rgba(245, 0, 87, 0.3)',
+          boxShadow: '5px 5px 0px #1a1a2e',
           transition: 'all 0.2s ease'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -146,7 +146,7 @@ export default async function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* VIVID GRADIENT ACTION BUTTONS */}
+      {/* SOLID FLAT COLOUR ACTION BUTTONS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
         <Link 
           href="/dashboard/super-admin/users" 
@@ -155,9 +155,9 @@ export default async function SuperAdminDashboard() {
             padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
             textAlign: 'center', width: '100%',
-            background: 'linear-gradient(135deg, #00c853, #00e676)', color: '#ffffff',
-            borderRadius: '12px', border: 'none',
-            boxShadow: '0 4px 14px rgba(0, 200, 83, 0.4)',
+            background: '#00c853', color: '#ffffff',
+            borderRadius: '50px', border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
             textDecoration: 'none', transition: 'all 0.2s ease'
           }}
         >
@@ -173,9 +173,9 @@ export default async function SuperAdminDashboard() {
             padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
             textAlign: 'center', width: '100%',
-            background: 'linear-gradient(135deg, #2979ff, #40c4ff)', color: '#ffffff',
-            borderRadius: '12px', border: 'none',
-            boxShadow: '0 4px 14px rgba(41, 121, 255, 0.4)',
+            background: '#2979ff', color: '#ffffff',
+            borderRadius: '50px', border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
             textDecoration: 'none', transition: 'all 0.2s ease'
           }}
         >
@@ -185,13 +185,14 @@ export default async function SuperAdminDashboard() {
         </Link>
       </div>
 
-      {/* AUDIT LOG TERMINAL (DARK GRADIENT + GLOWING GREEN MONOSPACE FONT) */}
+      {/* AUDIT LOG TERMINAL (SOLID DARK NAVY + HARD SHADOW) */}
       <div style={{
         padding: '1.75rem',
         borderRadius: '16px',
-        background: 'linear-gradient(135deg, #0f0c29, #1a1a2e)',
-        border: '1px solid rgba(0, 230, 118, 0.4)',
-        boxShadow: '0 0 20px rgba(0, 230, 118, 0.3)'
+        background: '#1a1a2e',
+        border: '3px solid #1a1a2e',
+        boxShadow: '5px 5px 0px #1a1a2e',
+        color: '#ffffff'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

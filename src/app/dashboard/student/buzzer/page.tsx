@@ -118,14 +118,14 @@ export default function StudentBuzzerPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(145deg, #0a1628, #052e16)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#1a1a2e' }}>
       {/* Header */}
-      <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #1a1a2e' }}>
         <div>
           <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live Session</div>
           <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>{activeSession.title}</h2>
         </div>
-        <span style={{ padding: '0.35rem 1rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700, background: activeSession.status === 'ACTIVE' ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)', color: activeSession.status === 'ACTIVE' ? '#6ee7b7' : '#fcd34d' }}>
+        <span style={{ padding: '0.35rem 1rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700, background: activeSession.status === 'ACTIVE' ? '#00c853' : '#ff6d00', color: '#ffffff' }}>
           {activeSession.status}
         </span>
       </div>
@@ -133,9 +133,9 @@ export default function StudentBuzzerPage() {
       {/* Scoreboard */}
       <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1rem', overflowX: 'auto' }}>
         {teams.map((team: any) => (
-          <div key={team.id} style={{ flex: '1', minWidth: '140px', padding: '1rem', borderRadius: '12px', background: `${team.color}22`, border: `1px solid ${team.color}55`, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: team.color, marginBottom: '0.25rem' }}>{team.name}</div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{team.score}</div>
+          <div key={team.id} style={{ flex: '1', minWidth: '140px', padding: '1rem', borderRadius: '16px', background: team.color || '#2979ff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ffffff', marginBottom: '0.25rem' }}>{team.name}</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{team.score}</div>
           </div>
         ))}
       </div>
@@ -166,12 +166,11 @@ export default function StudentBuzzerPage() {
           </div>
         ) : currentRound ? (
           <>
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', padding: '2rem', maxWidth: '600px', width: '100%', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>Current Question</div>
+            <div style={{ background: '#24243e', borderRadius: '16px', padding: '2rem', maxWidth: '600px', width: '100%', textAlign: 'center', border: '3px solid #1a1a2e', boxShadow: '5px 5px 0px #1a1a2e' }}>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>Current Question</div>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', lineHeight: 1.4 }}>{currentRound.question}</p>
             </div>
 
-            {/* Big Buzzer Button */}
             {/* Big Enormous Buzzer Button */}
             <div style={{ position: 'relative' }}>
               {isAnimating && (
@@ -181,11 +180,11 @@ export default function StudentBuzzerPage() {
                 onClick={handleBuzz}
                 disabled={buzzed}
                 style={{
-                  width: '250px', height: '250px', borderRadius: '50%', border: 'none', cursor: buzzed ? 'default' : 'pointer',
+                  width: '250px', height: '250px', borderRadius: '50%', border: '3px solid #1a1a2e', cursor: buzzed ? 'default' : 'pointer',
                   background: buzzed
-                    ? buzzResult === 'first' ? 'linear-gradient(135deg, #00c853, #69f0ae)' : 'linear-gradient(135deg, #757575, #9e9e9e)'
-                    : 'linear-gradient(135deg, #ff1744, #ff6d00)',
-                  boxShadow: buzzed ? 'none' : '0 0 30px rgba(255, 23, 68, 0.6), 0 0 60px rgba(255, 109, 0, 0.3)',
+                    ? buzzResult === 'first' ? '#00c853' : '#757575'
+                    : '#f50057',
+                  boxShadow: buzzed ? 'none' : '5px 5px 0px #1a1a2e',
                   animation: buzzed ? 'none' : 'pulse 1.5s ease-in-out infinite',
                   transform: isAnimating ? 'scale(0.93)' : 'scale(1)',
                   transition: 'all 0.15s ease',

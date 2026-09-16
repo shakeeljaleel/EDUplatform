@@ -46,17 +46,19 @@ export default function ParentChildSwitcher({ childrenData }: ParentChildSwitche
   return (
     <div>
       {/* CHILD SWITCHER TABS */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
         {childrenData.map((child) => (
           <button
             key={child.userId}
             onClick={() => setSelectedChildId(child.userId)}
+            className={`tab-pill ${selectedChildId === child.userId ? 'active' : ''}`}
             style={{
               padding: '0.75rem 1.25rem',
-              borderRadius: '12px',
-              border: selectedChildId === child.userId ? '2px solid #10b981' : '1px solid #e2e8f0',
-              background: selectedChildId === child.userId ? '#f0fdf4' : '#ffffff',
-              color: selectedChildId === child.userId ? '#059669' : '#0f172a',
+              borderRadius: '50px',
+              border: '3px solid #1a1a2e',
+              boxShadow: '3px 3px 0px #1a1a2e',
+              background: selectedChildId === child.userId ? '#1a1a2e' : '#ffffff',
+              color: selectedChildId === child.userId ? '#ffffff' : '#1a1a2e',
               fontWeight: 800,
               fontSize: '0.95rem',
               cursor: 'pointer',
@@ -67,10 +69,10 @@ export default function ParentChildSwitcher({ childrenData }: ParentChildSwitche
               transition: 'all 0.2s ease'
             }}
           >
-            <GraduationCap size={20} color={selectedChildId === child.userId ? '#059669' : '#64748b'} />
+            <GraduationCap size={20} color={selectedChildId === child.userId ? '#ffffff' : '#1a1a2e'} />
             <span>{child.user.name}</span>
             {child.unreadMessages > 0 && (
-              <span className="badge" style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '9999px', fontWeight: 800 }}>
+              <span className="badge" style={{ background: '#f50057', color: 'white', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '9999px', fontWeight: 800 }}>
                 {child.unreadMessages} new
               </span>
             )}
@@ -83,34 +85,36 @@ export default function ParentChildSwitcher({ childrenData }: ParentChildSwitche
         <div className="fade-in">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
             
-            {/* Attendance Rate - Vivid Green */}
-            <div style={{
-              background: 'linear-gradient(135deg, #00c853, #69f0ae)',
-              borderRadius: '20px',
+            {/* Attendance Rate - Solid Vivid Green */}
+            <div className="stat-card" style={{
+              background: '#00c853',
+              borderRadius: '16px',
               padding: '1.5rem',
               color: '#ffffff',
-              boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e',
               transition: 'all 0.2s ease'
             }}>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Overall Attendance</div>
+              <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Overall Attendance</div>
               <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', marginTop: '0.25rem', lineHeight: 1 }}>
                 {activeChild.attendanceRate}%
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.75rem' }}>
+              <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.75rem' }}>
                 {activeChild.attendanceCount} recorded sessions
               </p>
             </div>
 
-            {/* Stars & Medals - Electric Blue */}
-            <div style={{
-              background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
-              borderRadius: '20px',
+            {/* Stars & Medals - Solid Electric Blue */}
+            <div className="stat-card" style={{
+              background: '#2979ff',
+              borderRadius: '16px',
               padding: '1.5rem',
               color: '#ffffff',
-              boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e',
               transition: 'all 0.2s ease'
             }}>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Academic Badges</div>
+              <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Academic Badges</div>
               <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Star size={20} color="#ffd700" />
@@ -121,23 +125,24 @@ export default function ParentChildSwitcher({ childrenData }: ParentChildSwitche
                   <strong style={{ fontSize: '1.125rem', color: '#ffffff' }}>{activeChild.medals} Medals</strong>
                 </div>
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.75rem' }}>Active learning rewards</p>
+              <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.75rem' }}>Active learning rewards</p>
             </div>
 
-            {/* Teacher Updates - Vibrant Purple */}
-            <div style={{
-              background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
-              borderRadius: '20px',
+            {/* Teacher Updates - Solid Vibrant Purple */}
+            <div className="stat-card" style={{
+              background: '#aa00ff',
+              borderRadius: '16px',
               padding: '1.5rem',
               color: '#ffffff',
-              boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e',
               transition: 'all 0.2s ease'
             }}>
-              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Teacher Updates</div>
+              <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Teacher Updates</div>
               <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.25rem' }}>
                 {activeChild.unreadMessages} Unread
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>
+              <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>
                 {activeChild.recentExamCount} exam evaluations recorded
               </p>
             </div>
