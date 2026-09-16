@@ -40,6 +40,7 @@ export default async function SuperAdminDashboard() {
           Welcome back, Super 👋
         </h1>
         <p style={{ color: '#334155', fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem', margin: 0 }}>
+          Ready to explore your academic hub today?
         </p>
       </div>
 
