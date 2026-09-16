@@ -139,8 +139,8 @@ body {
 }
 
 .stat-card:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  animation: bob 0.8s ease-in-out infinite !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2) !important;
 }
 
 .stat-card, .stat-card *, .stat-card span, .stat-card div, .stat-card p, .stat-card svg {
@@ -151,7 +151,38 @@ body {
   transform: translateY(-2px) !important;
 }
 
-button:hover, .btn-primary:hover, .btn-secondary:hover {
+/* Universal Button Bob Animation on Hover */
+@keyframes bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(255, 23, 68, 0.6), 0 0 50px rgba(255, 109, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 55px rgba(255, 23, 68, 0.9), 0 0 85px rgba(255, 109, 0, 0.6);
+  }
+}
+
+button:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.sketch-button-v2:hover,
+.sketch-button:hover,
+a.btn-primary:hover,
+a.btn-secondary:hover,
+a.sketch-button-v2:hover,
+a.sketch-button:hover,
+a.action-btn:hover,
+.action-btn:hover,
+a[class*="btn"]:hover,
+button[class*="btn"]:hover,
+[role="button"]:hover {
+  animation: bob 0.6s ease-in-out infinite !important;
   filter: brightness(1.08);
 }
 
@@ -164,9 +195,14 @@ button:hover, .btn-primary:hover, .btn-secondary:hover {
 
 /* Keyframes */
 @keyframes buzzer-pulse {
-  0% { box-shadow: 0 0 20px rgba(255, 23, 68, 0.6); transform: scale(1); }
-  50% { box-shadow: 0 0 40px rgba(255, 23, 68, 0.9); transform: scale(1.03); }
-  100% { box-shadow: 0 0 20px rgba(255, 23, 68, 0.6); transform: scale(1); }
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(255, 23, 68, 0.6), 0 0 50px rgba(255, 109, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 55px rgba(255, 23, 68, 0.9), 0 0 85px rgba(255, 109, 0, 0.6);
+  }
 }
 
 @keyframes red-dot-pulse {

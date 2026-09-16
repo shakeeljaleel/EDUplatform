@@ -48,7 +48,7 @@ export default async function SuperAdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
         
         {/* Total Students - Vivid Green */}
-        <div style={{
+        <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #00c853, #69f0ae)',
           borderRadius: '16px',
           padding: '1.5rem',
@@ -68,7 +68,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Total Teachers - Electric Blue */}
-        <div style={{
+        <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
           borderRadius: '16px',
           padding: '1.5rem',
@@ -88,7 +88,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Total Parents - Vibrant Purple */}
-        <div style={{
+        <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
           borderRadius: '16px',
           padding: '1.5rem',
@@ -108,7 +108,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Active Enrollments - Energetic Orange */}
-        <div style={{
+        <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
           borderRadius: '16px',
           padding: '1.5rem',
@@ -128,7 +128,7 @@ export default async function SuperAdminDashboard() {
         </div>
 
         {/* Recent Sign-ups - Hot Pink */}
-        <div style={{
+        <div className="stat-card" style={{
           background: 'linear-gradient(135deg, #f50057, #ff80ab)',
           borderRadius: '16px',
           padding: '1.5rem',
@@ -150,6 +150,7 @@ export default async function SuperAdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
         <Link 
           href="/dashboard/super-admin/users" 
+          className="btn-primary"
           style={{ 
             padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
@@ -167,6 +168,7 @@ export default async function SuperAdminDashboard() {
 
         <Link 
           href="/dashboard/super-admin/branches" 
+          className="btn-primary"
           style={{ 
             padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',

@@ -186,7 +186,7 @@ export default function StudentBuzzerPage() {
                     ? buzzResult === 'first' ? 'linear-gradient(135deg, #00c853, #69f0ae)' : 'linear-gradient(135deg, #757575, #9e9e9e)'
                     : 'linear-gradient(135deg, #ff1744, #ff6d00)',
                   boxShadow: buzzed ? 'none' : '0 0 30px rgba(255, 23, 68, 0.6), 0 0 60px rgba(255, 109, 0, 0.3)',
-                  animation: buzzed ? 'none' : 'buzzer-pulse 2s infinite ease-in-out',
+                  animation: buzzed ? 'none' : 'pulse 1.5s ease-in-out infinite',
                   transform: isAnimating ? 'scale(0.93)' : 'scale(1)',
                   transition: 'all 0.15s ease',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px'
