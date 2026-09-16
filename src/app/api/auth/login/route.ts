@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { createSession } from '@/lib/auth'
+import { createSession, deleteSession, getSession } from '@/lib/auth'
+import { validateEnv } from '@/lib/env'
 
 let isSeeded = false
 
@@ -241,6 +242,35 @@ async function ensureDefaultUsersAndData() {
 
 export async function POST(request: Request) {
   try {
+    // 1. Audit Environment Variables Upfront
+    const envValidation = validateEnv()
+    if (!envValidation.valid) {
+      console.error('[VERCEL_AUTH_ERROR] Environment validation failed!')
+      console.error('[VERCEL_AUTH_ERROR] Missing variables:', envValidation.details.missingVars)
+      console.error('[VERCEL_AUTH_ERROR] Validation errors:', envValidation.errors)
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: Required environment variables are missing or invalid.',
+          missingVariables: envValidation.details.missingVars,
+          details: envValidation.errors
+        },
+        { status: 500 }
+      )
+    }
+
+    // 2. Pre-clear Stale or Expired Session Cookies
+    try {
+      const currentSession = await getSession()
+      if (!currentSession) {
+        // If cookie exists but getSession returned null (expired/malformed), clear it
+        await deleteSession()
+      }
+    } catch (cookieErr) {
+      console.warn('[AUTH_COOKIE_CLEANUP_WARN] Failed to pre-clear session cookie:', cookieErr)
+      await deleteSession().catch(() => {})
+    }
+
+    // 3. Parse Request Payload
     const { email, password } = await request.json()
 
     if (!email || !password) {
@@ -249,25 +279,39 @@ export async function POST(request: Request) {
 
     const cleanEmail = email.trim().toLowerCase()
 
-    // Auto-seed demo academic platform data on fresh databases
-    await ensureDefaultUsersAndData()
+    // 4. Safely Query Database (with explicit DB connection error catch)
+    let user = null
+    try {
+      // Auto-seed demo academic platform data on fresh databases
+      await ensureDefaultUsersAndData()
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      user = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      })
+    } catch (dbErr: any) {
+      console.error('[VERCEL_DB_CONNECTION_ERROR] Failed to query PostgreSQL database:', {
+        message: dbErr?.message,
+        code: dbErr?.code,
+        meta: dbErr?.meta
+      })
+      return NextResponse.json(
+        {
+          error: 'Database connection failure: Unable to reach database server. Please verify your DATABASE_URL / POSTGRES_URL connection strings in Vercel settings.',
+          details: dbErr?.message || 'Database query failed'
+        },
+        { status: 500 }
+      )
     }
 
-    if (!user.passwordHash) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    if (!user || !user.passwordHash) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
+
 
     const passwordMatch = await bcrypt.compare(password, user.passwordHash)
 
     if (!passwordMatch) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
     // Check if account is disabled by admin
@@ -283,7 +327,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Your account application has been rejected. Please contact the administrator.' }, { status: 403 })
     }
 
-    // Safely extract request headers without async dynamic imports
+    // Extract Request Headers safely
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
@@ -313,14 +357,14 @@ export async function POST(request: Request) {
       console.error('Non-critical security alert check failed:', auditErr)
     }
 
-    // Generate single-active-session token & set cookie
+    // 5. Generate Signed Session & Set Cookie
     const sessionToken = await createSession({
       id: user.id,
       role: user.role,
       name: user.name
     })
 
-    // Invalidate previous session in DB - non-blocking if session DB table has issues
+    // 6. Persistent Single Active Session Enforcement in DB
     try {
       await prisma.activeSession.upsert({
         where: { userId: user.id },
@@ -336,11 +380,13 @@ export async function POST(request: Request) {
           ipAddress
         }
       })
-    } catch (sessionErr) {
-      console.error('Non-critical active session upsert failed:', sessionErr)
+    } catch (sessionErr: any) {
+      console.error('[VERCEL_AUTH_ERROR] ActiveSession DB upsert failed:', sessionErr)
+      // Throw explicitly so login fails gracefully rather than leaving invalid active session token in DB
+      throw new Error(`Database session store error: ${sessionErr?.message || 'Could not persist active session'}`)
     }
 
-    // Log login event in audit history - non-blocking
+    // 7. Log login event in audit history
     try {
       await prisma.loginAuditLog.create({
         data: {
@@ -366,7 +412,16 @@ export async function POST(request: Request) {
       }
     })
   } catch (error: any) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 })
+    // 8. Server-Side Diagnostic Error Logging for Vercel Function Logs
+    console.error('[VERCEL_LOGIN_ERROR]', {
+      timestamp: new Date().toISOString(),
+      message: error?.message,
+      stack: error?.stack
+    })
+
+    return NextResponse.json(
+      { error: error?.message || 'Authentication failed due to a server error. Please try again.' },
+      { status: 500 }
+    )
   }
 }

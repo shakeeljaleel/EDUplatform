@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const secretKey = process.env.JWT_SECRET || 'fallback-secret-for-development'
-const key = new TextEncoder().encode(secretKey)
+import { getJwtSecretKey } from '@/lib/env'
 
 async function getSessionFromRequest(request: NextRequest) {
   const token = request.cookies.get('session')?.value
   if (!token) return null
   try {
+    const key = getJwtSecretKey()
     const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] })
     return payload as any
   } catch (error) {

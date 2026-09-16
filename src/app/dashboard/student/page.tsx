@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
 import EmptyState from '@/components/EmptyState'
+import StudentBatchHeaderBanner from '@/components/StudentBatchHeaderBanner'
 import { BookOpen, CheckSquare, Star, Award, Clock, TrendingUp, Sparkles, ChevronRight, MessageSquare } from '@/components/Icons'
 
 export default async function StudentDashboard() {
@@ -80,7 +81,7 @@ export default async function StudentDashboard() {
   // Calculate Ranking logic
   const enrollment = await prisma.batchEnrollment.findFirst({
     where: { userId: studentUserId },
-    select: { batchId: true }
+    include: { batch: { include: { branch: true } } }
   })
 
   let myRank = 0
@@ -241,6 +242,9 @@ export default async function StudentDashboard() {
           <li aria-current="page" style={{ color: 'var(--text-primary)' }}>Overview</li>
         </ol>
       </nav>
+
+      {/* Batch Enrollment Header Banner */}
+      <StudentBatchHeaderBanner currentBatch={enrollment?.batch || null} />
 
       {/* Pending Tasks & Quick Resume Section */}
       <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.08) 100%)', borderLeft: '8px solid var(--accent-primary)' }}>

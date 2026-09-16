@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import EmptyState from '@/components/EmptyState'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import { showToast } from '@/components/ToastContainer'
-import { Search, Filter, Lock, ShieldAlert, Check, Users, AlertTriangle } from '@/components/Icons'
+import { Search, Lock, Users, AlertTriangle, X, Check, Eye } from '@/components/Icons'
 
 const ROLES = ['TEACHER', 'STUDENT', 'PARENT', 'ASSISTANT']
 const ROLE_LABELS: Record<string, string> = {
@@ -13,10 +14,10 @@ const ROLE_LABELS: Record<string, string> = {
   ASSISTANT: 'Assistants',
 }
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  PENDING:  { bg: '#fffbeb', color: '#b45309', border: '#f59e0b' },
-  APPROVED: { bg: '#f0fdf4', color: '#059669', border: '#10b981' },
-  REJECTED: { bg: '#fef2f2', color: '#dc2626', border: '#ef4444' },
+const SINGLE_STATUS_BADGE: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  PENDING:  { label: 'Pending', bg: '#fffbeb', color: '#b45309', border: '#f59e0b' },
+  APPROVED: { label: 'Approved', bg: '#f0fdf4', color: '#059669', border: '#10b981' },
+  REJECTED: { label: 'Suspended', bg: '#fef2f2', color: '#dc2626', border: '#ef4444' },
 }
 
 export default function UsersPage() {
@@ -25,6 +26,13 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+
+  // Open 3-dot menu state: userId or null
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  // Profile modal state
+  const [viewUser, setViewUser] = useState<any | null>(null)
 
   // Password reset modal state
   const [resetUser, setResetUser] = useState<any | null>(null)
@@ -35,7 +43,20 @@ export default function UsersPage() {
   const [suspendUserTarget, setSuspendUserTarget] = useState<any | null>(null)
   const [suspendLoading, setSuspendLoading] = useState(false)
 
-  useEffect(() => { fetchUsers() }, [activeRole])
+  useEffect(() => { 
+    fetchUsers() 
+  }, [activeRole])
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuUserId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -52,7 +73,7 @@ export default function UsersPage() {
       body: JSON.stringify({ approvalStatus }),
     })
     if (res.ok) {
-      showToast(`User status updated to ${approvalStatus}`, 'success')
+      showToast(`User status updated to ${approvalStatus === 'APPROVED' ? 'Approved' : 'Suspended'}`, 'success')
       fetchUsers()
     }
   }
@@ -92,7 +113,7 @@ export default function UsersPage() {
         body: JSON.stringify({ newPassword }),
       })
       if (res.ok) {
-        showToast(`Password for ${resetUser.name} reset successfully!`, 'success')
+        showToast(`Password for ${resetUser.name} reset successfully`, 'success')
         setNewPassword('')
         setResetUser(null)
       } else {
@@ -116,31 +137,39 @@ export default function UsersPage() {
   const pendingCount = users.filter(u => u.approvalStatus === 'PENDING').length
 
   return (
-    <div className="fade-in">
-      {/* HEADER SECTION */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+    <div className="fade-in" style={{ paddingBottom: '4rem' }}>
+      {/* Breadcrumb Trail */}
+      <Breadcrumbs items={[{ label: 'User management' }]} />
+
+      {/* Clean Page Title Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>User Management Console</h1>
-          <p style={{ color: '#475569', fontSize: '1rem', fontWeight: 600 }}>Ecosystem account configuration, approval controls, and credential resets.</p>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+            User management
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, marginTop: '0.2rem', margin: 0 }}>
+            Account controls, role management, and access settings.
+          </p>
         </div>
+
         {pendingCount > 0 && activeRole === 'TEACHER' && (
-          <div style={{ padding: '0.65rem 1.25rem', backgroundColor: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '12px', color: '#b45309', fontWeight: 800, fontSize: '0.85rem' }}>
-            ⏳ {pendingCount} Pending Approvals
+          <div style={{ padding: '0.5rem 1rem', backgroundColor: '#fffbeb', border: '1px solid #f59e0b', borderRadius: '10px', color: '#b45309', fontWeight: 800, fontSize: '0.8rem' }}>
+            ⏳ {pendingCount} Pending approval(s)
           </div>
         )}
       </div>
 
-      {/* Role Tabs Container */}
-      <div style={{ display: 'flex', gap: '0.5rem', background: '#ffffff', padding: '6px', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '2rem', flexWrap: 'wrap' }}>
+      {/* Role Tabs */}
+      <div style={{ display: 'flex', gap: '0.4rem', background: '#ffffff', padding: '5px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {ROLES.map(role => (
           <button 
             key={role} 
-            onClick={() => { setActiveRole(role); setSearch('') }}
+            onClick={() => { setActiveRole(role); setSearch(''); setOpenMenuUserId(null); }}
             style={{
-              padding: '0.65rem 1.25rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
+              padding: '0.55rem 1.15rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
               backgroundColor: activeRole === role ? '#10b981' : 'transparent',
-              fontWeight: 800, color: activeRole === role ? 'white' : '#475569', fontSize: '0.875rem',
-              transition: 'all 0.2s ease', minHeight: '44px'
+              fontWeight: 800, color: activeRole === role ? 'white' : '#475569', fontSize: '0.85rem',
+              transition: 'all 0.15s ease', minHeight: '40px'
             }}
           >
             {ROLE_LABELS[role]}
@@ -148,8 +177,8 @@ export default function UsersPage() {
         ))}
       </div>
 
-      {/* Search & Status Filter Controls */}
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+      {/* Search & Status Filters */}
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
           <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input
@@ -158,7 +187,7 @@ export default function UsersPage() {
             placeholder="Search users by name or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', paddingLeft: '2.5rem', minHeight: '44px' }}
+            style={{ width: '100%', paddingLeft: '2.5rem', minHeight: '42px', fontSize: '0.9rem' }}
           />
         </div>
 
@@ -166,115 +195,190 @@ export default function UsersPage() {
           className="input-field"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          style={{ width: '200px', minHeight: '44px' }}
+          style={{ width: '200px', minHeight: '42px', fontSize: '0.9rem' }}
         >
-          <option value="ALL">All Statuses</option>
-          <option value="APPROVED">Approved Only</option>
-          <option value="PENDING">Pending Approval</option>
-          <option value="REJECTED">Suspended / Rejected</option>
+          <option value="ALL">All statuses</option>
+          <option value="APPROVED">Approved only</option>
+          <option value="PENDING">Pending approval</option>
+          <option value="REJECTED">Suspended only</option>
         </select>
       </div>
 
-      {/* User List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '4rem' }}>
-        {loading && <p style={{ fontWeight: 800, color: '#64748b' }}>Loading user directory...</p>}
+      {/* User Directory List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {loading && <p style={{ fontWeight: 800, color: '#64748b', padding: '1rem' }}>Loading user directory...</p>}
 
         {!loading && filtered.map(user => {
-          const statusStyle = STATUS_COLORS[user.approvalStatus] || STATUS_COLORS.APPROVED
+          // Exactly ONE single status badge reflecting current state
+          const badgeConfig = SINGLE_STATUS_BADGE[user.approvalStatus] || SINGLE_STATUS_BADGE.APPROVED
           const paymentStatus = user.profile?.paymentStatus || 'Pending'
 
           return (
             <div 
               key={user.id} 
-              className="premium-card-v2" 
               style={{ 
-                padding: '1.25rem 1.5rem', 
+                padding: '1rem 1.25rem', 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '1.5rem', 
+                gap: '1.25rem', 
                 flexWrap: 'wrap',
-                borderLeft: `6px solid ${statusStyle.border}`,
-                background: '#ffffff'
+                borderLeft: `4px solid ${badgeConfig.border}`,
+                background: '#ffffff',
+                borderRadius: '10px',
+                borderTop: '1px solid #e2e8f0',
+                borderRight: '1px solid #e2e8f0',
+                borderBottom: '1px solid #e2e8f0',
+                position: 'relative'
               }}
             >
-              {/* Avatar */}
+              {/* User Avatar */}
               <div style={{ 
-                width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#f0fdf4', 
+                width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f0fdf4', 
                 border: '1px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                fontWeight: 900, color: '#059669', fontSize: '1.1rem', flexShrink: 0
+                fontWeight: 900, color: '#059669', fontSize: '1rem', flexShrink: 0
               }}>
-                {user.name[0].toUpperCase()}
+                {user.name[0]?.toUpperCase()}
               </div>
 
-              {/* Info */}
+              {/* Name & Email Info */}
               <div style={{ flex: 1, minWidth: '200px' }}>
-                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>{user.name}</div>
-                <div style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>{user.email}</div>
+                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>{user.name}</div>
+                <div style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600 }}>{user.email}</div>
               </div>
 
-              {/* Badges Column */}
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* Approval status badge */}
-                <div style={{ padding: '0.25rem 0.875rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', backgroundColor: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
-                  {user.approvalStatus}
-                </div>
-
-                {/* Student specific payment status badge */}
-                {activeRole === 'STUDENT' && (
-                  <div style={{ 
-                    padding: '0.25rem 0.875rem', 
-                    borderRadius: '9999px', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 800, 
-                    textTransform: 'uppercase',
-                    backgroundColor: paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbeb', 
-                    color: paymentStatus === 'Paid' ? '#059669' : '#b45309',
-                    border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}` 
-                  }}>
-                    💳 {paymentStatus}
-                  </div>
-                )}
-              </div>
-
-              {/* Actions Column */}
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flexShrink: 0 }}>
-                {user.approvalStatus !== 'APPROVED' && (
-                  <button className="btn-primary" style={{ padding: '0.5rem 0.875rem', fontSize: '0.8rem', minHeight: '40px' }} onClick={() => handleStatus(user.id, 'APPROVED')}>
-                    Approve
-                  </button>
-                )}
-
-                {/* DESTRUCTIVE SUSPEND ACTION — RED OUTLINE STYLE & CONFIRMATION MODAL */}
-                {user.approvalStatus !== 'REJECTED' && (
-                  <button 
-                    style={{
-                      padding: '0.5rem 0.875rem', fontSize: '0.8rem', minHeight: '40px',
-                      color: '#dc2626', background: '#fef2f2', border: '1px solid #ef4444',
-                      borderRadius: '8px', fontWeight: 800, cursor: 'pointer'
-                    }}
-                    onClick={() => setSuspendUserTarget(user)}
-                  >
-                    Suspend User
-                  </button>
-                )}
-
-                {/* Password Reset Trigger */}
-                <button 
-                  className="btn-secondary" 
-                  style={{ padding: '0.5rem 0.875rem', fontSize: '0.8rem', minHeight: '40px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                  onClick={() => { setResetUser(user); setNewPassword('') }}
+              {/* Single Status Badge */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span 
+                  style={{ 
+                    padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
+                    fontWeight: 800, backgroundColor: badgeConfig.bg, color: badgeConfig.color, 
+                    border: `1px solid ${badgeConfig.border}` 
+                  }}
                 >
-                  <Lock size={14} /> Password Reset
+                  {badgeConfig.label}
+                </span>
+
+                {activeRole === 'STUDENT' && (
+                  <span 
+                    style={{ 
+                      padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
+                      fontWeight: 800, backgroundColor: paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbeb', 
+                      color: paymentStatus === 'Paid' ? '#059669' : '#b45309',
+                      border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}` 
+                    }}
+                  >
+                    💳 {paymentStatus}
+                  </span>
+                )}
+              </div>
+
+              {/* 3-Dot Overflow Menu (•••) */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setOpenMenuUserId(openMenuUserId === user.id ? null : user.id)}
+                  style={{
+                    width: '36px', height: '36px', borderRadius: '8px', border: '1px solid #cbd5e1',
+                    background: '#f8fafc', color: '#475569', fontSize: '1.1rem', fontWeight: 900,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  title="Actions menu"
+                >
+                  •••
                 </button>
 
-                {activeRole === 'STUDENT' && (
-                  <button 
-                    className="btn-secondary" 
-                    style={{ padding: '0.5rem 0.875rem', fontSize: '0.8rem', minHeight: '40px' }} 
-                    onClick={() => handlePayment(user.id, paymentStatus)}
+                {/* Dropdown Menu Items */}
+                {openMenuUserId === user.id && (
+                  <div 
+                    ref={menuRef}
+                    style={{
+                      position: 'absolute', right: 0, top: '44px', zIndex: 100,
+                      width: '180px', backgroundColor: '#ffffff', borderRadius: '10px',
+                      border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                      padding: '0.4rem 0', display: 'flex', flexDirection: 'column'
+                    }}
                   >
-                    {paymentStatus === 'Paid' ? 'Mark Pending' : 'Mark Paid'}
-                  </button>
+                    <button
+                      onClick={() => { setViewUser(user); setOpenMenuUserId(null); }}
+                      style={{
+                        padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                        fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <Eye size={14} /> View profile
+                    </button>
+
+                    <button
+                      onClick={() => { setResetUser(user); setNewPassword(''); setOpenMenuUserId(null); }}
+                      style={{
+                        padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                        fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.5rem'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <Lock size={14} /> Password reset
+                    </button>
+
+                    {activeRole === 'STUDENT' && (
+                      <button
+                        onClick={() => { handlePayment(user.id, paymentStatus); setOpenMenuUserId(null); }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', cursor: 'pointer'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        💳 {paymentStatus === 'Paid' ? 'Mark pending' : 'Mark paid'}
+                      </button>
+                    )}
+
+                    {user.approvalStatus === 'PENDING' && (
+                      <button
+                        onClick={() => { handleStatus(user.id, 'APPROVED'); setOpenMenuUserId(null); }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 700, color: '#059669', cursor: 'pointer'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        ✓ Approve user
+                      </button>
+                    )}
+
+                    <div style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '0.35rem 0' }} />
+
+                    {user.approvalStatus !== 'REJECTED' ? (
+                      <button
+                        onClick={() => { setSuspendUserTarget(user); setOpenMenuUserId(null); }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 800, color: '#dc2626', cursor: 'pointer'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        🚫 Suspend user
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { handleStatus(user.id, 'APPROVED'); setOpenMenuUserId(null); }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 800, color: '#059669', cursor: 'pointer'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0fdf4'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        Un-suspend user
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -290,24 +394,24 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* CONFIRMATION DIALOG FOR DESTRUCTIVE SUSPEND ACTION */}
+      {/* SUSPEND CONFIRMATION DIALOG (PROMPT 1 SPECIFICATION) */}
       {suspendUserTarget && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
           background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '2rem', position: 'relative', border: '2px solid #ef4444' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef2f2', border: '1px solid #ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-              <AlertTriangle size={24} color="#dc2626" />
+          <div className="card" style={{ width: '100%', maxWidth: '420px', padding: '2rem', border: '2px solid #ef4444' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#fef2f2', border: '1px solid #ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+              <AlertTriangle size={22} color="#dc2626" />
             </div>
 
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.5rem', color: '#0f172a' }}>
-              Confirm Account Suspension
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '0.5rem', color: '#0f172a' }}>
+              Suspend {suspendUserTarget.name}?
             </h3>
 
             <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              Are you sure you want to suspend access for <strong style={{ color: '#0f172a' }}>{suspendUserTarget.name}</strong> ({suspendUserTarget.email})? They will be blocked from logging into the platform until re-approved.
+              Suspend <strong>{suspendUserTarget.name}</strong> ({suspendUserTarget.email})? They will lose access immediately.
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -315,7 +419,7 @@ export default function UsersPage() {
                 type="button" 
                 className="btn-secondary" 
                 onClick={() => setSuspendUserTarget(null)}
-                style={{ minHeight: '44px', padding: '0.75rem 1.25rem' }}
+                style={{ minHeight: '40px', padding: '0.5rem 1.25rem', fontWeight: 800 }}
               >
                 Cancel
               </button>
@@ -324,12 +428,47 @@ export default function UsersPage() {
                 onClick={confirmSuspend}
                 disabled={suspendLoading}
                 style={{
-                  minHeight: '44px', padding: '0.75rem 1.25rem',
+                  minHeight: '40px', padding: '0.5rem 1.25rem',
                   background: '#dc2626', color: 'white', border: 'none',
                   borderRadius: '8px', fontWeight: 800, cursor: 'pointer'
                 }}
               >
-                {suspendLoading ? 'Suspending...' : 'Confirm Suspension'}
+                {suspendLoading ? 'Suspending...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW PROFILE MODAL */}
+      {viewUser && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '2rem', position: 'relative' }}>
+            <button 
+              onClick={() => setViewUser(null)}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '1rem', color: '#0f172a' }}>User profile</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem' }}>
+              <div><strong>Name:</strong> {viewUser.name}</div>
+              <div><strong>Email:</strong> {viewUser.email}</div>
+              <div><strong>Role:</strong> {viewUser.role}</div>
+              <div><strong>Status:</strong> {viewUser.approvalStatus}</div>
+              {viewUser.profile?.phone && <div><strong>Phone:</strong> {viewUser.profile.phone}</div>}
+              {viewUser.profile?.address && <div><strong>Address:</strong> {viewUser.profile.address}</div>}
+              <div><strong>Joined:</strong> {new Date(viewUser.createdAt).toLocaleDateString()}</div>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setViewUser(null)} style={{ padding: '0.5rem 1.25rem', fontWeight: 800 }}>
+                Close
               </button>
             </div>
           </div>
@@ -351,14 +490,14 @@ export default function UsersPage() {
               ✕
             </button>
 
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.25rem', color: '#0f172a' }}>Reset Password</h3>
-            <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.25rem', color: '#0f172a' }}>Reset password</h3>
+            <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '1.25rem' }}>
               Set new password for <strong style={{ color: '#0f172a' }}>{resetUser.name}</strong> ({resetUser.email})
             </p>
 
             <form onSubmit={handleResetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#475569' }}>New Password</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#475569' }}>New password</label>
                 <input 
                   type="password"
                   className="input-field"
@@ -366,7 +505,7 @@ export default function UsersPage() {
                   placeholder="Min. 6 characters"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  style={{ width: '100%', minHeight: '44px' }}
+                  style={{ width: '100%', minHeight: '42px' }}
                 />
               </div>
 
@@ -374,9 +513,9 @@ export default function UsersPage() {
                 type="submit"
                 className="btn-primary"
                 disabled={resetLoading}
-                style={{ width: '100%', minHeight: '44px' }}
+                style={{ width: '100%', minHeight: '42px', fontWeight: 800 }}
               >
-                {resetLoading ? 'Updating Password...' : 'Confirm Password Reset'}
+                {resetLoading ? 'Updating password...' : 'Confirm password reset'}
               </button>
             </form>
           </div>

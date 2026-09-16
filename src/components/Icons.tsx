@@ -257,3 +257,22 @@ export function Calendar(props: IconProps) {
     </IconBase>
   )
 }
+
+export function ArrowLeft(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </IconBase>
+  )
+}
+
+export function Eye(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </IconBase>
+  )
+}
+
