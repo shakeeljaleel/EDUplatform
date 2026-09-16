@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -26,6 +27,7 @@ interface SidebarProps {
 export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -40,12 +42,14 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         prefetch={true}
         onClick={() => onClose && onClose()}
         className={`nav-link ${active ? 'active' : ''}`}
+        title={isCollapsed ? label : undefined}
         style={{
           minHeight: '44px',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: isCollapsed ? 'center' : 'flex-start',
           gap: '0.75rem',
-          padding: '0.75rem 1rem',
+          padding: isCollapsed ? '0.75rem 0' : '0.75rem 1rem',
           borderRadius: '12px',
           color: active ? '#ffffff' : '#94a3b8',
           background: active ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
@@ -59,7 +63,7 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#10b981' : '#94a3b8' }}>
           {icon}
         </span>
-        <span>{label}</span>
+        {!isCollapsed && <span>{label}</span>}
       </Link>
     )
   }
@@ -85,65 +89,78 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         background: '#020617',
         display: 'flex',
         flexDirection: 'column',
-        padding: '1.5rem 1rem',
-        boxShadow: '4px 0 24px rgba(0,0,0,0.15)'
+        padding: '1.5rem 0.75rem',
+        width: isCollapsed ? '80px' : '260px',
+        transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+        zIndex: 999
       }}>
         
-        {/* Brand Header & Mobile Close */}
-        <div style={{ padding: '0.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '2.25rem',
-              fontWeight: 900,
-              color: 'white',
-              lineHeight: 1,
-              letterSpacing: '-0.05em'
-            }}>
-              <span style={{
-                background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                HELIX
-              </span>
-            </div>
-            <div style={{
-              fontSize: '0.65rem',
-              color: '#10b981',
-              textTransform: 'uppercase',
-              letterSpacing: '0.15em',
-              fontWeight: 800,
-              marginTop: '6px'
-            }}>
-              {role.replace('_', ' ')} PORTAL
-            </div>
-          </div>
-
-          {onClose && (
-            <button
-              onClick={onClose}
-              style={{
-                minWidth: '44px',
-                minHeight: '44px',
-                background: 'rgba(255,255,255,0.08)',
-                border: 'none',
-                borderRadius: '8px',
+        {/* Brand Header & Collapse Toggle */}
+        <div style={{ padding: '0.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: isCollapsed ? 'center' : 'space-between', alignItems: 'center' }}>
+          {!isCollapsed && (
+            <div>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '2rem',
+                fontWeight: 900,
                 color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              aria-label="Close menu"
-            >
-              <X size={20} />
-            </button>
+                lineHeight: 1,
+                letterSpacing: '-0.05em'
+              }}>
+                <span style={{
+                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                  HELIX
+                </span>
+              </div>
+              <div style={{
+                fontSize: '0.6rem',
+                color: '#10b981',
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                fontWeight: 800,
+                marginTop: '4px'
+              }}>
+                {role.replace('_', ' ')}
+              </div>
+            </div>
           )}
+
+          {/* Desktop & Mobile Collapse / Close Toggle */}
+          <button
+            onClick={() => {
+              if (window.innerWidth <= 1024 && onClose) {
+                onClose()
+              } else {
+                setIsCollapsed(!isCollapsed)
+              }
+            }}
+            style={{
+              width: '38px',
+              height: '38px',
+              background: 'rgba(255,255,255,0.08)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#94a3b8',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.1rem',
+              transition: 'all 0.2s ease'
+            }}
+            aria-label="Toggle sidebar navigation"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            ☰
+          </button>
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', marginBottom: '1.5rem' }} />
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', marginBottom: '1.25rem' }} />
 
         {/* Navigation Items */}
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -180,17 +197,19 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
           </>)}
         </nav>
 
-        {/* Sign Out Button */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem', marginTop: 'auto' }}>
+        {/* Horizontal Divider Line above Sign Out Link */}
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1.25rem', marginTop: 'auto' }}>
           <button
             onClick={handleLogout}
+            title={isCollapsed ? "Sign Out" : undefined}
             style={{
               width: '100%',
               minHeight: '44px',
-              padding: '0.75rem 1rem',
+              padding: isCollapsed ? '0.75rem 0' : '0.75rem 1rem',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
               gap: '0.75rem',
               color: '#f87171',
               fontWeight: 600,
@@ -204,10 +223,11 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
             <LogOut size={20} color="#f87171" />
-            <span>Sign Out</span>
+            {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
     </>
   )
 }
+

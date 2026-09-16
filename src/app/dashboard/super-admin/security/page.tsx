@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 interface Alert {
   id: string
@@ -35,7 +36,7 @@ interface Recording {
 
 export default function SecurityAuditDashboardPage() {
   const [activeTab, setActiveTab] = useState<'sessions' | 'alerts'>('sessions')
-  
+
   // Alerts state
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [alertsLoading, setAlertsLoading] = useState(true)
@@ -154,16 +155,19 @@ export default function SecurityAuditDashboardPage() {
 
   return (
     <div style={{ maxWidth: '1200px' }}>
+      <Breadcrumbs items={[{ label: 'Overview', href: '/dashboard/super-admin' }, { label: 'Security alerts' }]} />
+
       {/* Header & Tabs */}
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>🛡️ Security & Session Audit</h1>
+            <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>🛡️ Security & session audit</h1>
             <p style={{ color: 'var(--text-secondary)' }}>
               Enforce single-session authentication, monitor multi-IP access, and manage recording progress overrides.
             </p>
           </div>
         </div>
+
 
         {/* Tab Buttons */}
         <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>

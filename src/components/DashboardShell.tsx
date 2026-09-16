@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import NotificationBell from '@/components/NotificationBell'
 import ToastContainer from '@/components/ToastContainer'
@@ -16,6 +17,13 @@ interface DashboardShellProps {
 
 export default function DashboardShell({ user, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Greeting header should only show on main Overview/Dashboard pages
+  const isOverview = pathname === '/dashboard/super-admin' || 
+                     pathname === '/dashboard/teacher' || 
+                     pathname === '/dashboard/student' || 
+                     pathname === '/dashboard/parent'
 
   return (
     <div className="dashboard-layout" style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
@@ -75,27 +83,29 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         <div className="content-wrapper" style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <header className="desktop-dashboard-header" style={{ 
             display: 'flex', 
-            justifyContent: 'space-between', 
+            justifyContent: isOverview ? 'space-between' : 'flex-end', 
             alignItems: 'center', 
-            marginBottom: '2rem',
-            paddingBottom: '1.25rem',
+            marginBottom: '1.5rem',
+            paddingBottom: '1rem',
             borderBottom: '1px solid #e2e8f0',
             position: 'relative',
             zIndex: 20
           }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>
-                  Welcome back, {user.name.split(' ')[0]} 👋
-                </h1>
-                <span className="badge" style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem', background: '#f0fdf4', color: '#059669', border: '1px solid #10b981', fontWeight: 800, borderRadius: '9999px' }}>
-                  {user.role.replace('_', ' ')}
-                </span>
+            {isOverview && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                  <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em' }}>
+                    Welcome back, {user.name.split(' ')[0]} 👋
+                  </h1>
+                  <span className="badge" style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem', background: '#f0fdf4', color: '#059669', border: '1px solid #10b981', fontWeight: 800, borderRadius: '9999px' }}>
+                    {user.role.replace('_', ' ')}
+                  </span>
+                </div>
+                <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.95rem' }}>
+                  Ready to explore your academic hub today?
+                </p>
               </div>
-              <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.95rem' }}>
-                Ready to explore your academic hub today?
-              </p>
-            </div>
+            )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
               <NotificationBell />
@@ -123,3 +133,4 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
     </div>
   )
 }
+
