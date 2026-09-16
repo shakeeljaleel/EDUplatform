@@ -16,7 +16,7 @@ async function getSessionFromRequest(request: NextRequest) {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   const isPublicPath = path === '/login' || path === '/register' || path === '/' || path.startsWith('/api/')
