@@ -36,71 +36,23 @@ class ErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode
 export function DnaHelixSvg({ className = '', style }: Props) {
   return (
     <svg
-      viewBox="0 0 32 40"
-      fill="none"
+      width="28"
+      height="40"
+      viewBox="0 0 28 40"
       xmlns="http://www.w3.org/2000/svg"
       className={`dna-helix-logo ${className}`}
       style={style}
       aria-label="DNA Helix Logo"
       role="img"
     >
-      <defs>
-        {/* Strand 1 Gradient: #00c853 (vivid green) to #00e5ff (cyan) */}
-        <linearGradient id="strand1Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00c853" />
-          <stop offset="100%" stopColor="#00e5ff" />
-        </linearGradient>
-
-        {/* Strand 2 Gradient: #aa00ff (purple) to #f50057 (pink) */}
-        <linearGradient id="strand2Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#aa00ff" />
-          <stop offset="100%" stopColor="#f50057" />
-        </linearGradient>
-      </defs>
-
-      {/* Connecting Rungs with alternating vivid colors */}
-      {/* Rung 1: Yellow #ffd600 */}
-      <line x1="10" y1="7" x2="22" y2="7" stroke="#ffd600" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-      {/* Rung 2: Orange #ff6d00 */}
-      <line x1="7" y1="13" x2="25" y2="13" stroke="#ff6d00" strokeWidth="2.5" strokeLinecap="round" opacity="0.95" />
-      {/* Rung 3: Cyan #00e5ff */}
-      <line x1="10" y1="19" x2="22" y2="19" stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-      {/* Rung 4: Mint #69f0ae */}
-      <line x1="10" y1="25" x2="22" y2="25" stroke="#69f0ae" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-      {/* Rung 5: Yellow #ffd600 */}
-      <line x1="7" y1="31" x2="25" y2="31" stroke="#ffd600" strokeWidth="2.5" strokeLinecap="round" opacity="0.95" />
-      {/* Rung 6: Orange #ff6d00 */}
-      <line x1="10" y1="37" x2="22" y2="37" stroke="#ff6d00" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
-
-      {/* Rung base pair nodes (small vivid dots at rung ends) */}
-      <circle cx="10" cy="7" r="1.5" fill="#ffd600" />
-      <circle cx="22" cy="7" r="1.5" fill="#ffd600" />
-      <circle cx="7" cy="13" r="1.5" fill="#ff6d00" />
-      <circle cx="25" cy="13" r="1.5" fill="#ff6d00" />
-      <circle cx="10" cy="19" r="1.5" fill="#00e5ff" />
-      <circle cx="22" cy="19" r="1.5" fill="#00e5ff" />
-      <circle cx="10" cy="25" r="1.5" fill="#69f0ae" />
-      <circle cx="22" cy="25" r="1.5" fill="#69f0ae" />
-      <circle cx="7" cy="31" r="1.5" fill="#ffd600" />
-      <circle cx="25" cy="31" r="1.5" fill="#ffd600" />
-      <circle cx="10" cy="37" r="1.5" fill="#ff6d00" />
-      <circle cx="22" cy="37" r="1.5" fill="#ff6d00" />
-
-      {/* Strand 1 (Green to Cyan) */}
-      <path
-        d="M 16,1 C 28,5 28,15 16,20 C 4,25 4,35 16,39"
-        stroke="url(#strand1Gradient)"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-
-      {/* Strand 2 (Purple to Pink) */}
-      <path
-        d="M 16,1 C 4,5 4,15 16,20 C 28,25 28,35 16,39"
-        stroke="url(#strand2Gradient)"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
+      <path d="M4,2 C4,2 24,8 24,12 C24,16 4,22 4,26 C4,30 24,36 24,38" stroke="#00c853" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <path d="M24,2 C24,2 4,8 4,12 C4,16 24,22 24,26 C24,30 4,36 4,38" stroke="#aa00ff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <line x1="4" y1="7" x2="24" y2="7" stroke="#ffd600" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="14" y1="12" x2="14" y2="12" stroke="#00e5ff" strokeWidth="3" strokeLinecap="round"/>
+      <line x1="4" y1="17" x2="24" y2="17" stroke="#ff6d00" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="4" y1="22" x2="24" y2="22" stroke="#f50057" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="4" y1="27" x2="24" y2="27" stroke="#00c853" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="4" y1="33" x2="24" y2="33" stroke="#ffd600" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   )
 }

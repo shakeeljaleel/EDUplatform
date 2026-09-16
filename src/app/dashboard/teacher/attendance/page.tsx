@@ -100,8 +100,7 @@ export default async function GlobalAttendancePage() {
 
         <Link 
           href="/dashboard/teacher" 
-          className="btn-secondary" 
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.1rem' }}
+          className="btn-back" 
         >
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>

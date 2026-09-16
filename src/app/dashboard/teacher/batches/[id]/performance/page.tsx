@@ -38,7 +38,7 @@ export default function BatchPerformancePage({ params }: { params: Promise<{ id:
     <div className="content-wrapper">
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <Link href={`/dashboard/teacher/batches/${id}`} style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: 600 }}>← Back to Batch</Link>
+          <Link href={`/dashboard/teacher/batches/${id}`} className="btn-back">← Back to Batch</Link>
           <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.5rem' }}>Performance Insight</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Advanced ranking and academic health monitoring.</p>
         </div>

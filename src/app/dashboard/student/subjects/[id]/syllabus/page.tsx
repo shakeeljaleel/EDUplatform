@@ -47,7 +47,7 @@ export default function StudentSyllabusPage({ params }: { params: Promise<{ id: 
       <RoughFilter />
       <div style={{ marginBottom: '4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '2rem' }}>
         <div>
-          <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontWeight: 900, textTransform: 'uppercase' }}>
+          <Link href="/dashboard/student" className="btn-back" style={{ marginBottom: '1.5rem' }}>
             ← Back to Dashboard
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>

@@ -120,7 +120,7 @@ export default function SubjectSettingsPage({ params }: { params: Promise<{ id: 
   return (
     <div className="content-wrapper">
       <div style={{ marginBottom: '2rem' }}>
-        <Link href={`/dashboard/teacher/subjects/${id}`} style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: 600 }}>← Back to Subject</Link>
+        <Link href={`/dashboard/teacher/subjects/${id}`} className="btn-back">← Back to Subject</Link>
         <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.5rem' }}>Master Academic Settings</h2>
         <p style={{ color: 'var(--text-secondary)' }}>Advanced academic management with AI-powered syllabus analysis.</p>
       </div>

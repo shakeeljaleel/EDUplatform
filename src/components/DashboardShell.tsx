@@ -45,25 +45,14 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
       }}>
         <button
           onClick={() => setSidebarOpen(true)}
-          style={{
-            minWidth: '44px',
-            minHeight: '44px',
-            background: 'rgba(255,255,255,0.1)',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            fontSize: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer'
-          }}
+          className="hamburger-btn"
+          style={{ color: 'white' }}
           aria-label="Open menu"
         >
           ☰
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>
           <DnaHelixLogo />
           <span style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             HELIX
@@ -98,20 +87,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  background: 'rgba(15, 23, 42, 0.06)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: '#0f172a',
-                  fontSize: '1.2rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease'
-                }}
+                className="hamburger-btn"
                 aria-label="Toggle menu"
                 title="Toggle sidebar navigation"
               >
@@ -119,15 +95,22 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
               </button>
 
               <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
                 fontFamily: 'var(--font-display)', 
                 fontWeight: 900, 
                 fontSize: '1.5rem', 
-                background: 'linear-gradient(135deg, #10b981, #3b82f6)', 
-                WebkitBackgroundClip: 'text', 
-                WebkitTextFillColor: 'transparent',
                 letterSpacing: '-0.03em'
               }}>
-                HELIX
+                <DnaHelixLogo />
+                <span style={{
+                  background: 'linear-gradient(135deg, #10b981, #3b82f6)', 
+                  WebkitBackgroundClip: 'text', 
+                  WebkitTextFillColor: 'transparent'
+                }}>
+                  HELIX
+                </span>
               </div>
             </div>
 

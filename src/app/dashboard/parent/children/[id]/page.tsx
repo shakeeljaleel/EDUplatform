@@ -109,7 +109,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
   return (
     <div style={{ maxWidth: '1200px' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <Link href="/dashboard/parent" style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600 }}>← Back to Overview</Link>
+        <Link href="/dashboard/parent" className="btn-back">← Back to Overview</Link>
         <h1 style={{ fontSize: '2rem', marginTop: '1rem' }}>{childProfile.user.name}'s Academic Report</h1>
       </div>
 

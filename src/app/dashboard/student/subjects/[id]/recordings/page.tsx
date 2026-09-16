@@ -79,7 +79,7 @@ export default function StudentRecordingsPage({ params }: { params: Promise<{ id
   return (
     <div style={{ maxWidth: '900px' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600 }}>← Back to Dashboard</Link>
+        <Link href="/dashboard/student" className="btn-back">← Back to Dashboard</Link>
         <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '1rem' }}>Class Recordings</h2>
         <p style={{ color: 'var(--text-secondary)' }}>Protected forward-only video player. Dynamic watermark & position tracking enabled.</p>
       </div>

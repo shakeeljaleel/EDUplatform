@@ -157,20 +157,8 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
                 setIsCollapsed(!isCollapsed)
               }
             }}
-            style={{
-              width: '38px',
-              height: '38px',
-              background: 'rgba(255,255,255,0.08)',
-              border: 'none',
-              borderRadius: '8px',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.1rem',
-              transition: 'all 0.2s ease'
-            }}
+            className="hamburger-btn"
+            style={{ color: 'white' }}
             aria-label="Toggle sidebar navigation"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >

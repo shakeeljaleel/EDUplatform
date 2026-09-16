@@ -71,7 +71,7 @@ export default function StudentForumPage({ params }: { params: Promise<{ id: str
     <div style={{ maxWidth: '1000px' }}>
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600 }}>← Back to Dashboard</Link>
+          <Link href="/dashboard/student" className="btn-back">← Back to Dashboard</Link>
           <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '1rem' }}>Class Discussion Forum</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Discuss topics with your batch mates and teachers.</p>
         </div>

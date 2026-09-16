@@ -52,7 +52,7 @@ export default function BatchStudentsPage({ params }: { params: Promise<{ id: st
     <div className="content-wrapper">
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <Link href={`/dashboard/teacher/batches/${id}`} style={{ color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: 600 }}>← Back to Batch</Link>
+          <Link href={`/dashboard/teacher/batches/${id}`} className="btn-back">← Back to Batch</Link>
           <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '0.5rem' }}>Student List: {batchName}</h2>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <p style={{ color: 'var(--text-secondary)' }}>Manage your batch students. Actions require Admin approval.</p>

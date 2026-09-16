@@ -317,7 +317,7 @@ function RegisterForm() {
                     <button 
                       type="button" 
                       onClick={() => setTeacherWizardStep(1)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer' }}
+                      className="btn-back"
                     >
                       ← Back to Basic Info
                     </button>

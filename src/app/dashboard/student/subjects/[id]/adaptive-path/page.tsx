@@ -61,7 +61,7 @@ export default function AdaptivePathPage({ params }: { params: Promise<{ id: str
 
   if (error) return (
     <div className="content-wrapper">
-      <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 900, textTransform: 'uppercase', marginBottom: '2rem', display: 'inline-block' }}>← Back to Dashboard</Link>
+      <Link href="/dashboard/student" className="btn-back" style={{ marginBottom: '1.5rem' }}>← Back to Dashboard</Link>
       <div className="card" style={{ color: 'var(--error)', borderLeft: '10px solid var(--error)' }}>
         <h3>Analysis Error</h3>
         <p>{error}</p>
@@ -71,7 +71,7 @@ export default function AdaptivePathPage({ params }: { params: Promise<{ id: str
 
   if (data?.message) return (
     <div className="content-wrapper">
-      <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 900, textTransform: 'uppercase', marginBottom: '2rem', display: 'inline-block' }}>← Back to Dashboard</Link>
+      <Link href="/dashboard/student" className="btn-back" style={{ marginBottom: '1.5rem' }}>← Back to Dashboard</Link>
       <div className="card" style={{ textAlign: 'center', padding: '4rem' }}>
         <span style={{ fontSize: '3rem' }}>📉</span>
         <h3 style={{ margin: '1rem 0' }}>Not Enough Data</h3>
@@ -83,7 +83,7 @@ export default function AdaptivePathPage({ params }: { params: Promise<{ id: str
   return (
     <div className="content-wrapper">
       <div style={{ marginBottom: '3rem' }}>
-        <Link href="/dashboard/student" style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1.5rem', display: 'inline-block' }}>← Back to Dashboard</Link>
+        <Link href="/dashboard/student" className="btn-back" style={{ marginBottom: '1.5rem' }}>← Back to Dashboard</Link>
         <h4 style={{ color: 'var(--accent-primary)', marginBottom: '0.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Personalized Guidance</h4>
         <h1 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.04em' }}>Your AI Study Path</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600 }}>Based on your quiz and exam results, here is your custom biological roadmap.</p>

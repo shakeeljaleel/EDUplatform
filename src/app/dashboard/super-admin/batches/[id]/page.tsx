@@ -213,7 +213,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
     <div className="fade-in" style={{ paddingBottom: '4rem' }}>
       {/* Breadcrumb & Navigation */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Link href="/dashboard/super-admin/batches" style={{ color: '#10b981', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem' }}>
+        <Link href="/dashboard/super-admin/batches" className="btn-back">
           <ArrowLeft size={16} /> Back to Batches Console
         </Link>
       </div>
