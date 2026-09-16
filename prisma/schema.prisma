@@ -117,6 +117,9 @@ model BatchEnrollment {
 model Subject {
   id                 String              @id @default(uuid())
   name               String
+  description        String?
+  academicLevel      String?
+  createdBy          String?
   batchId            String
   createdAt          DateTime            @default(now())
   announcements      Announcement[]
@@ -205,12 +208,14 @@ model Notification {
 }
 
 model SubjectTeacher {
-  id        String   @id @default(uuid())
-  subjectId String
-  userId    String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  subjectId  String
+  userId     String
+  assignedBy String?
+  assignedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([subjectId, userId])
 }

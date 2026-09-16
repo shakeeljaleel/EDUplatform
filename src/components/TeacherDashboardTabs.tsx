@@ -5,6 +5,7 @@ import Link from 'next/link'
 import EmptyState from '@/components/EmptyState'
 import { showToast } from '@/components/ToastContainer'
 import { BookOpen, Users, Search, Filter, CheckSquare, Sparkles } from '@/components/Icons'
+import { getSubjectColor } from '@/lib/subjectColors'
 
 export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollments, allStudents }: any) {
   const [activeTab, setActiveTab] = useState<'SUBJECTS' | 'STUDENTS'>('SUBJECTS')
@@ -137,56 +138,75 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
           {subjectAssignments.length > 0 ? (
             <div style={{ marginBottom: '3rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
-                {subjectAssignments.map((sa: any) => (
-                  <div key={sa.id} className="card premium-card" style={{ padding: '2rem' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
-                      {sa.subject.batch.name}
+                {subjectAssignments.map((sa: any, idx: number) => {
+                  const subjectColor = getSubjectColor(sa.subject.name, idx)
+                  const studentCount = sa.subject._count?.enrollments || 0
+
+                  return (
+                    <div
+                      key={sa.id}
+                      className="card"
+                      style={{
+                        padding: '1.75rem',
+                        background: subjectColor,
+                        color: '#ffffff',
+                        border: '3px solid #1a1a2e',
+                        boxShadow: '5px 5px 0px #1a1a2e',
+                        borderRadius: '16px'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.35rem', letterSpacing: '0.05em', opacity: 0.9 }}>
+                        {sa.subject.batch.name}
+                      </div>
+                      <h3 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem', color: '#ffffff' }}>{sa.subject.name}</h3>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '1.25rem', color: 'rgba(255,255,255,0.9)' }}>
+                        👥 {studentCount} Student(s) Enrolled
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <Link prefetch={true} href={`/dashboard/teacher/batches/${sa.subject.batchId}`} className="btn-primary" style={{ 
+                          gridColumn: 'span 2', textAlign: 'center', padding: '0.75rem', fontSize: '0.9rem', fontWeight: 800,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minHeight: '42px',
+                          background: '#1a1a2e', color: '#ffffff', border: '2px solid #ffffff', borderRadius: '10px'
+                        }}>
+                          <CheckSquare size={18} /> Quizzes & Assessments
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          🤖 AI Grading
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/buzzer`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          ⚡ Speed Buzzer
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          💬 Q&A Forum
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/performance`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          📊 Mark Analytics
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/lesson-planner`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          📑 AI Planner
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/syllabus`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          🧬 Syllabus
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          📅 Schedule
+                        </Link>
+
+                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                          📹 Recordings
+                        </Link>
+                      </div>
                     </div>
-                    <h3 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '1.5rem', color: '#0f172a' }}>{sa.subject.name}</h3>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <Link prefetch={true} href={`/dashboard/teacher/batches/${sa.subject.batchId}`} className="btn-primary" style={{ 
-                        gridColumn: 'span 2', textAlign: 'center', padding: '0.85rem', fontSize: '0.95rem', fontWeight: 800,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minHeight: '44px',
-                        background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '12px'
-                      }}>
-                        <CheckSquare size={18} /> Quizzes & Assessments
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/grading`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#ec4899', border: '1.5 solid rgba(236, 72, 153, 0.3)', background: 'rgba(236, 72, 153, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        🤖 AI Grading
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/buzzer`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#f59e0b', border: '1.5 solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        ⚡ Speed Buzzer
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/forum`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#2563eb', border: '1.5 solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        💬 Q&A Forum
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/performance`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#7c3aed', border: '1.5 solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        📊 Mark Analytics
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/lesson-planner`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#4f46e5', border: '1.5 solid rgba(79, 70, 229, 0.3)', background: 'rgba(79, 70, 229, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        📑 AI Planner
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/syllabus`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#059669', border: '1.5 solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        🧬 Syllabus
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/calendar`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0f172a', border: '1.5 solid #cbd5e1', background: '#f8fafc', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        📅 Schedule
-                      </Link>
-
-                      <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/recordings`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem', color: '#0891b2', border: '1.5 solid rgba(6, 182, 212, 0.3)', background: 'rgba(6, 182, 212, 0.08)', textAlign: 'center', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                        📹 Recordings
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           ) : (

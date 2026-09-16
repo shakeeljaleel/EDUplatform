@@ -4,6 +4,7 @@ import Link from 'next/link'
 import EmptyState from '@/components/EmptyState'
 import StudentBatchHeaderBanner from '@/components/StudentBatchHeaderBanner'
 import { BookOpen, CheckSquare, Star, Award, Clock, TrendingUp, Sparkles, ChevronRight, MessageSquare } from '@/components/Icons'
+import { getSubjectColor } from '@/lib/subjectColors'
 
 export default async function StudentDashboard() {
   const session = await getSession()
@@ -27,8 +28,15 @@ export default async function StudentDashboard() {
       orderBy: { classSession: { scheduledDate: 'desc' } }
     }),
     prisma.subjectEnrollment.findMany({
-      where: { userId: studentUserId, status: { in: ['APPROVED', 'ACTIVE'] } },
-      include: { subject: { include: { batch: { include: { branch: true } } } } }
+      where: { userId: studentUserId, status: { in: ['APPROVED', 'ACTIVE', 'ADMIN_APPROVED'] } },
+      include: {
+        subject: {
+          include: {
+            batch: { include: { branch: true } },
+            teachers: { include: { user: { select: { id: true, name: true, email: true } } } }
+          }
+        }
+      }
     }),
     prisma.notification.findMany({
       where: { userId: studentUserId },
@@ -603,57 +611,109 @@ export default async function StudentDashboard() {
         </div>
       )}
 
-      <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem' }}>My Enrolled Subjects</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+      <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem', fontWeight: 900 }}>My Enrolled Subjects</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem', marginBottom: '4rem' }}>
         {subjectEnrollments.map((e, idx) => {
+          const subjectColor = getSubjectColor(e.subject.name, idx)
+          const assignedTeacherName = e.subject.teachers?.[0]?.user?.name || null
           const subjectData = subjectsWithObjectives.find(s => s.id === e.subject.id)
           const totalObjectives = subjectData?.syllabusObjectives.length || 0
           const taughtObjectives = subjectData?.syllabusObjectives.filter(obj => obj.classes.length > 0).length || 0
           const syllabusPct = totalObjectives > 0 ? Math.round((taughtObjectives / totalObjectives) * 100) : 0
 
           return (
-            <div key={e.subject.id} className="premium-card-v2" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', borderTop: '12px solid var(--text-primary)' }}>
+            <div
+              key={e.subject.id}
+              className="card"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
+                background: subjectColor,
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                borderRadius: '16px',
+                padding: '1.75rem'
+              }}
+            >
               <div>
-                <h4 style={{ fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{e.subject.batch.name}</h4>
-                <h3 style={{ fontSize: '1.75rem', fontWeight: 900 }}>{e.subject.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 800, opacity: 0.9 }}>
+                    {e.subject.batch.name}
+                  </span>
+                  <span style={{
+                    background: '#1a1a2e',
+                    color: '#ffffff',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase'
+                  }}>
+                    {e.status}
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>{e.subject.name}</h3>
+                
+                <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 800, background: 'rgba(0,0,0,0.2)', padding: '0.4rem 0.75rem', borderRadius: '8px', display: 'inline-block' }}>
+                  {assignedTeacherName ? `👨‍🏫 Teacher: ${assignedTeacherName}` : '⚠️ No teacher assigned'}
+                </div>
               </div>
               
-              <div style={{ background: 'var(--bg-accent)', padding: '1.5rem', borderRadius: '16px', border: '2px solid var(--text-primary)', display: 'flex', alignItems: 'center', gap: '1.5rem', boxShadow: '6px 6px 0 var(--text-primary)' }}>
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ 
                   position: 'relative', 
-                  width: '64px', 
-                  height: '64px', 
+                  width: '52px', 
+                  height: '52px', 
                   borderRadius: '50%', 
-                  background: `conic-gradient(var(--accent-primary) ${syllabusPct}%, var(--bg-tertiary) 0)`,
+                  background: `conic-gradient(#ffffff ${syllabusPct}%, rgba(255,255,255,0.3) 0)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0,
-                  border: '2px solid var(--text-primary)'
+                  flexShrink: 0
                 }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '50%', backgroundColor: 'var(--bg-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: subjectColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#ffffff' }}>
                     {syllabusPct}%
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', gap: '1rem' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 900 }}>Syllabus</div>
-                    <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/syllabus`} style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 900, textDecoration: 'underline' }}>Breakdown</Link>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', gap: '1rem' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Syllabus</div>
+                    <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/syllabus`} style={{ fontSize: '0.75rem', color: '#ffffff', fontWeight: 900, textDecoration: 'underline' }}>Breakdown</Link>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{taughtObjectives} / {totalObjectives} Objectives</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>{taughtObjectives} / {totalObjectives} Objectives</div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/adaptive-path`} className="btn-primary" style={{ padding: '0.85rem', fontSize: '0.95rem', textAlign: 'center', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#ffffff', gridColumn: 'span 2', fontWeight: 900, borderRadius: '12px', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>🪄 AI Adaptive Study Path</Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/grading`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', textAlign: 'center', border: '1.5px solid rgba(236, 72, 153, 0.3)', background: 'rgba(236, 72, 153, 0.08)', color: '#ec4899', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>🤖 AI Marking</Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/forum`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', textAlign: 'center', border: '1.5px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.08)', color: '#2563eb', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>💬 Q&A Forum</Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/calendar`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', textAlign: 'center', border: '1.5px solid #cbd5e1', background: '#f8fafc', color: '#0f172a', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>📅 Schedule</Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/recordings`} className="btn-secondary" style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', textAlign: 'center', border: '1.5px solid rgba(6, 182, 212, 0.3)', background: 'rgba(6, 182, 212, 0.08)', color: '#0891b2', fontWeight: 800, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>📹 Recordings</Link>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/adaptive-path`} className="btn-primary" style={{ padding: '0.75rem', fontSize: '0.85rem', textAlign: 'center', background: '#1a1a2e', color: '#ffffff', gridColumn: 'span 2', fontWeight: 900, borderRadius: '10px', border: '2px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                  🪄 AI Adaptive Study Path
+                </Link>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                  🤖 AI Marking
+                </Link>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                  💬 Q&A Forum
+                </Link>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                  📅 Schedule
+                </Link>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                  📹 Recordings
+                </Link>
               </div>
             </div>
           )
         })}
+
+        {subjectEnrollments.length === 0 && (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', background: '#ffffff', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+            <BookOpen size={36} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#475569' }}>No enrolled subjects found</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Explore available batches and enrol in subjects to get started.</p>
+          </div>
+        )}
       </div>
     </div>
   )

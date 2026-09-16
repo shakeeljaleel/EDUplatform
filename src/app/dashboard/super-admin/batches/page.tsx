@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { Plus, X, Layers, Building2, BookOpen, Users } from '@/components/Icons'
 import { showToast } from '@/components/ToastContainer'
+import { getAcademicLevelColor } from '@/lib/subjectColors'
 
 const LEVEL_GRADIENTS: Record<string, { bg: string; border: string; text: string }> = {
   'O Level': { bg: 'linear-gradient(135deg, #00b4d8, #0077b6)', border: '#00b4d8', text: '#ffffff' },
@@ -117,14 +118,15 @@ export default function BatchesPage() {
             </thead>
             <tbody>
               {batches.map(batch => {
-                const levelConfig = LEVEL_GRADIENTS[batch.academicLevel] || LEVEL_GRADIENTS['Grade 11']
+                const levelColor = getAcademicLevelColor(batch.academicLevel)
+                const subjectCount = batch._count?.subjects || 0
                 return (
                   <tr 
                     key={batch.id} 
                     onClick={() => router.push(`/dashboard/super-admin/batches/${batch.id}`)}
                     style={{
                       borderBottom: '1px solid #e2e8f0',
-                      borderLeft: `5px solid ${levelConfig.border}`,
+                      borderLeft: `6px solid ${levelColor}`,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
@@ -145,13 +147,13 @@ export default function BatchesPage() {
                     </td>
                     <td style={{ padding: '1rem 1.25rem' }}>
                       <span style={{
-                        background: levelConfig.bg,
-                        color: levelConfig.text,
+                        background: levelColor,
+                        color: '#ffffff',
                         fontWeight: 800,
                         padding: '0.35rem 0.85rem',
                         borderRadius: '9999px',
                         fontSize: '0.75rem',
-                        boxShadow: `0 2px 8px ${levelConfig.border}44`
+                        boxShadow: `0 2px 8px ${levelColor}44`
                       }}>
                         {batch.academicLevel}
                       </span>
@@ -159,8 +161,29 @@ export default function BatchesPage() {
                     <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
                       👥 {batch._count?.enrollments || 0}
                     </td>
-                    <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
-                      📚 {batch._count?.subjects || 0}
+                    <td style={{ padding: '1rem 1.25rem' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/dashboard/super-admin/batches/${batch.id}?tab=subjects`)
+                        }}
+                        style={{
+                          background: '#f0fdf4',
+                          color: '#059669',
+                          border: '1.5px solid #10b981',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '8px',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        📚 {subjectCount} {subjectCount === 1 ? 'subject' : 'subjects'}
+                      </button>
                     </td>
                     <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
                       {new Date(batch.createdAt).toLocaleDateString()}
