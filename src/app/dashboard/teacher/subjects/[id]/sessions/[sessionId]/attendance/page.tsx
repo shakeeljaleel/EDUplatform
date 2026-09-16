@@ -257,54 +257,57 @@ export default function AttendancePage({ params }: { params: Promise<{ id: strin
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                 <button 
                   style={{
-                    padding: '0.55rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: 'none',
-                    background: isPhysical ? 'var(--primary)' : 'rgba(16, 185, 129, 0.12)',
-                    color: isPhysical ? '#ffffff' : 'var(--primary)',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
+                    background: isPhysical ? '#00c853' : 'rgba(0, 200, 83, 0.15)',
+                    color: isPhysical ? '#ffffff' : '#00c853',
+                    fontWeight: 900,
+                    fontSize: '0.85rem',
                     cursor: 'pointer',
+                    boxShadow: isPhysical ? '0 4px 12px rgba(0, 200, 83, 0.4)' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                   disabled={saving === s.id}
                   onClick={() => markAttendance(s.id, 'PHYSICAL')}
                 >
-                  Physical
+                  ✓ Present
                 </button>
                 <button 
                   style={{
-                    padding: '0.55rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: 'none',
-                    background: isOnline ? '#2563eb' : 'rgba(59, 130, 246, 0.12)',
-                    color: isOnline ? '#ffffff' : '#2563eb',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
+                    background: isOnline ? '#2979ff' : 'rgba(41, 121, 255, 0.15)',
+                    color: isOnline ? '#ffffff' : '#2979ff',
+                    fontWeight: 900,
+                    fontSize: '0.85rem',
                     cursor: 'pointer',
+                    boxShadow: isOnline ? '0 4px 12px rgba(41, 121, 255, 0.4)' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                   disabled={saving === s.id}
                   onClick={() => markAttendance(s.id, 'ONLINE')}
                 >
-                  Online
+                  💻 Online
                 </button>
                 <button 
                   style={{
-                    padding: '0.55rem',
+                    padding: '0.65rem 0.5rem',
                     borderRadius: '10px',
                     border: 'none',
-                    background: isAbsent ? 'var(--error)' : 'rgba(239, 68, 68, 0.12)',
-                    color: isAbsent ? '#ffffff' : 'var(--error)',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
+                    background: isAbsent ? '#ff1744' : 'rgba(255, 23, 68, 0.15)',
+                    color: isAbsent ? '#ffffff' : '#ff1744',
+                    fontWeight: 900,
+                    fontSize: '0.85rem',
                     cursor: 'pointer',
+                    boxShadow: isAbsent ? '0 4px 12px rgba(255, 23, 68, 0.4)' : 'none',
                     transition: 'all 0.15s ease'
                   }}
                   disabled={saving === s.id}
                   onClick={() => markAttendance(s.id, 'ABSENT')}
                 >
-                  Absent
+                  ✕ Absent
                 </button>
               </div>
             </div>

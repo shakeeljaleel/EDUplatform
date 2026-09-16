@@ -165,36 +165,52 @@ export default function ManageQuizPage({ params }: { params: Promise<{ id: strin
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {quiz.questions.map((q: any, i: number) => (
-          <div key={q.id} className="card" style={{ padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>Q{i + 1}. {q.text}</div>
-              <div className="badge badge-level">{q.points} pts</div>
+        {quiz.questions.map((q: any, i: number) => {
+          const colors = ['#2979ff', '#aa00ff', '#00c853', '#ff6d00']
+          const rotateColor = colors[i % colors.length]
+
+          return (
+            <div key={q.id} className="card" style={{
+              padding: '1.5rem',
+              borderLeft: `6px solid ${rotateColor}`,
+              borderRadius: '16px',
+              boxShadow: `0 4px 14px ${rotateColor}22`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>Q{i + 1}. {q.text}</div>
+                <div style={{
+                  background: rotateColor, color: '#ffffff', padding: '4px 12px', borderRadius: '9999px',
+                  fontWeight: 900, fontSize: '0.8rem', boxShadow: `0 2px 8px ${rotateColor}44`
+                }}>
+                  {q.points} pts
+                </div>
+              </div>
+              
+              {q.type === 'MCQ' && q.options && (
+                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1rem' }}>
+                  {JSON.parse(q.options).map((opt: string, idx: number) => (
+                    <div key={idx} style={{ 
+                      padding: '0.65rem 1rem', 
+                      borderRadius: '10px', 
+                      backgroundColor: q.correctOption === idx ? 'rgba(0, 200, 83, 0.12)' : '#f8fafc',
+                      border: q.correctOption === idx ? '2px solid #00c853' : '1px solid #e2e8f0',
+                      color: q.correctOption === idx ? '#00c853' : '#334155',
+                      fontWeight: q.correctOption === idx ? 800 : 600
+                    }}>
+                      {String.fromCharCode(65 + idx)}. {opt} {q.correctOption === idx && '✓'}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {q.type === 'SHORT_ANSWER' && (
+                <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '10px', color: '#64748b', fontSize: '0.85rem' }}>
+                  <em>Short answer required. Will be manually graded by instructor.</em>
+                </div>
+              )}
             </div>
-            
-            {q.type === 'MCQ' && q.options && (
-              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem' }}>
-                {JSON.parse(q.options).map((opt: string, idx: number) => (
-                  <div key={idx} style={{ 
-                    padding: '0.5rem', 
-                    borderRadius: 'var(--radius-sm)', 
-                    backgroundColor: q.correctOption === idx ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                    border: q.correctOption === idx ? '1px solid var(--success)' : '1px solid var(--bg-tertiary)',
-                    color: q.correctOption === idx ? 'var(--text-primary)' : 'var(--text-secondary)'
-                  }}>
-                    {String.fromCharCode(65 + idx)}. {opt}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {q.type === 'SHORT_ANSWER' && (
-              <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)' }}>
-                <em>Short answer required. Will be manually graded.</em>
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
         {quiz.questions.length === 0 && !showAddQuestion && (
           <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
             <p style={{ color: 'var(--text-secondary)' }}>No questions added yet.</p>

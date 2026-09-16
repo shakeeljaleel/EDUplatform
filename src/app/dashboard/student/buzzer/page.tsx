@@ -172,25 +172,27 @@ export default function StudentBuzzerPage() {
             </div>
 
             {/* Big Buzzer Button */}
+            {/* Big Enormous Buzzer Button */}
             <div style={{ position: 'relative' }}>
               {isAnimating && (
-                <div style={{ position: 'absolute', inset: '-20px', borderRadius: '50%', background: 'rgba(16,185,129,0.3)', animation: 'ping 0.6s ease-out forwards' }} />
+                <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', background: 'rgba(255,23,68,0.4)', animation: 'ping 0.6s ease-out forwards' }} />
               )}
               <button
                 onClick={handleBuzz}
                 disabled={buzzed}
                 style={{
-                  width: '200px', height: '200px', borderRadius: '50%', border: 'none', cursor: buzzed ? 'default' : 'pointer',
+                  width: '250px', height: '250px', borderRadius: '50%', border: 'none', cursor: buzzed ? 'default' : 'pointer',
                   background: buzzed
-                    ? buzzResult === 'first' ? 'linear-gradient(145deg, #059669, #047857)' : 'linear-gradient(145deg, #6b7280, #4b5563)'
-                    : 'linear-gradient(145deg, #ef4444, #dc2626)',
-                  boxShadow: buzzed ? 'none' : '0 8px 40px rgba(239,68,68,0.6), 0 0 0 8px rgba(239,68,68,0.15)',
+                    ? buzzResult === 'first' ? 'linear-gradient(135deg, #00c853, #69f0ae)' : 'linear-gradient(135deg, #757575, #9e9e9e)'
+                    : 'linear-gradient(135deg, #ff1744, #ff6d00)',
+                  boxShadow: buzzed ? 'none' : '0 0 30px rgba(255, 23, 68, 0.6), 0 0 60px rgba(255, 109, 0, 0.3)',
+                  animation: buzzed ? 'none' : 'buzzer-pulse 2s infinite ease-in-out',
                   transform: isAnimating ? 'scale(0.93)' : 'scale(1)',
                   transition: 'all 0.15s ease',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px'
                 }}>
-                <span style={{ fontSize: '3rem' }}>{buzzed ? (buzzResult === 'first' ? '✅' : '❌') : '🔔'}</span>
-                <span style={{ color: 'white', fontWeight: 900, fontSize: '1rem', letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: '4rem' }}>{buzzed ? (buzzResult === 'first' ? '⚡' : '❌') : '🔔'}</span>
+                <span style={{ color: '#ffffff', fontWeight: 900, fontSize: '1.4rem', letterSpacing: '0.08em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
                   {buzzed ? (buzzResult === 'first' ? 'YOU BUZZED!' : 'TOO LATE') : 'BUZZ!'}
                 </span>
               </button>

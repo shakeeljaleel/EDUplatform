@@ -114,12 +114,19 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div className="card stagger-1">
-          <h2 style={{ fontSize: '1.125rem', marginBottom: '1rem' }}>Overall Attendance</h2>
-          <div style={{ fontSize: '2.5rem', fontWeight: 800, color: attendanceRate < 75 ? 'var(--error)' : 'var(--success)' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
+          <h2 style={{ fontSize: '1.125rem', marginBottom: '1rem', color: '#ffffff' }}>Overall Attendance</h2>
+          <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             {attendanceRate}%
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{presentCount} sessions attended out of {totalClasses}</p>
+          <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.95)', marginTop: '0.75rem', fontWeight: 700 }}>{presentCount} sessions attended out of {totalClasses}</p>
         </div>
 
         <div className="card stagger-2">
@@ -265,17 +272,27 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
                 </tr>
               </thead>
               <tbody>
-                {attendance.map(a => (
-                  <tr key={a.id}>
-                    <td style={{ fontSize: '0.85rem' }}>{new Date(a.classSession.scheduledDate).toLocaleDateString()}</td>
-                    <td style={{ fontSize: '0.85rem' }}>{a.classSession.title}</td>
-                    <td>
-                      <span className={`badge ${a.status === 'PHYSICAL' ? 'badge-paid' : a.status === 'ONLINE' ? 'badge-pending' : 'badge-level'}`} style={{ fontSize: '0.7rem' }}>
-                        {a.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {attendance.map(a => {
+                  const isPhys = a.status === 'PHYSICAL'
+                  const isOnl = a.status === 'ONLINE'
+                  const rowBg = isPhys ? 'rgba(0, 200, 83, 0.08)' : isOnl ? 'rgba(41, 121, 255, 0.08)' : 'rgba(255, 23, 68, 0.08)'
+                  const borderCol = isPhys ? '#00c853' : isOnl ? '#2979ff' : '#ff1744'
+
+                  return (
+                    <tr key={a.id} style={{ backgroundColor: rowBg, borderLeft: `4px solid ${borderCol}` }}>
+                      <td style={{ fontSize: '0.85rem', fontWeight: 700 }}>{new Date(a.classSession.scheduledDate).toLocaleDateString()}</td>
+                      <td style={{ fontSize: '0.85rem', fontWeight: 600 }}>{a.classSession.title}</td>
+                      <td>
+                        <span style={{
+                          fontSize: '0.75rem', fontWeight: 900, color: borderCol, padding: '0.25rem 0.65rem',
+                          borderRadius: '9999px', background: '#ffffff', border: `1px solid ${borderCol}`
+                        }}>
+                          {a.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
                 {attendance.length === 0 && <tr><td colSpan={3} style={{ textAlign: 'center', padding: '1rem' }}>No attendance records found.</td></tr>}
               </tbody>
             </table>

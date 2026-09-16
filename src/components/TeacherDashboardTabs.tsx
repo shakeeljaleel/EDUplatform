@@ -49,28 +49,49 @@ export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollme
     <div>
       {/* AT-A-GLANCE SUMMARY CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div className="premium-card-v2" style={{ borderLeft: '6px solid #10b981' }}>
-          <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #00b4d8, #0077b6)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(0, 180, 216, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Assigned Subjects
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#0f172a' }}>{subjectAssignments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700, marginTop: '0.5rem' }}>Active teaching modules</p>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{subjectAssignments.length}</div>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Active teaching modules</p>
         </div>
 
-        <div className="premium-card-v2" style={{ borderLeft: '6px solid #3b82f6' }}>
-          <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #2979ff, #448aff)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Assigned Batches
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#2563eb' }}>{batchEnrollments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 700, marginTop: '0.5rem' }}>Active student intakes</p>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{batchEnrollments.length}</div>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Active student intakes</p>
         </div>
 
-        <div className="premium-card-v2" style={{ borderLeft: '6px solid #8b5cf6' }}>
-          <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
             Total Roster Students
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#7c3aed' }}>{allStudents.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#7c3aed', fontWeight: 700, marginTop: '0.5rem' }}>Enrolled across all classes</p>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{allStudents.length}</div>
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>Enrolled across all classes</p>
         </div>
       </div>
 

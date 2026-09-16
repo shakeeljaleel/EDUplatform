@@ -51,16 +51,28 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
           gap: '0.75rem',
           padding: isCollapsed ? '0.75rem 0' : '0.75rem 1rem',
           borderRadius: '12px',
-          color: active ? '#ffffff' : '#94a3b8',
-          background: active ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-          borderLeft: active ? '4px solid #10b981' : '4px solid transparent',
+          color: active ? '#0f172a' : '#cbd5e1',
+          background: active ? '#ffffff' : 'transparent',
+          boxShadow: active ? '0 4px 14px rgba(0, 0, 0, 0.25)' : 'none',
           fontWeight: active ? 800 : 600,
           fontSize: '0.9rem',
           transition: 'all 0.2s ease',
           textDecoration: 'none'
         }}
+        onMouseEnter={e => {
+          if (!active) {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
+            e.currentTarget.style.color = '#ffffff'
+          }
+        }}
+        onMouseLeave={e => {
+          if (!active) {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = '#cbd5e1'
+          }
+        }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#10b981' : '#94a3b8' }}>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? '#00c853' : '#94a3b8' }}>
           {icon}
         </span>
         {!isCollapsed && <span>{label}</span>}
@@ -86,13 +98,13 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
 
       <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`} style={{
         borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-        background: '#020617',
+        background: 'linear-gradient(180deg, #0f0c29, #302b63, #24243e)',
         display: 'flex',
         flexDirection: 'column',
         padding: '1.5rem 0.75rem',
         width: isCollapsed ? '80px' : '260px',
         transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.25)',
         zIndex: 999
       }}>
         
@@ -194,6 +206,11 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
 
           {role === 'PARENT' && (<>
             <NavLink href="/dashboard/parent" label="Children Overview" icon={<Users size={20} />} exact />
+          </>)}
+
+          {role === 'ASSISTANT' && (<>
+            <NavLink href="/dashboard/assistant" label="Overview" icon={<LayoutDashboard size={20} />} exact />
+            <NavLink href="/dashboard/assistant/forum" label="Forum Moderation" icon={<MessageSquare size={20} />} />
           </>)}
         </nav>
 

@@ -289,63 +289,99 @@ export default async function StudentDashboard() {
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
-        <div className="premium-card-v2 stagger-1">
+        {/* Card 1 - Syllabus Completed - Vivid Green */}
+        <div style={{
+          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Syllabus Completed</h3>
+            <h3 style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Syllabus Completed</h3>
             <span style={{ fontSize: '1.5rem' }}>🎯</span>
           </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--dna-blue)', lineHeight: 1 }}>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             {syllabusProgressPct}%
           </div>
-          <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.08)', borderRadius: '4px', marginTop: '1rem', overflow: 'hidden' }}>
-            <div style={{ width: `${syllabusProgressPct}%`, height: '100%', background: 'var(--dna-blue)', transition: 'width 0.5s ease' }}></div>
+          <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.3)', borderRadius: '4px', marginTop: '1rem', overflow: 'hidden' }}>
+            <div style={{ width: `${syllabusProgressPct}%`, height: '100%', background: '#ffffff', transition: 'width 0.5s ease' }}></div>
           </div>
-          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+          <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700 }}>
             {completedObjCount} of {totalObjCount} objectives mastered
           </p>
         </div>
-        <div className="premium-card-v2 stagger-1">
+
+        {/* Card 2 - Overall Attendance - Electric Teal */}
+        <div style={{
+          background: 'linear-gradient(135deg, #00b4d8, #0077b6)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(0, 180, 216, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Overall Attendance</h3>
+            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Overall Attendance</h3>
             <span style={{ fontSize: '1.5rem' }}>📋</span>
           </div>
-          <div style={{ fontSize: '2.75rem', fontWeight: 900, color: attendanceRate < 75 ? 'var(--error)' : 'var(--accent-primary)', lineHeight: 1 }}>
+          <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             {attendanceRate}%
           </div>
-          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700 }}>{presentCount} sessions of {totalClasses}</p>
+          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>{presentCount} sessions of {totalClasses}</p>
         </div>
 
-        <div className="premium-card-v2 stagger-2">
+        {/* Card 3 - Student Status - Electric Blue */}
+        <div style={{
+          background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Student Status</h3>
+            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Student Status</h3>
             <span style={{ fontSize: '1.5rem' }}>💎</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-            <span className={`badge ${profile?.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`}>
-              {profile?.paymentStatus || 'Pending'}
+            <span style={{
+              background: 'rgba(255,255,255,0.25)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)',
+              padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800
+            }}>
+              💳 {profile?.paymentStatus || 'Pending'}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
             <div>
               <span style={{ fontSize: '1.25rem' }}>⭐</span>
-              <strong style={{ marginLeft: '0.5rem', fontSize: '1.125rem' }}>{profile?.stars || 0}</strong>
+              <strong style={{ marginLeft: '0.5rem', fontSize: '1.125rem', color: '#ffffff' }}>{profile?.stars || 0}</strong>
             </div>
             <div>
               <span style={{ fontSize: '1.25rem' }}>🏅</span>
-              <strong style={{ marginLeft: '0.5rem', fontSize: '1.125rem' }}>{profile?.medals || 0}</strong>
+              <strong style={{ marginLeft: '0.5rem', fontSize: '1.125rem', color: '#ffffff' }}>{profile?.medals || 0}</strong>
             </div>
           </div>
         </div>
 
-        <div className="premium-card-v2 stagger-3" style={{ borderTop: '12px solid var(--accent-primary)', boxShadow: '12px 12px 0 var(--accent-glow)' }}>
+        {/* Card 4 - Class Rank - Vibrant Purple */}
+        <div style={{
+          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+          transition: 'all 0.2s ease'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Class Rank</h3>
+            <h3 style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.95)', fontWeight: 800 }}>Class Rank</h3>
             <span style={{ fontSize: '1.5rem' }}>🏆</span>
           </div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--accent-primary)', lineHeight: 1, textShadow: '0 4px 12px var(--accent-glow)' }}>
+          <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
             #{myRank || '--'}
           </div>
-          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900 }}>Top {Math.max(1, 100 - (myPercentile || 0))}% of batch</p>
+          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.95)' }}>Top {Math.max(1, 100 - (myPercentile || 0))}% of batch</p>
         </div>
       </div>
 
@@ -524,28 +560,39 @@ export default async function StudentDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {leaderboard.slice(0, 5).map((s) => (
-                  <tr key={s.id} style={{ backgroundColor: s.id === studentUserId ? 'rgba(16, 185, 129, 0.04)' : 'transparent' }}>
-                    <td style={{ textAlign: 'center' }}>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px',
-                        borderRadius: '10px', border: '2px solid var(--text-primary)',
-                        backgroundColor: s.rank === 1 ? '#eab308' : s.rank === 2 ? '#94a3b8' : s.rank === 3 ? '#b45309' : 'white',
-                        color: s.rank <= 3 ? 'white' : 'var(--text-primary)',
-                        fontWeight: 900,
-                        boxShadow: '2px 2px 0 var(--text-primary)'
-                      }}>
-                        {s.rank}
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 900, fontSize: '1.1rem' }}>
-                      {s.name} {s.id === studentUserId && <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', marginLeft: '0.5rem', fontWeight: 900, border: '2px solid var(--accent-primary)', padding: '2px 8px', borderRadius: '8px' }}>YOU</span>}
-                    </td>
-                    <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.stars}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.medals}</td>
-                    <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: 'var(--accent-primary)' }}>{s.score} pts</td>
-                  </tr>
-                ))}
+                {leaderboard.slice(0, 5).map((s) => {
+                  const rankBg = s.rank === 1 ? 'linear-gradient(135deg, #ffd700, #ffae00)'
+                                : s.rank === 2 ? 'linear-gradient(135deg, #e0e0e0, #9e9e9e)'
+                                : s.rank === 3 ? 'linear-gradient(135deg, #cd7f32, #8b4513)'
+                                : '#ffffff'
+                  const rankGlow = s.rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.7)'
+                                 : s.rank === 2 ? '0 0 10px rgba(158, 158, 158, 0.5)'
+                                 : s.rank === 3 ? '0 0 10px rgba(205, 127, 50, 0.5)'
+                                 : 'none'
+
+                  return (
+                    <tr key={s.id} style={{ backgroundColor: s.id === studentUserId ? 'rgba(0, 200, 83, 0.08)' : 'transparent' }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px',
+                          borderRadius: '12px', border: s.rank <= 3 ? 'none' : '2px solid var(--text-primary)',
+                          background: rankBg,
+                          color: s.rank <= 3 ? '#ffffff' : 'var(--text-primary)',
+                          fontWeight: 900,
+                          boxShadow: rankGlow
+                        }}>
+                          {s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : s.rank}
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: 900, fontSize: '1.1rem' }}>
+                        {s.name} {s.id === studentUserId && <span style={{ color: '#00c853', fontSize: '0.8rem', marginLeft: '0.5rem', fontWeight: 900, border: '2px solid #00c853', padding: '2px 8px', borderRadius: '8px' }}>YOU</span>}
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.stars}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.medals}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: '#00c853' }}>{s.score} pts</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

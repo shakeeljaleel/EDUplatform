@@ -61,12 +61,13 @@ export default function NotificationBell() {
         {unreadCount > 0 && (
           <span style={{ 
             position: 'absolute', top: '-6px', right: '-6px', 
-            background: 'var(--error)', color: 'white', 
+            background: 'linear-gradient(135deg, #ff1744, #ff5252)', color: 'white', 
             fontSize: '0.7rem', fontWeight: 900, 
-            width: '24px', height: '24px', borderRadius: '8px',
+            width: '24px', height: '24px', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid var(--text-primary)',
-            boxShadow: '2px 2px 0 var(--text-primary)'
+            border: '2px solid #ffffff',
+            boxShadow: '0 0 10px rgba(255, 23, 68, 0.7)',
+            animation: 'red-dot-pulse 2s infinite ease-in-out'
           }}>
             {unreadCount}
           </span>

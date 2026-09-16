@@ -32,31 +32,54 @@ export default function StudentResourcesPage({ params }: { params: Promise<{ id:
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        {materials.map((m, idx) => (
-          <div key={m.id} className={`card stagger-${(idx % 5) + 1}`} style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-              <div style={{ 
-                width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
-                background: m.type === 'YOUTUBE' ? 'rgba(239, 68, 68, 0.1)' : m.type === 'PDF' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                color: m.type === 'YOUTUBE' ? '#ef4444' : m.type === 'PDF' ? '#f59e0b' : '#3b82f6'
-              }}>
-                {m.type === 'YOUTUBE' ? '▶️' : m.type === 'PDF' ? '📄' : '🔗'}
+        {materials.map((m, idx) => {
+          const typeLower = (m.type || '').toLowerCase()
+          const titleLower = (m.title || '').toLowerCase()
+
+          let theme = { bg: 'linear-gradient(135deg, #00c853, #69f0ae)', border: '#00c853', icon: '📝', label: 'Notes' }
+          if (typeLower.includes('youtube') || typeLower.includes('video') || titleLower.includes('video')) {
+            theme = { bg: 'linear-gradient(135deg, #ff1744, #ff5252)', border: '#ff1744', icon: '▶️', label: 'YouTube Video' }
+          } else if (typeLower.includes('pdf') || titleLower.includes('pdf')) {
+            theme = { bg: 'linear-gradient(135deg, #2979ff, #448aff)', border: '#2979ff', icon: '📄', label: 'PDF Document' }
+          } else if (titleLower.includes('past paper') || titleLower.includes('paper') || titleLower.includes('exam')) {
+            theme = { bg: 'linear-gradient(135deg, #ff6d00, #ffd180)', border: '#ff6d00', icon: '📚', label: 'Past Paper' }
+          }
+
+          return (
+            <div key={m.id} className={`card stagger-${(idx % 5) + 1}`} style={{
+              display: 'flex', flexDirection: 'column',
+              borderLeft: `6px solid ${theme.border}`,
+              borderRadius: '16px',
+              padding: '1.5rem',
+              boxShadow: `0 4px 14px ${theme.border}22`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div style={{ 
+                  width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem',
+                  background: theme.bg, color: 'white', boxShadow: `0 4px 10px ${theme.border}44`
+                }}>
+                  {theme.icon}
+                </div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: theme.border, background: 'rgba(0,0,0,0.04)', padding: '0.25rem 0.65rem', borderRadius: '9999px', border: `1px solid ${theme.border}33` }}>
+                  {theme.label}
+                </span>
               </div>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>
-                {new Date(m.createdAt).toLocaleDateString()}
-              </span>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>{m.title}</h3>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '1.5rem', wordBreak: 'break-all' }}>
+                Shared by {m.author?.name || 'Instructor'} • {new Date(m.createdAt).toLocaleDateString()}
+              </div>
+              <div style={{ marginTop: 'auto' }}>
+                <a href={m.url} target="_blank" rel="noopener noreferrer" style={{
+                  width: '100%', display: 'inline-flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.75rem 1.25rem', borderRadius: '12px', background: theme.bg, color: 'white',
+                  fontWeight: 800, fontSize: '0.875rem', textDecoration: 'none', boxShadow: `0 4px 12px ${theme.border}44`
+                }}>
+                  Access Resource
+                </a>
+              </div>
             </div>
-            <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>{m.title}</h3>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', wordBreak: 'break-all' }}>
-              {m.type} shared by {m.author.name}
-            </div>
-            <div style={{ marginTop: 'auto' }}>
-              <a href={m.url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: '100%', display: 'inline-flex', justifyContent: 'center' }}>
-                Access Resource
-              </a>
-            </div>
-          </div>
-        ))}
+          )
+        })}
         {materials.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>

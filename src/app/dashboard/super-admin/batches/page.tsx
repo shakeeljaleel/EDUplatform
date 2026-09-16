@@ -7,6 +7,13 @@ import Breadcrumbs from '@/components/Breadcrumbs'
 import { Plus, X, Layers, Building2, BookOpen, Users } from '@/components/Icons'
 import { showToast } from '@/components/ToastContainer'
 
+const LEVEL_GRADIENTS: Record<string, { bg: string; border: string; text: string }> = {
+  'O Level': { bg: 'linear-gradient(135deg, #00b4d8, #0077b6)', border: '#00b4d8', text: '#ffffff' },
+  'AS Level': { bg: 'linear-gradient(135deg, #2979ff, #448aff)', border: '#2979ff', text: '#ffffff' },
+  'A Level': { bg: 'linear-gradient(135deg, #aa00ff, #ea80fc)', border: '#aa00ff', text: '#ffffff' },
+  'Grade 11': { bg: 'linear-gradient(135deg, #ff6d00, #ffd180)', border: '#ff6d00', text: '#ffffff' },
+}
+
 export default function BatchesPage() {
   const router = useRouter()
   const [batches, setBatches] = useState<any[]>([])
@@ -109,40 +116,58 @@ export default function BatchesPage() {
               </tr>
             </thead>
             <tbody>
-              {batches.map(batch => (
-                <tr 
-                  key={batch.id} 
-                  onClick={() => router.push(`/dashboard/super-admin/batches/${batch.id}`)}
-                  style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer', transition: 'background-color 0.15s ease' }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                    {batch.name}
-                  </td>
-                  <td style={{ padding: '1rem 1.25rem' }}>
-                    {batch.branch ? (
-                      <span style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>
-                        📍 {batch.branch.name}
+              {batches.map(batch => {
+                const levelConfig = LEVEL_GRADIENTS[batch.academicLevel] || LEVEL_GRADIENTS['Grade 11']
+                return (
+                  <tr 
+                    key={batch.id} 
+                    onClick={() => router.push(`/dashboard/super-admin/batches/${batch.id}`)}
+                    style={{
+                      borderBottom: '1px solid #e2e8f0',
+                      borderLeft: `5px solid ${levelConfig.border}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(240, 249, 255, 0.6)'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
+                      {batch.name}
+                    </td>
+                    <td style={{ padding: '1rem 1.25rem' }}>
+                      {batch.branch ? (
+                        <span style={{ backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>
+                          📍 {batch.branch.name}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>Global</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '1rem 1.25rem' }}>
+                      <span style={{
+                        background: levelConfig.bg,
+                        color: levelConfig.text,
+                        fontWeight: 800,
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        boxShadow: `0 2px 8px ${levelConfig.border}44`
+                      }}>
+                        {batch.academicLevel}
                       </span>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>Global</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '1rem 1.25rem' }}>
-                    <span className="badge badge-level" style={{ fontWeight: 800 }}>{batch.academicLevel}</span>
-                  </td>
-                  <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
-                    👥 {batch._count?.enrollments || 0}
-                  </td>
-                  <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
-                    📚 {batch._count?.subjects || 0}
-                  </td>
-                  <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                    {new Date(batch.createdAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+                      👥 {batch._count?.enrollments || 0}
+                    </td>
+                    <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+                      📚 {batch._count?.subjects || 0}
+                    </td>
+                    <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+                      {new Date(batch.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                )
+              })}
               {batches.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>

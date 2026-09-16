@@ -83,40 +83,61 @@ export default function ParentChildSwitcher({ childrenData }: ParentChildSwitche
         <div className="fade-in">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
             
-            {/* Attendance Rate */}
-            <div className="premium-card-v2" style={{ borderLeft: '6px solid #10b981' }}>
-              <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800 }}>Overall Attendance</div>
-              <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#059669', marginTop: '0.25rem', lineHeight: 1 }}>
+            {/* Attendance Rate - Vivid Green */}
+            <div style={{
+              background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              color: '#ffffff',
+              boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)',
+              transition: 'all 0.2s ease'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Overall Attendance</div>
+              <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', marginTop: '0.25rem', lineHeight: 1 }}>
                 {activeChild.attendanceRate}%
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginTop: '0.75rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.75rem' }}>
                 {activeChild.attendanceCount} recorded sessions
               </p>
             </div>
 
-            {/* Stars & Medals */}
-            <div className="premium-card-v2" style={{ borderLeft: '6px solid #3b82f6' }}>
-              <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800 }}>Academic Badges</div>
+            {/* Stars & Medals - Electric Blue */}
+            <div style={{
+              background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              color: '#ffffff',
+              boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)',
+              transition: 'all 0.2s ease'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Academic Badges</div>
               <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Star size={20} color="#f59e0b" />
-                  <strong style={{ fontSize: '1.125rem', color: '#0f172a' }}>{activeChild.stars} Stars</strong>
+                  <Star size={20} color="#ffd700" />
+                  <strong style={{ fontSize: '1.125rem', color: '#ffffff' }}>{activeChild.stars} Stars</strong>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Award size={20} color="#3b82f6" />
-                  <strong style={{ fontSize: '1.125rem', color: '#0f172a' }}>{activeChild.medals} Medals</strong>
+                  <Award size={20} color="#ffffff" />
+                  <strong style={{ fontSize: '1.125rem', color: '#ffffff' }}>{activeChild.medals} Medals</strong>
                 </div>
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#2563eb', fontWeight: 700, marginTop: '0.75rem' }}>Active learning rewards</p>
+              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.75rem' }}>Active learning rewards</p>
             </div>
 
-            {/* Teacher Updates */}
-            <div className="premium-card-v2" style={{ borderLeft: '6px solid #8b5cf6' }}>
-              <div style={{ fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', fontWeight: 800 }}>Teacher Updates</div>
-              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#7c3aed', marginTop: '0.25rem' }}>
+            {/* Teacher Updates - Vibrant Purple */}
+            <div style={{
+              background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              color: '#ffffff',
+              boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)',
+              transition: 'all 0.2s ease'
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Teacher Updates</div>
+              <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', marginTop: '0.25rem' }}>
                 {activeChild.unreadMessages} Unread
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginTop: '0.5rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.95)', fontWeight: 700, marginTop: '0.5rem' }}>
                 {activeChild.recentExamCount} exam evaluations recorded
               </p>
             </div>

@@ -14,6 +14,13 @@ const ROLE_LABELS: Record<string, string> = {
   ASSISTANT: 'Assistants',
 }
 
+const ROLE_TAB_COLORS: Record<string, string> = {
+  TEACHER: '#2979ff',
+  STUDENT: '#00c853',
+  PARENT: '#aa00ff',
+  ASSISTANT: '#ff6d00',
+}
+
 const SINGLE_STATUS_BADGE: Record<string, { label: string; bg: string; color: string; border: string }> = {
   PENDING:  { label: 'Pending', bg: '#fffbeb', color: '#b45309', border: '#f59e0b' },
   APPROVED: { label: 'Approved', bg: '#f0fdf4', color: '#059669', border: '#10b981' },
@@ -161,20 +168,25 @@ export default function UsersPage() {
 
       {/* Role Tabs */}
       <div style={{ display: 'flex', gap: '0.4rem', background: '#ffffff', padding: '5px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        {ROLES.map(role => (
-          <button 
-            key={role} 
-            onClick={() => { setActiveRole(role); setSearch(''); setOpenMenuUserId(null); }}
-            style={{
-              padding: '0.55rem 1.15rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
-              backgroundColor: activeRole === role ? '#10b981' : 'transparent',
-              fontWeight: 800, color: activeRole === role ? 'white' : '#475569', fontSize: '0.85rem',
-              transition: 'all 0.15s ease', minHeight: '40px'
-            }}
-          >
-            {ROLE_LABELS[role]}
-          </button>
-        ))}
+        {ROLES.map(role => {
+          const tabColor = ROLE_TAB_COLORS[role] || '#00c853'
+          const isActive = activeRole === role
+          return (
+            <button 
+              key={role} 
+              onClick={() => { setActiveRole(role); setSearch(''); setOpenMenuUserId(null); }}
+              style={{
+                padding: '0.55rem 1.15rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                backgroundColor: isActive ? tabColor : 'transparent',
+                boxShadow: isActive ? `0 4px 12px ${tabColor}55` : 'none',
+                fontWeight: 800, color: isActive ? 'white' : '#475569', fontSize: '0.85rem',
+                transition: 'all 0.15s ease', minHeight: '40px'
+              }}
+            >
+              {ROLE_LABELS[role]}
+            </button>
+          )
+        })}
       </div>
 
       {/* Search & Status Filters */}
@@ -212,6 +224,7 @@ export default function UsersPage() {
           // Exactly ONE single status badge reflecting current state
           const badgeConfig = SINGLE_STATUS_BADGE[user.approvalStatus] || SINGLE_STATUS_BADGE.APPROVED
           const paymentStatus = user.profile?.paymentStatus || 'Pending'
+          const roleColor = ROLE_TAB_COLORS[user.role || activeRole] || '#00c853'
 
           return (
             <div 
@@ -222,7 +235,7 @@ export default function UsersPage() {
                 alignItems: 'center', 
                 gap: '1.25rem', 
                 flexWrap: 'wrap',
-                borderLeft: `4px solid ${badgeConfig.border}`,
+                borderLeft: `5px solid ${roleColor}`,
                 background: '#ffffff',
                 borderRadius: '10px',
                 borderTop: '1px solid #e2e8f0',

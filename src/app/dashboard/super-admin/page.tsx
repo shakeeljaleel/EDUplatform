@@ -27,137 +27,194 @@ export default async function SuperAdminDashboard() {
 
   return (
     <div className="content-wrapper fade-in" style={{ paddingBottom: '4rem' }}>
-      {/* Overview Greeting Header (Overview Page Only) */}
-      <div style={{ marginBottom: '2rem' }}>
+      {/* Soft Teal to Mint Banner Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #e0f7fa, #e8f5e9)',
+        padding: '1.5rem 2rem',
+        borderRadius: '16px',
+        border: '1px solid rgba(0, 200, 83, 0.2)',
+        boxShadow: '0 4px 20px rgba(0, 200, 83, 0.08)',
+        marginBottom: '2rem'
+      }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
           Welcome back, Super 👋
         </h1>
-        <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem', margin: 0 }}>
+        <p style={{ color: '#334155', fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem', margin: 0 }}>
           Ready to explore your academic hub today?
         </p>
       </div>
 
-      {/* 5 STAT CARDS GRID (Light 1px border + 4px colored top accent) */}
+      {/* 5 VIVID GRADIENT STAT CARDS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
         
-        {/* Total Students */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #10b981', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        {/* Total Students - Vivid Green */}
+        <div className="stat-card" style={{
+          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(0, 200, 83, 0.3)'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
-            <GraduationCap size={18} color="#10b981" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total students</span>
+            <GraduationCap size={20} color="#ffffff" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, marginTop: '0.5rem', color: '#0f172a' }}>{studentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={12} /> Active learner roster
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, marginTop: '0.5rem', color: '#ffffff' }}>{studentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="#ffffff" /> Active learner roster
           </div>
         </div>
 
-        {/* Total Teachers */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #3b82f6', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        {/* Total Teachers - Electric Blue */}
+        <div className="stat-card" style={{
+          background: 'linear-gradient(135deg, #2979ff, #82b1ff)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(41, 121, 255, 0.3)'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
-            <Users size={18} color="#3b82f6" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total teachers</span>
+            <Users size={20} color="#ffffff" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#0f172a', marginTop: '0.5rem' }}>{teachersCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={12} /> Instructors & staff
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{teachersCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="#ffffff" /> Instructors & staff
           </div>
         </div>
 
-        {/* Total Parents */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #8b5cf6', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        {/* Total Parents - Vibrant Purple */}
+        <div className="stat-card" style={{
+          background: 'linear-gradient(135deg, #aa00ff, #ea80fc)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(170, 0, 255, 0.3)'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
-            <Users size={18} color="#8b5cf6" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Total parents</span>
+            <Users size={20} color="#ffffff" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#0f172a', marginTop: '0.5rem' }}>{parentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#7c3aed', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={12} /> Guardian accounts
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{parentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="#ffffff" /> Guardian accounts
           </div>
         </div>
 
-        {/* Active Enrollments */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #ec4899', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        {/* Active Enrollments - Energetic Orange */}
+        <div className="stat-card" style={{
+          background: 'linear-gradient(135deg, #ff6d00, #ffd180)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(255, 109, 0, 0.3)'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
-            <Layers size={18} color="#ec4899" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Active enrollments</span>
+            <Layers size={20} color="#ffffff" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#0f172a', marginTop: '0.5rem' }}>{enrollmentsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#db2777', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <TrendingUp size={12} /> Batch seats allocated
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{enrollmentsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <TrendingUp size={14} color="#ffffff" /> Batch seats allocated
           </div>
         </div>
 
-        {/* Recent Sign-ups */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0', borderTop: '4px solid #f59e0b', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        {/* Recent Sign-ups - Hot Pink */}
+        <div className="stat-card" style={{
+          background: 'linear-gradient(135deg, #f50057, #ff80ab)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          color: '#ffffff',
+          boxShadow: '0 8px 24px rgba(245, 0, 87, 0.3)'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
-            <TrendingUp size={18} color="#f59e0b" />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase', fontWeight: 800 }}>Recent sign-ups (7d)</span>
+            <TrendingUp size={20} color="#ffffff" />
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#0f172a', marginTop: '0.5rem' }}>{recentSignupsCount}</div>
-          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#b45309', fontWeight: 700 }}>+ new sign-ups this week</div>
+          <div style={{ fontSize: '2.25rem', fontWeight: 900, lineHeight: 1, color: '#ffffff', marginTop: '0.5rem' }}>{recentSignupsCount}</div>
+          <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: '#ffffff', fontWeight: 700 }}>+ new sign-ups this week</div>
         </div>
       </div>
 
-      {/* CONSISTENT OUTLINED ACTION BUTTONS (EQUAL WIDTH, EQUAL WEIGHT, SENTENCE CASE) */}
+      {/* VIVID GRADIENT ACTION BUTTONS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
         <Link 
           href="/dashboard/super-admin/users" 
-          className="btn-secondary" 
           style={{ 
-            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            textAlign: 'center', width: '100%', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a',
-            borderRadius: '10px'
+            padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+            textAlign: 'center', width: '100%',
+            background: 'linear-gradient(135deg, #00c853, #00e676)', color: '#ffffff',
+            borderRadius: '12px', border: 'none',
+            boxShadow: '0 4px 14px rgba(0, 200, 83, 0.4)',
+            textDecoration: 'none', transition: 'all 0.2s ease'
           }}
         >
-          <Users size={18} color="#10b981" />
+          <Users size={20} color="#ffffff" />
           <span>Manage all users & approvals</span>
-          <ChevronRight size={16} color="#64748b" />
+          <ChevronRight size={18} color="#ffffff" />
         </Link>
 
         <Link 
           href="/dashboard/super-admin/branches" 
-          className="btn-secondary" 
           style={{ 
-            padding: '0.85rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            textAlign: 'center', width: '100%', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a',
-            borderRadius: '10px'
+            padding: '0.95rem 1.5rem', fontSize: '0.95rem', fontWeight: 800, 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+            textAlign: 'center', width: '100%',
+            background: 'linear-gradient(135deg, #2979ff, #40c4ff)', color: '#ffffff',
+            borderRadius: '12px', border: 'none',
+            boxShadow: '0 4px 14px rgba(41, 121, 255, 0.4)',
+            textDecoration: 'none', transition: 'all 0.2s ease'
           }}
         >
-          <Building2 size={18} color="#3b82f6" />
+          <Building2 size={20} color="#ffffff" />
           <span>Physical branches overview</span>
-          <ChevronRight size={16} color="#64748b" />
+          <ChevronRight size={18} color="#ffffff" />
         </Link>
       </div>
 
-      {/* ADMINISTRATIVE AUDIT LOG TERMINAL SECTION (CLEAN LIGHT CARD DESIGN) */}
-      <div className="card" style={{ padding: '1.75rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+      {/* AUDIT LOG TERMINAL (DARK GRADIENT + GLOWING GREEN MONOSPACE FONT) */}
+      <div style={{
+        padding: '1.75rem',
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #0f0c29, #1a1a2e)',
+        border: '1px solid rgba(0, 230, 118, 0.4)',
+        boxShadow: '0 0 20px rgba(0, 230, 118, 0.3)'
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <ShieldAlert size={22} color="#10b981" />
+            <ShieldAlert size={24} color="#00e676" />
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', margin: 0 }}>Administrative audit log terminal</h3>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.15rem' }}>Immutable record of administrator actions and system modifications</p>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>Administrative audit log terminal</h3>
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, marginTop: '0.15rem' }}>Immutable record of administrator actions and system modifications</p>
             </div>
           </div>
-          <span className="badge" style={{ fontSize: '0.75rem', background: '#f0fdf4', color: '#059669', border: '1px solid #10b981', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontWeight: 700 }}>
-            Audit active
+          <span style={{ fontSize: '0.75rem', background: 'rgba(0, 230, 118, 0.15)', color: '#00e676', border: '1px solid #00e676', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontWeight: 800 }}>
+            ● Audit active
           </span>
         </div>
 
-        <div style={{ background: '#f9fafb', color: '#334155', border: '1px solid #e2e8f0', padding: '1.25rem 1.5rem', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', overflowX: 'auto' }}>
+        <div style={{
+          background: 'rgba(0, 0, 0, 0.4)',
+          color: '#00e676',
+          border: '1px solid rgba(0, 230, 118, 0.2)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '12px',
+          fontFamily: 'monospace, SFMono-Regular, Menlo, Monaco, Consolas',
+          fontSize: '0.875rem',
+          lineHeight: 1.6,
+          overflowX: 'auto'
+        }}>
           {auditLogs.map((log) => (
-            <div key={log.id} style={{ marginBottom: '0.65rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#64748b' }}>[{new Date(log.createdAt).toLocaleString()}]</span>{' '}
-              <strong style={{ color: '#2563eb', fontWeight: 700 }}>{log.adminName}</strong> executed{' '}
-              <span style={{ color: '#d97706', fontWeight: 700 }}>{log.action}</span>
-              {log.details && <span style={{ color: '#0f172a' }}> — {log.details}</span>}
+            <div key={log.id} style={{ marginBottom: '0.65rem', borderBottom: '1px solid rgba(0, 230, 118, 0.1)', paddingBottom: '0.5rem' }}>
+              <span style={{ color: '#82b1ff' }}>[{new Date(log.createdAt).toLocaleString()}]</span>{' '}
+              <strong style={{ color: '#69f0ae' }}>{log.adminName}</strong> executed{' '}
+              <span style={{ color: '#ffd180' }}>{log.action}</span>
+              {log.details && <span style={{ color: '#00e676' }}> — {log.details}</span>}
             </div>
           ))}
           {auditLogs.length === 0 && (
-            <div style={{ color: '#64748b' }}>No administrative audit events recorded yet. System initial state clean.</div>
+            <div style={{ color: '#00e676' }}>[SYSTEM] No administrative audit events recorded yet. System initial state clean.</div>
           )}
         </div>
       </div>
