@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     }
   })
 
-  // Auto-enroll student into default subjects of this batch
+  // Self-enrolled students start at Stage 1: status PENDING (requires Admin approval then Teacher confirmation)
   for (const subject of batch.subjects) {
     await prisma.subjectEnrollment.upsert({
       where: {
@@ -81,11 +81,11 @@ export async function POST(request: Request) {
           userId: session.user.id
         }
       },
-      update: { status: 'APPROVED' },
+      update: { status: 'PENDING' },
       create: {
         subjectId: subject.id,
         userId: session.user.id,
-        status: 'APPROVED'
+        status: 'PENDING'
       }
     })
   }

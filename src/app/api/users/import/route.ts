@@ -27,8 +27,28 @@ export async function POST(request: Request) {
 
     let successCount = 0
 
-    // Fetch subjects of target batch to auto-enroll
-    const subjects = await prisma.subject.findMany({ where: { batchId } })
+    // Fetch target batch details with subjects and assigned teachers
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      include: {
+        subjects: {
+          include: {
+            teachers: { select: { userId: true } }
+          }
+        }
+      }
+    })
+
+    const subjects = batch?.subjects || []
+    const importedStudents: Array<{ id: string; name: string; email: string; status: string }> = []
+
+    // Collect all unique teacher IDs assigned to this batch's subjects
+    const teacherUserIds = new Set<string>()
+    for (const subject of subjects) {
+      for (const t of subject.teachers) {
+        if (t.userId) teacherUserIds.add(t.userId)
+      }
+    }
 
     for (const record of records) {
       if (!record.email || !record.name) continue
@@ -71,7 +91,7 @@ export async function POST(request: Request) {
         }
       })
 
-      // Auto-enroll in batch subjects
+      // Admin-imported students skip Stage 1: status is ADMIN_APPROVED awaiting Stage 3 Teacher confirmation
       for (const subject of subjects) {
         await prisma.subjectEnrollment.upsert({
           where: {
@@ -80,19 +100,44 @@ export async function POST(request: Request) {
               userId: user.id
             }
           },
-          update: { status: 'APPROVED' },
+          update: { status: 'ADMIN_APPROVED' },
           create: {
             subjectId: subject.id,
             userId: user.id,
-            status: 'APPROVED'
+            status: 'ADMIN_APPROVED'
           }
         })
       }
 
+      // Notify teachers about new admin-imported student
+      for (const teacherId of Array.from(teacherUserIds)) {
+        await prisma.notification.create({
+          data: {
+            userId: teacherId,
+            type: 'TEACHER_ENROLMENT_CONFIRMATION',
+            title: 'Student Enrolment Confirmation',
+            message: `New student ${user.name} has been added to ${batch?.name || 'the batch'} by the admin. Please confirm their enrolment.`
+          }
+        })
+      }
+
+      importedStudents.push({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        status: 'ADMIN_APPROVED'
+      })
+
       successCount++
     }
 
-    return NextResponse.json({ success: true, count: successCount, totalParsed: records.length })
+    return NextResponse.json({
+      success: true,
+      count: successCount,
+      totalParsed: records.length,
+      batchName: batch?.name || 'Selected Batch',
+      students: importedStudents
+    })
   } catch (error: any) {
     console.error('Student import error:', error)
     return NextResponse.json({ error: error?.message || 'Failed to import students' }, { status: 500 })

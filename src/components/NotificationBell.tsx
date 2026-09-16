@@ -49,25 +49,19 @@ export default function NotificationBell() {
     <div style={{ position: 'relative' }}>
       <button 
         onClick={toggleDropdown}
-        className="sketch-button-v2" 
-        style={{ 
-          width: '52px', height: '52px', padding: 0, borderRadius: '14px', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative', background: 'white', color: 'var(--text-primary)',
-          boxShadow: unreadCount > 0 ? '4px 4px 0 var(--error)' : '4px 4px 0 var(--text-primary)'
-        }}
+        className="notification-bell-btn" 
+        aria-label="Notifications"
       >
-        <span style={{ fontSize: '1.5rem' }}>🔔</span>
+        <span style={{ fontSize: '1.2rem' }}>🔔</span>
         {unreadCount > 0 && (
           <span style={{ 
-            position: 'absolute', top: '-6px', right: '-6px', 
-            background: 'linear-gradient(135deg, #ff1744, #ff5252)', color: 'white', 
-            fontSize: '0.7rem', fontWeight: 900, 
-            width: '24px', height: '24px', borderRadius: '50%',
+            position: 'absolute', top: '-4px', right: '-4px', 
+            background: '#f50057', color: 'white', 
+            fontSize: '0.65rem', fontWeight: 900, 
+            width: '20px', height: '20px', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #ffffff',
-            boxShadow: '0 0 10px rgba(255, 23, 68, 0.7)',
-            animation: 'red-dot-pulse 2s infinite ease-in-out'
+            border: '2px solid #1a1a2e',
+            boxShadow: '0 0 6px rgba(245, 0, 87, 0.6)'
           }}>
             {unreadCount}
           </span>

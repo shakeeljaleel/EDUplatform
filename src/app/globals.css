@@ -257,19 +257,54 @@ a.back-btn:hover {
   color: #1a1a2e !important;
 }
 
+/* Comic Bell Notification Button */
+.notification-bell-btn,
+button.notification-bell-btn,
+a.notification-bell-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  color: #1a1a2e !important;
+  border: 2px solid #1a1a2e !important;
+  box-shadow: 3px 3px 0px #1a1a2e !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: all 0.2s ease !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+.notification-bell-btn:hover,
+button.notification-bell-btn:hover,
+a.notification-bell-btn:hover {
+  animation: bob 0.6s ease-in-out infinite !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 5px 5px 0px #1a1a2e !important;
+  background: #ffffff !important;
+}
+
 /* Comic Book Pill Buttons */
-button:not(.hamburger-btn):not(.btn-back):not(.back-btn),
+button:not(.hamburger-btn):not(.btn-back):not(.back-btn):not(.notification-bell-btn),
 .btn-primary,
-.btn-secondary:not(.btn-back):not(.back-btn),
+.btn-secondary:not(.btn-back):not(.back-btn):not(.notification-bell-btn),
 .sketch-button-v2,
 .sketch-button,
 a.btn-primary,
-a.btn-secondary:not(.btn-back):not(.back-btn),
+a.btn-secondary:not(.btn-back):not(.back-btn):not(.notification-bell-btn),
 a.sketch-button-v2,
 a.action-btn,
 .action-btn,
-a[class*="btn"]:not(.btn-back):not(.back-btn):not(.hamburger-btn),
-button[class*="btn"]:not(.btn-back):not(.back-btn):not(.hamburger-btn) {
+a[class*="btn"]:not(.btn-back):not(.back-btn):not(.hamburger-btn):not(.notification-bell-btn),
+button[class*="btn"]:not(.btn-back):not(.back-btn):not(.hamburger-btn):not(.notification-bell-btn) {
   border-radius: 50px !important;
   border: 3px solid #1a1a2e !important;
   box-shadow: 4px 4px 0px #1a1a2e !important;
