@@ -429,7 +429,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                     boxShadow: '5px 5px 0px #1a1a2e',
                     display: 'flex',
                     flexDirection: 'column',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     gap: '1.25rem',
                     position: 'relative'
                   }}
