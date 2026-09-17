@@ -5,6 +5,8 @@ import React, { Component, ReactNode } from 'react'
 interface Props {
   className?: string
   style?: React.CSSProperties
+  width?: number | string
+  height?: number | string
 }
 
 interface State {
@@ -33,26 +35,50 @@ class ErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   }
 }
 
-export function DnaHelixSvg({ className = '', style }: Props) {
+export function DnaHelixSvg({ className = '', style, width = 32, height = 44 }: Props) {
   return (
     <svg
-      width="28"
-      height="40"
-      viewBox="0 0 28 40"
+      width={width}
+      height={height}
+      viewBox="0 0 32 44"
       xmlns="http://www.w3.org/2000/svg"
       className={`dna-helix-logo ${className}`}
       style={style}
       aria-label="DNA Helix Logo"
       role="img"
     >
-      <path d="M4,2 C4,2 24,8 24,12 C24,16 4,22 4,26 C4,30 24,36 24,38" stroke="#00c853" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <path d="M24,2 C24,2 4,8 4,12 C4,16 24,22 24,26 C24,30 4,36 4,38" stroke="#aa00ff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <line x1="4" y1="7" x2="24" y2="7" stroke="#ffd600" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="14" y1="12" x2="14" y2="12" stroke="#00e5ff" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="4" y1="17" x2="24" y2="17" stroke="#ff6d00" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="4" y1="22" x2="24" y2="22" stroke="#f50057" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="4" y1="27" x2="24" y2="27" stroke="#00c853" strokeWidth="2" strokeLinecap="round"/>
-      <line x1="4" y1="33" x2="24" y2="33" stroke="#ffd600" strokeWidth="2" strokeLinecap="round"/>
+      {/* Strand 1: green to cyan sine wave */}
+      <path
+        d="M6,2 C10,6 22,6 26,10 C30,14 30,18 26,22 C22,26 10,26 6,30 C2,34 2,38 6,42"
+        stroke="url(#s1)"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* Strand 2: purple to pink sine wave (opposite phase) */}
+      <path
+        d="M26,2 C22,6 10,6 6,10 C2,14 2,18 6,22 C10,26 22,26 26,30 C30,34 30,38 26,42"
+        stroke="url(#s2)"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* Rungs connecting the two strands */}
+      <line x1="7" y1="8" x2="25" y2="8" stroke="#ffd600" strokeWidth="2" strokeLinecap="round" />
+      <line x1="16" y1="16" x2="16" y2="16" stroke="#00e5ff" strokeWidth="3" strokeLinecap="round" />
+      <line x1="7" y1="22" x2="25" y2="22" stroke="#ff6d00" strokeWidth="2" strokeLinecap="round" />
+      <line x1="7" y1="30" x2="25" y2="30" stroke="#f50057" strokeWidth="2" strokeLinecap="round" />
+      <line x1="7" y1="36" x2="25" y2="36" stroke="#00c853" strokeWidth="2" strokeLinecap="round" />
+      <defs>
+        <linearGradient id="s1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#00c853" />
+          <stop offset="100%" stopColor="#00e5ff" />
+        </linearGradient>
+        <linearGradient id="s2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#aa00ff" />
+          <stop offset="100%" stopColor="#f50057" />
+        </linearGradient>
+      </defs>
     </svg>
   )
 }

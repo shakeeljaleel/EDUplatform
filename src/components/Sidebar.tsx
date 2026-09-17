@@ -112,7 +112,7 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         {/* Brand Header & Collapse Toggle */}
         <div style={{ padding: '0.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: isCollapsed ? 'center' : 'space-between', alignItems: 'center' }}>
           {isCollapsed ? (
-            <DnaHelixLogo />
+            <DnaHelixLogo width={32} height={44} style={{ width: '32px', height: '44px' }} />
           ) : (
             <div>
               <div style={{
@@ -124,9 +124,9 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
                 letterSpacing: '-0.05em',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.6rem'
+                gap: '8px'
               }}>
-                <DnaHelixLogo />
+                <DnaHelixLogo width={32} height={44} style={{ width: '32px', height: '44px' }} />
                 <span style={{
                   background: 'linear-gradient(135deg, #10b981, #3b82f6)',
                   WebkitBackgroundClip: 'text',

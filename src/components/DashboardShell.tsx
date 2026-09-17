@@ -52,8 +52,8 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
           ☰
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>
-          <DnaHelixLogo />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.03em' }}>
+          <DnaHelixLogo width={24} height={33} style={{ width: '24px', height: '33px' }} />
           <span style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             HELIX
           </span>
@@ -97,13 +97,13 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
               <div style={{ 
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.6rem',
+                gap: '8px',
                 fontFamily: 'var(--font-display)', 
                 fontWeight: 900, 
                 fontSize: '1.5rem', 
                 letterSpacing: '-0.03em'
               }}>
-                <DnaHelixLogo />
+                <DnaHelixLogo width={24} height={33} style={{ width: '24px', height: '33px' }} />
                 <span style={{
                   background: 'linear-gradient(135deg, #10b981, #3b82f6)', 
                   WebkitBackgroundClip: 'text', 

@@ -180,29 +180,40 @@ body {
   box-shadow: 8px 8px 0px #1a1a2e !important;
 }
 
-/* Clean Hamburger Menu Button */
+/* Floating DNA Logo Animation */
+@keyframes helixFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.dna-helix-logo {
+  animation: helixFloat 2.5s ease-in-out infinite !important;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Clean Plain Hamburger Menu Button (No Circle / Border) */
 .hamburger-btn,
 button.hamburger-btn,
 a.hamburger-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
   background: transparent !important;
   border: none !important;
+  outline: none !important;
   box-shadow: none !important;
-  border-radius: 8px !important;
-  padding: 6px !important;
-  color: #1a1a2e !important;
-  font-size: 20px !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: 24px !important;
   line-height: 1 !important;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  transition: background 0.2s ease !important;
+  transition: opacity 0.2s ease !important;
   animation: none !important;
   transform: none !important;
 }
@@ -210,10 +221,12 @@ a.hamburger-btn {
 .hamburger-btn:hover,
 button.hamburger-btn:hover,
 a.hamburger-btn:hover {
-  background: rgba(0, 0, 0, 0.06) !important;
+  background: transparent !important;
+  opacity: 0.8 !important;
+  border: none !important;
+  box-shadow: none !important;
   animation: none !important;
   transform: none !important;
-  box-shadow: none !important;
 }
 
 /* Comic Book Back Button */
