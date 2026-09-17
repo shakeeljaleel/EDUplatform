@@ -310,11 +310,19 @@ export async function PATCH(req: Request) {
       }
     })
 
+function capSubject(name?: string | null): string {
+  if (!name) return ''
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
     // Stage 2: notify ALL assigned teachers for that subject at that branch
     const teachers = await prisma.subjectBranchTeacher.findMany({
       where: { subjectId: enrollment.subjectId, branchId: enrollment.branchId },
-      select: { teacherId: true }
+      include: { teacher: { select: { id: true, name: true } } }
     })
+
+    const teacherNames = teachers.map(t => t.teacher?.name).filter(Boolean)
+    const teacherName = teacherNames.length > 0 ? teacherNames.join(', ') : 'Assigned Teacher'
 
     for (const t of teachers) {
       await prisma.notification.create({
@@ -322,7 +330,7 @@ export async function PATCH(req: Request) {
           userId: t.teacherId,
           type: 'TEACHER_CONFIRMATION_REQUEST',
           title: 'Confirm Student Enrolment',
-          message: `${enrollment.student.name} has been approved by admin for ${enrollment.subject.name}. Please confirm their enrolment.`,
+          message: `${enrollment.student.name} has been approved by admin for ${capSubject(enrollment.subject.name)}. Please confirm their enrolment.`,
           link: '/dashboard/teacher'
         }
       })
@@ -335,11 +343,17 @@ export async function PATCH(req: Request) {
         action: 'ADMIN_APPROVE_ENROLLMENT',
         targetType: 'STUDENT_ENROLLMENT',
         targetId: id,
-        details: JSON.stringify({ studentName: enrollment.student.name, subjectName: enrollment.subject.name })
+        details: JSON.stringify({ studentName: enrollment.student.name, subjectName: capSubject(enrollment.subject.name) })
       }
     })
 
-    return NextResponse.json({ enrollment: updated })
+    return NextResponse.json({
+      enrollment: updated,
+      studentName: enrollment.student.name,
+      subjectName: capSubject(enrollment.subject.name),
+      branchName: enrollment.branch.name,
+      teacherName
+    })
   }
 
   if (action === 'TEACHER_CONFIRM') {

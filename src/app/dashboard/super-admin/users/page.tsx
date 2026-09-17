@@ -55,6 +55,8 @@ export default function UsersPage() {
 
   // Enrolment requests modal state
   const [enrolmentRequestsUserTarget, setEnrolmentRequestsUserTarget] = useState<any | null>(null)
+  const [modalRejectState, setModalRejectState] = useState<Record<string, { open: boolean; reason: string; loading: boolean }>>({})
+  const [modalActionLoading, setModalActionLoading] = useState<Record<string, boolean>>({})
 
   useEffect(() => { 
     fetchUsers() 
@@ -607,105 +609,239 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* STUDENT ENROLMENT REQUESTS MODAL (Fix 1C) */}
+      {/* STUDENT ENROLMENT REQUESTS MODAL (Fixes 7, 8, 9, 10, 11, 12) */}
       {enrolmentRequestsUserTarget && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 1000,
           background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(6px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
         }}>
-          <div className="card" style={{
-            width: '100%', maxWidth: '640px', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-            padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '6px 6px 0px #1a1a2e'
+          <div style={{
+            width: '100%', maxWidth: '640px', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+            padding: 0, overflow: 'hidden', background: '#ffffff',
+            border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e'
           }}>
-            <div style={{ padding: '1.25rem 1.5rem', background: '#1a1a2e', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* White Header — Fix 8 */}
+            <div style={{
+              padding: '1.25rem 1.5rem', background: '#ffffff', borderBottom: '2px solid #e2e8f0',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
               <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: 'white' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, margin: 0, color: '#1a1a2e' }}>
                   Enrolment Requests — {enrolmentRequestsUserTarget.name}
                 </h3>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 700 }}>{enrolmentRequestsUserTarget.email}</div>
+                <div style={{ fontSize: '0.9rem', color: '#666666', fontWeight: 600, marginTop: '0.15rem' }}>
+                  {enrolmentRequestsUserTarget.email}
+                </div>
               </div>
               <button
                 onClick={() => setEnrolmentRequestsUserTarget(null)}
-                style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer' }}
+                style={{
+                  background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50%',
+                  width: '36px', height: '36px', fontSize: '1rem', fontWeight: 900, color: '#1a1a2e',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '2px 2px 0px #1a1a2e'
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Scrollable Enrolment Cards List — Fix 9 */}
+            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: '#ffffff' }}>
               {(!enrolmentRequestsUserTarget.studentEnrollments || enrolmentRequestsUserTarget.studentEnrollments.length === 0) ? (
                 <p style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, padding: '2rem' }}>
                   No enrolment records found for this student.
                 </p>
               ) : (
-                enrolmentRequestsUserTarget.studentEnrollments.map((e: any) => (
-                  <div
-                    key={e.id || Math.random()}
-                    style={{
-                      padding: '1rem 1.25rem',
-                      borderRadius: '12px',
-                      border: '2px solid #1a1a2e',
-                      boxShadow: '3px 3px 0px #1a1a2e',
-                      background: '#ffffff',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '0.75rem'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
-                        📚 {e.subject?.name || 'Subject'}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginTop: '0.2rem' }}>
-                        🎓 Batch: {e.batch?.name || 'Batch'} • 📍 Branch: {e.branch?.name || 'Branch'}
-                      </div>
-                    </div>
+                enrolmentRequestsUserTarget.studentEnrollments.map((e: any) => {
+                  const subName = e.subject?.name ? e.subject.name.charAt(0).toUpperCase() + e.subject.name.slice(1) : 'Subject'
+                  const batchName = e.batch?.name || 'Batch'
+                  const branchName = e.branch?.name || 'Branch'
+                  const rej = modalRejectState[e.id] || { open: false, reason: '', loading: false }
+                  const isApproving = modalActionLoading[e.id]
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <StatusBadge status={e.status} size="sm" />
+                  const leftAccent = e.status === 'pending' ? '#ffab00' : e.status === 'admin_approved' ? '#2979ff' : e.status === 'active' ? '#00c853' : '#f50057'
+
+                  return (
+                    <div
+                      key={e.id || Math.random()}
+                      style={{
+                        padding: '1.25rem',
+                        borderRadius: '16px',
+                        border: '3px solid #1a1a2e',
+                        boxShadow: '5px 5px 0px #1a1a2e',
+                        background: '#ffffff',
+                        borderLeft: `6px solid ${leftAccent}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.85rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{ fontWeight: 900, fontSize: '1.15rem', color: '#1a1a2e', textTransform: 'capitalize' }}>
+                            📚 {subName}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{
+                              background: '#2979ff', color: '#ffffff',
+                              border: '2px solid #1a1a2e', borderRadius: '50px',
+                              padding: '0.2rem 0.65rem', fontSize: '0.75rem', fontWeight: 800
+                            }}>
+                              🎓 {batchName}
+                            </span>
+
+                            <span style={{
+                              background: '#00c853', color: '#ffffff',
+                              border: '2px solid #1a1a2e', borderRadius: '50px',
+                              padding: '0.2rem 0.65rem', fontSize: '0.75rem', fontWeight: 800
+                            }}>
+                              📍 {branchName}
+                            </span>
+                          </div>
+                        </div>
+
+                        <StatusBadge status={e.status} size="sm" />
+                      </div>
+
+                      {/* Action Buttons for Pending Enrolments (Fix 7 & 12) */}
                       {e.status === 'pending' && (
-                        <button
-                          onClick={async () => {
-                            const res = await fetch('/api/student-enrollments', {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ id: e.id, action: 'ADMIN_APPROVE' })
-                            })
-                            if (res.ok) {
-                              showToast('Enrolment approved', 'success')
-                              setEnrolmentRequestsUserTarget(null)
-                              fetchUsers()
-                            }
-                          }}
-                          style={{
-                            background: '#00c853',
-                            color: '#ffffff',
-                            border: '2px solid #1a1a2e',
-                            borderRadius: '50px',
-                            boxShadow: '2px 2px 0px #1a1a2e',
-                            padding: '0.25rem 0.75rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 900,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Approve
-                        </button>
+                        <div style={{ paddingTop: '0.65rem', borderTop: '1px dashed #cbd5e1' }}>
+                          {!rej.open ? (
+                            <div style={{ display: 'flex', gap: '0.65rem' }}>
+                              <button
+                                type="button"
+                                disabled={isApproving}
+                                onClick={async () => {
+                                  setModalActionLoading(prev => ({ ...prev, [e.id]: true }))
+                                  try {
+                                    const res = await fetch('/api/student-enrollments', {
+                                      method: 'PATCH',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ id: e.id, action: 'ADMIN_APPROVE' })
+                                    })
+                                    if (res.ok) {
+                                      const data = await res.json()
+                                      showToast(`Enrolment approved for ${data.studentName || enrolmentRequestsUserTarget.name} — ${data.subjectName || subName} at ${data.branchName || branchName}. Teacher ${data.teacherName || 'Assigned Teacher'} has been notified.`, 'success')
+                                      
+                                      // Update local status in state
+                                      e.status = 'admin_approved'
+                                      fetchUsers()
+                                    } else {
+                                      const err = await res.json()
+                                      showToast(err.error || 'Failed to approve', 'error')
+                                    }
+                                  } finally {
+                                    setModalActionLoading(prev => ({ ...prev, [e.id]: false }))
+                                  }
+                                }}
+                                style={{
+                                  background: '#00c853', color: '#ffffff',
+                                  border: '2px solid #1a1a2e', borderRadius: '50px',
+                                  boxShadow: '3px 3px 0px #1a1a2e', padding: '0.4rem 1rem',
+                                  fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer'
+                                }}
+                              >
+                                {isApproving ? 'Approving...' : 'Approve'}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setModalRejectState(prev => ({ ...prev, [e.id]: { open: true, reason: '', loading: false } }))}
+                                style={{
+                                  background: '#f50057', color: '#ffffff',
+                                  border: '2px solid #1a1a2e', borderRadius: '50px',
+                                  boxShadow: '3px 3px 0px #1a1a2e', padding: '0.4rem 1rem',
+                                  fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer'
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <input
+                                type="text"
+                                placeholder="Reason for rejection (optional)"
+                                value={rej.reason}
+                                onChange={ev => {
+                                  const val = ev.target.value
+                                  setModalRejectState(prev => ({ ...prev, [e.id]: { ...prev[e.id], reason: val } }))
+                                }}
+                                style={{
+                                  padding: '0.45rem 0.75rem', fontSize: '0.825rem',
+                                  border: '2px solid #1a1a2e', borderRadius: '8px',
+                                  width: '100%', background: '#ffffff', fontWeight: 600
+                                }}
+                              />
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  disabled={rej.loading}
+                                  onClick={async () => {
+                                    setModalRejectState(prev => ({ ...prev, [e.id]: { ...prev[e.id], loading: true } }))
+                                    try {
+                                      const res = await fetch('/api/student-enrollments', {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ id: e.id, action: 'REJECT', rejectionReason: rej.reason })
+                                      })
+                                      if (res.ok) {
+                                        showToast('Enrolment request rejected', 'success')
+                                        e.status = 'rejected'
+                                        setModalRejectState(prev => ({ ...prev, [e.id]: { open: false, reason: '', loading: false } }))
+                                        fetchUsers()
+                                      } else {
+                                        const err = await res.json()
+                                        showToast(err.error || 'Failed to reject', 'error')
+                                      }
+                                    } finally {
+                                      setModalRejectState(prev => ({ ...prev, [e.id]: { ...prev[e.id], loading: false } }))
+                                    }
+                                  }}
+                                  style={{
+                                    background: '#f50057', color: '#ffffff',
+                                    border: '2px solid #1a1a2e', borderRadius: '50px',
+                                    boxShadow: '2px 2px 0px #1a1a2e', padding: '0.35rem 0.85rem',
+                                    fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer'
+                                  }}
+                                >
+                                  {rej.loading ? 'Confirming...' : 'Confirm rejection'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setModalRejectState(prev => ({ ...prev, [e.id]: { open: false, reason: '', loading: false } }))}
+                                  style={{
+                                    background: '#ffffff', color: '#1a1a2e',
+                                    border: '2px solid #1a1a2e', borderRadius: '50px',
+                                    padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer'
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
 
-            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '2px solid #1a1a2e', textAlign: 'right' }}>
+            {/* Seamless White Footer with Close Button — Fix 10 & 11 */}
+            <div style={{ padding: '1.25rem 1.5rem', background: '#ffffff', borderTop: '2px solid #e2e8f0', textAlign: 'right' }}>
               <button
-                className="btn-secondary"
                 onClick={() => setEnrolmentRequestsUserTarget(null)}
-                style={{ padding: '0.4rem 1.25rem', fontWeight: 800, borderRadius: '50px' }}
+                style={{
+                  background: '#ffffff', color: '#1a1a2e',
+                  border: '2px solid #1a1a2e', borderRadius: '50px',
+                  boxShadow: '3px 3px 0px #1a1a2e', padding: '0.45rem 1.5rem',
+                  fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer'
+                }}
               >
                 Close
               </button>

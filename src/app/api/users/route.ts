@@ -25,7 +25,10 @@ export async function GET(request: Request) {
       },
       studentEnrollments: {
         select: {
+          id: true,
           status: true,
+          requestedAt: true,
+          rejectionReason: true,
           batch: {
             select: { id: true, name: true }
           },

@@ -38,7 +38,13 @@ export default function PendingEnrolmentsSection() {
       })
 
       if (res.ok) {
-        showToast('Enrolment approved! Moved to Stage 2 teacher confirmation.', 'success')
+        const data = await res.json()
+        const studentName = data.studentName || 'Student'
+        const subjectName = data.subjectName || 'Subject'
+        const branchName = data.branchName || 'Branch'
+        const teacherName = data.teacherName || 'Assigned Teacher'
+
+        showToast(`Enrolment approved for ${studentName} — ${subjectName} at ${branchName}. Teacher ${teacherName} has been notified.`, 'success')
         fetchPendingEnrollments()
       } else {
         const data = await res.json()
@@ -104,6 +110,7 @@ export default function PendingEnrolmentsSection() {
         {enrollments.map(e => {
           const isApproving = actionLoading[e.id]
           const rej = rejectState[e.id] || { open: false, reason: '', loading: false }
+          const subName = e.subject?.name ? e.subject.name.charAt(0).toUpperCase() + e.subject.name.slice(1) : 'Subject'
 
           return (
             <div
@@ -143,7 +150,7 @@ export default function PendingEnrolmentsSection() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '1rem' }}>
-                <div>📚 Subject: <strong style={{ color: '#0f172a' }}>{e.subject?.name}</strong></div>
+                <div>📚 Subject: <strong style={{ color: '#0f172a', textTransform: 'capitalize' }}>{subName}</strong></div>
                 <div>🎓 Batch: <span style={{ color: '#0f172a' }}>{e.batch?.name}</span></div>
                 <div>📍 Branch: <span style={{ color: '#0f172a' }}>{e.branch?.name}</span></div>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.2rem' }}>

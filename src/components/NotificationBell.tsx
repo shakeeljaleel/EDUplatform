@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { Bell } from './Icons'
+import { showToast } from './ToastContainer'
 
-function getLeftBorderColor(type: string = '', title: string = ''): string {
-  const norm = (type + ' ' + title).toLowerCase()
+function getLeftBorderColor(type: string = '', title: string = '', message: string = ''): string {
+  const norm = (type + ' ' + title + ' ' + message).toLowerCase()
   if (norm.includes('enroll') || norm.includes('enrol')) return '#00c853' // green
   if (norm.includes('assign')) return '#2979ff' // blue
+  if (norm.includes('pending') || norm.includes('reminder')) return '#ffab00' // amber
   if (norm.includes('warn') || norm.includes('alert') || norm.includes('reject')) return '#f50057' // red
   return '#00c853'
+}
+
+function formatNotificationMessage(msg?: string): string {
+  if (!msg) return ''
+  // Capitalize subject names like 'in biology' -> 'in Biology'
+  return msg.replace(/\bin ([a-z])/g, (_, letter) => `in ${letter.toUpperCase()}`)
 }
 
 interface NotificationBellProps {
@@ -21,7 +29,8 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
   const [show, setShow] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
-  // Inline rejection state per notification ID: { [notifId]: { open: boolean, reason: string, loading: boolean } }
+  // Track action outcome per notification card (APPROVED | REJECTED)
+  const [actionStatus, setActionStatus] = useState<Record<string, 'APPROVED' | 'REJECTED'>>({})
   const [rejectState, setRejectState] = useState<Record<string, { open: boolean; reason: string; loading: boolean }>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
 
@@ -63,7 +72,6 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
   }
 
   const findEnrollmentIdForNotification = (n: any): string | null => {
-    // 1. Try parsing from n.link query param
     if (n.link && n.link.includes('enrollmentId=')) {
       try {
         const urlObj = new URL(n.link, 'http://localhost')
@@ -72,7 +80,6 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
       } catch {}
     }
 
-    // 2. Try matching pendingEnrollments list by student/subject/batch match in message
     if (pendingEnrollments.length > 0 && n.message) {
       const msgLower = n.message.toLowerCase()
       const match = pendingEnrollments.find(e => {
@@ -83,7 +90,6 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
       if (match) return match.id
     }
 
-    // 3. Fallback to first pending enrollment if available
     if (pendingEnrollments.length > 0) return pendingEnrollments[0].id
 
     return null
@@ -102,7 +108,16 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
       })
 
       if (res.ok) {
-        // Mark notification read
+        const data = await res.json()
+        setActionStatus(prev => ({ ...prev, [n.id]: 'APPROVED' }))
+        
+        const studentName = data.studentName || 'Student'
+        const subjectName = data.subjectName || 'Subject'
+        const branchName = data.branchName || 'Branch'
+        const teacherName = data.teacherName || 'Assigned Teacher'
+
+        showToast(`Enrolment approved for ${studentName} — ${subjectName} at ${branchName}. Teacher ${teacherName} has been notified.`, 'success')
+
         await fetch('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -110,6 +125,9 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         })
         fetchNotifications()
         fetchPendingEnrollments()
+      } else {
+        const errData = await res.json()
+        showToast(errData.error || 'Failed to approve enrolment', 'error')
       }
     } finally {
       setActionLoading(prev => ({ ...prev, [n.id]: false }))
@@ -131,6 +149,8 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
       })
 
       if (res.ok) {
+        setActionStatus(prev => ({ ...prev, [n.id]: 'REJECTED' }))
+        showToast('Enrolment request rejected', 'success')
         await fetch('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -139,6 +159,9 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
         setRejectState(prev => ({ ...prev, [n.id]: { open: false, reason: '', loading: false } }))
         fetchNotifications()
         fetchPendingEnrollments()
+      } else {
+        const errData = await res.json()
+        showToast(errData.error || 'Failed to reject enrolment', 'error')
       }
     } finally {
       setRejectState(prev => ({ ...prev, [n.id]: { ...prev[n.id], loading: false } }))
@@ -219,6 +242,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
             border: '3px solid #1a1a2e', zIndex: 1000,
             padding: '1.25rem', maxHeight: '520px', overflowY: 'auto'
           }}>
+            {/* Header: Fix 2 (Roadmap alerts) and Fix 3 (Mark all as read button styling) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>Roadmap alerts</h4>
@@ -233,14 +257,15 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
                 type="button"
                 onClick={markRead}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#2979ff',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  padding: '0.2rem 0.4rem',
-                  borderRadius: '4px'
+                  background: '#ffffff',
+                  border: '2px solid #1a1a2e',
+                  borderRadius: '50px',
+                  boxShadow: '3px 3px 0px #1a1a2e',
+                  color: '#1a1a2e',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  padding: '0.35rem 0.85rem',
+                  cursor: 'pointer'
                 }}
               >
                 Mark all as read
@@ -249,28 +274,48 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {notifications.map(n => {
-                const borderColor = getLeftBorderColor(n.type, n.title)
-                const isEnrollmentReq = (n.type === 'STUDENT_ENROLLMENT_REQUESTED' || (n.title && n.title.toLowerCase().includes('enrolment request')) || (n.title && n.title.toLowerCase().includes('enrollment request'))) && !n.read
+                const borderColor = getLeftBorderColor(n.type, n.title, n.message)
+                const isEnrollmentReq = (n.type === 'STUDENT_ENROLLMENT_REQUESTED' || (n.title && n.title.toLowerCase().includes('enrolment request')) || (n.title && n.title.toLowerCase().includes('enrollment request')))
+                const status = actionStatus[n.id]
                 const rej = rejectState[n.id] || { open: false, reason: '', loading: false }
                 const isApproving = actionLoading[n.id]
+                const isActionDone = Boolean(status)
 
                 return (
                   <div key={n.id} style={{ 
                     padding: '0.85rem 1rem', borderRadius: '12px', 
-                    backgroundColor: n.read ? '#ffffff' : '#f8fafc',
+                    backgroundColor: n.read || isActionDone ? '#f8fafc' : '#ffffff',
+                    opacity: isActionDone ? 0.75 : 1,
                     border: '2px solid #1a1a2e',
                     borderLeft: `6px solid ${borderColor}`,
                     boxShadow: '3px 3px 0px #1a1a2e',
                     position: 'relative'
                   }}>
-                    {!n.read && (
-                      <div style={{ position: 'absolute', top: '10px', right: '10px', width: '8px', height: '8px', background: '#2979ff', borderRadius: '50%' }}></div>
+                    {!n.read && !isActionDone && (
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', width: '8px', height: '8px', background: '#2979ff', borderRadius: '50%' }} />
                     )}
-                    <div style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '0.2rem', color: '#1a1a2e' }}>{n.title}</div>
-                    <div style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.4, fontWeight: 600 }}>{n.message}</div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#1a1a2e' }}>{n.title}</div>
+                      
+                      {status === 'APPROVED' && (
+                        <span style={{ background: '#00c853', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.15rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>
+                          Approved ✓
+                        </span>
+                      )}
+                      {status === 'REJECTED' && (
+                        <span style={{ background: '#f50057', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.15rem 0.55rem', fontSize: '0.7rem', fontWeight: 900 }}>
+                          Rejected
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.4, fontWeight: 600, textTransform: 'capitalize' }}>
+                      {formatNotificationMessage(n.message)}
+                    </div>
                     
-                    {/* Inline Action Buttons for Admins on Enrolment Request Notifications */}
-                    {isAdmin && isEnrollmentReq && (
+                    {/* Fix 1 — Inline Action Buttons for Admins on Enrolment Request Notifications */}
+                    {isAdmin && isEnrollmentReq && !isActionDone && (
                       <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px dashed #cbd5e1' }}>
                         {!rej.open ? (
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -315,7 +360,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                             <input
                               type="text"
-                              placeholder="Reason for rejection (optional)"
+                              placeholder="Reason (optional)"
                               value={rej.reason}
                               onChange={e => {
                                 const val = e.target.value
@@ -348,7 +393,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
                                   cursor: 'pointer'
                                 }}
                               >
-                                {rej.loading ? 'Rejecting...' : 'Confirm rejection'}
+                                {rej.loading ? 'Confirming...' : 'Confirm'}
                               </button>
                               <button
                                 type="button"
@@ -412,7 +457,6 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
             )}
           </div>
 
-          {/* Backdrop to close */}
           <div 
             onClick={() => setShow(false)}
             style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'transparent' }}
