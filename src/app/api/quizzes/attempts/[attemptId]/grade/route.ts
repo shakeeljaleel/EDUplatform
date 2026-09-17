@@ -1,88 +1,72 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { recalculateQuizAttempt } from '@/lib/gamification'
 
-// Manual grading of short answer questions by Teacher
 export async function POST(request: Request, { params }: { params: Promise<{ attemptId: string }> }) {
   const session = await getSession()
   if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TEACHER')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  
+
   const { attemptId } = await params
 
   try {
     const data = await request.json()
-    const { grades } = data // array of { answerId, pointsAwarded, isCorrect }
+    const { grades } = data // array of { answerId, marksAwarded, teacherFeedback }
 
     const attempt = await prisma.quizAttempt.findUnique({
       where: { id: attemptId },
-      include: { 
-        answers: true,
-        quiz: { include: { questions: true } }
+      include: {
+        answers: { include: { question: true } },
+        quiz: true,
+        user: true
       }
     })
 
     if (!attempt) return NextResponse.json({ error: 'Attempt not found' }, { status: 404 })
 
-    let additionalPoints = 0
-    let additionalStars = 0
+    for (const grade of grades) {
+      const answer = attempt.answers.find(a => a.id === grade.answerId)
+      if (!answer) continue
 
-    await prisma.$transaction(async (tx) => {
-      for (const grade of grades) {
-        const answer = attempt.answers.find(a => a.id === grade.answerId)
-        if (!answer) continue
+      const maxMarks = answer.question.maxMarks || 10
+      const awarded = Math.min(maxMarks, Math.max(0, Number(grade.marksAwarded) || 0))
 
-        // Update the answer record
-        await tx.answer.update({
-          where: { id: answer.id },
-          data: {
-            pointsAwarded: grade.pointsAwarded,
-            isCorrect: grade.isCorrect
-          }
-        })
-
-        additionalPoints += grade.pointsAwarded
-        if (grade.isCorrect) {
-          additionalStars += 10 // Award stars for correct short answers
-        }
-      }
-
-      // Update total score and status
-      const newScore = attempt.score + additionalPoints
-      
-      // Check if all short answers are graded (for simplicity, we assume this grades all pending)
-      await tx.quizAttempt.update({
-        where: { id: attemptId },
+      await prisma.answer.update({
+        where: { id: answer.id },
         data: {
-          score: newScore,
-          status: 'GRADED'
+          marksAwarded: awarded,
+          pointsAwarded: awarded,
+          isCorrect: awarded >= maxMarks * 0.6,
+          teacherFeedback: grade.teacherFeedback || null,
+          gradingMethod: 'teacher',
+          overrideByTeacher: true
         }
       })
+    }
 
-      // Check for medals (did this bump them to >90%?)
-      const maxScore = attempt.quiz.questions.reduce((acc, q) => acc + q.points, 0)
-      let medalsEarned = 0
-      
-      // If it wasn't graded before, we calculate medal eligibility now
-      if (attempt.status === 'PENDING_REVIEW' && maxScore > 0 && newScore / maxScore >= 0.9) {
-        medalsEarned = 1
-      }
+    // Recalculate quiz attempt
+    const updatedAttempt = await recalculateQuizAttempt(attemptId)
 
-      // Update student profile
-      if (additionalStars > 0 || medalsEarned > 0) {
-        await tx.studentProfile.update({
-          where: { userId: attempt.userId },
-          data: {
-            stars: { increment: additionalStars },
-            medals: { increment: medalsEarned }
-          }
-        })
+    // Notify student about teacher grade/override
+    await prisma.notification.create({
+      data: {
+        userId: attempt.userId,
+        type: 'TEACHER_GRADED',
+        title: 'Quiz Grade Updated',
+        message: `Your answers for "${attempt.quiz.title}" have been reviewed by your teacher. Total Score: ${updatedAttempt?.score} / ${updatedAttempt?.maxPossibleScore}`,
+        link: `/dashboard/student/quizzes/${attempt.quizId}`
       }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      attempt: updatedAttempt
+    })
+
   } catch (error: any) {
+    console.error('Teacher manual grade error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

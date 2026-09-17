@@ -17,30 +17,38 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
   const [error, setError] = useState('')
   const [sessions, setSessions] = useState<any[]>([])
 
-  // Setup Form
+  // Section A — Quiz Setup
   const [title, setTitle] = useState(initialTopic ? `Quiz: ${initialTopic}` : '')
   const [topic, setTopic] = useState(initialTopic)
   const [description, setDescription] = useState('')
   const [linkedSessionId, setLinkedSessionId] = useState(initialLinkedSessionId)
   const [dueDate, setDueDate] = useState('')
+  const [hasTimeLimit, setHasTimeLimit] = useState(false)
+  const [timeLimitMins, setTimeLimitMins] = useState(30)
   const [showAnswersAfterSubmission, setShowAnswersAfterSubmission] = useState(true)
+  const [allowOneAttempt, setAllowOneAttempt] = useState(true)
+  const [markingMode, setMarkingMode] = useState<'AUTO_AI' | 'MANUAL_ONLY'>('AUTO_AI')
 
-  // Questions
+  // Section B — Questions
   const [questions, setQuestions] = useState<any[]>([
     {
       type: 'MCQ',
       text: 'Which organelle is known as the powerhouse of the cell?',
       maxMarks: 10,
       options: [
-        { id: 'opt_1', text: 'Mitochondria', is_correct: true },
-        { id: 'opt_2', text: 'Nucleus', is_correct: false },
-        { id: 'opt_3', text: 'Ribosome', is_correct: false },
-        { id: 'opt_4', text: 'Golgi Apparatus', is_correct: false }
+        { id: 'opt_1', text: 'Mitochondria', is_correct: true, imageUrl: '' },
+        { id: 'opt_2', text: 'Nucleus', is_correct: false, imageUrl: '' },
+        { id: 'opt_3', text: 'Ribosome', is_correct: false, imageUrl: '' },
+        { id: 'opt_4', text: 'Golgi Apparatus', is_correct: false, imageUrl: '' }
       ],
       correctOption: 0,
-      markScheme: ''
+      markScheme: '',
+      hasWordLimit: false,
+      wordLimit: 100
     }
   ])
+
+  const [showPublishModal, setShowPublishModal] = useState(false)
 
   useEffect(() => {
     fetchSessions()
@@ -51,10 +59,11 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
       const res = await fetch(`/api/subjects/${subjectId}/sessions`)
       if (res.ok) {
         const data = await res.json()
-        setSessions(data.sessions)
+        setSessions(data.sessions || [])
         if (initialLinkedSessionId) {
           const match = data.sessions.find((s: any) => s.id === initialLinkedSessionId)
           if (match) {
+            const dateStr = new Date(match.scheduledDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
             if (!title) setTitle(`Quiz: ${match.title}`)
             if (!topic) setTopic(match.title)
           }
@@ -84,19 +93,23 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
         text: '',
         maxMarks: 10,
         options: [
-          { id: `opt_${Date.now()}_1`, text: '', is_correct: true },
-          { id: `opt_${Date.now()}_2`, text: '', is_correct: false },
-          { id: `opt_${Date.now()}_3`, text: '', is_correct: false },
-          { id: `opt_${Date.now()}_4`, text: '', is_correct: false }
+          { id: `opt_${Date.now()}_1`, text: '', is_correct: true, imageUrl: '' },
+          { id: `opt_${Date.now()}_2`, text: '', is_correct: false, imageUrl: '' },
+          { id: `opt_${Date.now()}_3`, text: '', is_correct: false, imageUrl: '' },
+          { id: `opt_${Date.now()}_4`, text: '', is_correct: false, imageUrl: '' }
         ],
         correctOption: 0,
-        markScheme: ''
+        markScheme: '',
+        hasWordLimit: false,
+        wordLimit: 100
       }
     ])
   }
 
   const removeQuestion = (idx: number) => {
-    setQuestions(prev => prev.filter((_, i) => i !== idx))
+    if (confirm('Are you sure you want to delete this question?')) {
+      setQuestions(prev => prev.filter((_, i) => i !== idx))
+    }
   }
 
   const duplicateQuestion = (idx: number) => {
@@ -122,11 +135,11 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
     })
   }
 
-  const updateMcqOption = (qIdx: number, optIdx: number, text: string) => {
+  const updateMcqOption = (qIdx: number, optIdx: number, text: string, imageUrl: string = '') => {
     setQuestions(prev => {
       const updated = [...prev]
       const opts = [...updated[qIdx].options]
-      opts[optIdx] = { ...opts[optIdx], text }
+      opts[optIdx] = { ...opts[optIdx], text, imageUrl }
       updated[qIdx].options = opts
       return updated
     })
@@ -147,6 +160,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
   const totalMarks = questions.reduce((acc, q) => acc + (parseInt(q.maxMarks) || 0), 0)
 
   const handleSave = async (status: 'DRAFT' | 'PUBLISHED') => {
+    setShowPublishModal(false)
     setLoading(true)
     setError('')
     try {
@@ -156,8 +170,11 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
         title: title || 'Untitled Quiz',
         topic,
         description,
-        dueDate,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        timeLimitMins: hasTimeLimit ? Number(timeLimitMins) : null,
+        allowOneAttempt,
         showAnswersAfterSubmission,
+        markingMode,
         status,
         questions
       }
@@ -183,12 +200,12 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
   const palette = ['#00c853', '#2979ff', '#aa00ff', '#ff6d00', '#f50057']
 
   return (
-    <div className="content-wrapper" style={{ maxWidth: '900px' }}>
+    <div className="content-wrapper" style={{ maxWidth: '1100px' }}>
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#1a1a2e' }}>Quiz & Assessment Builder</h2>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Quiz & Assessment Builder</h2>
           <p style={{ color: '#64748b', fontWeight: 600 }}>Design topic quizzes with instant MCQ grading and AI mark-scheme evaluation.</p>
         </div>
         <Link
@@ -248,7 +265,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
       {/* STEP 1: QUIZ SETUP */}
       {step === 1 && (
         <div className="card" style={{ padding: '2rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Step 1 — Quiz Setup</h3>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Section A — Quiz Setup</h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
@@ -280,7 +297,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Link to Lesson Session (Optional)
+                Link to Lesson (Optional)
               </label>
               <select
                 value={linkedSessionId}
@@ -288,32 +305,136 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                 style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '12px', color: '#1a1a2e', fontWeight: 700 }}
               >
                 <option value="">-- Standalone Quiz (Not linked to specific lesson) --</option>
-                {sessions.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {new Date(s.scheduledDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} — {s.title}
-                  </option>
-                ))}
+                {sessions.map(s => {
+                  const dateStr = new Date(s.scheduledDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {dateStr} — {s.title}
+                    </option>
+                  )
+                })}
               </select>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', fontWeight: 600 }}>
-                Linking auto-populates title and integrates quiz into Lesson Planner.
-              </p>
             </div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Due Date & Time
+                Due Date & Time <span style={{ color: '#f50057' }}>*</span>
               </label>
               <input
                 type="datetime-local"
+                required
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
                 style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '12px', color: '#1a1a2e', fontWeight: 700 }}
               />
             </div>
 
+            {/* Time Limit Toggle */}
+            <div style={{ background: '#f8fafc', padding: '1.25rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hasTimeLimit ? '1rem' : 0 }}>
+                <div>
+                  <div style={{ fontWeight: 800, color: '#1a1a2e' }}>Enable Time Limit</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Set a countdown timer for students taking this quiz</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={hasTimeLimit}
+                  onChange={e => setHasTimeLimit(e.target.checked)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#00c853' }}
+                />
+              </div>
+
+              {hasTimeLimit && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {[15, 30, 45, 60, 90].map(mins => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setTimeLimitMins(mins)}
+                      style={{
+                        padding: '0.4rem 1rem',
+                        background: timeLimitMins === mins ? '#2979ff' : '#ffffff',
+                        color: timeLimitMins === mins ? '#ffffff' : '#1a1a2e',
+                        border: '2px solid #1a1a2e',
+                        borderRadius: '50px',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {mins} Mins
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Marking Mode Toggle */}
+            <div style={{ background: '#f0fdf4', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1.25rem' }}>
+              <label style={{ display: 'block', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.5rem' }}>
+                Grading Method
+              </label>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setMarkingMode('AUTO_AI')}
+                  style={{
+                    flex: 1,
+                    padding: '0.6rem 1rem',
+                    background: markingMode === 'AUTO_AI' ? '#00c853' : '#ffffff',
+                    color: markingMode === 'AUTO_AI' ? '#ffffff' : '#1a1a2e',
+                    border: '2px solid #1a1a2e',
+                    borderRadius: '50px',
+                    fontWeight: 900,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🤖 Auto MCQ + AI Short/Essay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMarkingMode('MANUAL_ONLY')}
+                  style={{
+                    flex: 1,
+                    padding: '0.6rem 1rem',
+                    background: markingMode === 'MANUAL_ONLY' ? '#aa00ff' : '#ffffff',
+                    color: markingMode === 'MANUAL_ONLY' ? '#ffffff' : '#1a1a2e',
+                    border: '2px solid #1a1a2e',
+                    borderRadius: '50px',
+                    fontWeight: 900,
+                    cursor: 'pointer'
+                  }}
+                >
+                  👤 Teacher Manual Marking Only
+                </button>
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+                <span style={{ fontWeight: 800, color: '#1a1a2e', fontSize: '0.9rem' }}>Show correct answers after submission</span>
+                <input
+                  type="checkbox"
+                  checked={showAnswersAfterSubmission}
+                  onChange={e => setShowAnswersAfterSubmission(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00c853' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+                <span style={{ fontWeight: 800, color: '#1a1a2e', fontSize: '0.9rem' }}>Allow one attempt only</span>
+                <input
+                  type="checkbox"
+                  checked={allowOneAttempt}
+                  onChange={e => setAllowOneAttempt(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00c853' }}
+                />
+              </div>
+            </div>
+
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Instructions / Description
+                Instructions for Students (Optional)
               </label>
               <textarea
                 rows={2}
@@ -323,19 +444,6 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                 style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '12px', color: '#1a1a2e', fontWeight: 700 }}
               />
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
-              <div>
-                <div style={{ fontWeight: 800, color: '#1a1a2e', fontSize: '0.9rem' }}>Show correct answers to students after submission</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>If enabled, students can see model answers right after submitting</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={showAnswersAfterSubmission}
-                onChange={e => setShowAnswersAfterSubmission(e.target.checked)}
-                style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#00c853' }}
-              />
-            </div>
           </div>
 
           <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
@@ -343,6 +451,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
               type="button"
               onClick={() => {
                 if (!title) { setError('Please enter a quiz title'); return; }
+                if (!dueDate) { setError('Please set a due date and time'); return; }
                 setError('');
                 setStep(2);
               }}
@@ -373,7 +482,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
               <p style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{questions.length} Question{questions.length !== 1 ? 's' : ''} added</p>
             </div>
             <div style={{ background: '#00c853', color: '#ffffff', border: '2px solid #ffffff', borderRadius: '50px', padding: '0.4rem 1.2rem', fontWeight: 900, fontSize: '0.95rem' }}>
-              Total marks: {totalMarks}
+              Total: {totalMarks} marks
             </div>
           </div>
 
@@ -386,27 +495,40 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                   style={{
                     background: '#ffffff',
                     border: '3px solid #1a1a2e',
-                    borderRadius: '20px',
-                    boxShadow: '6px 6px 0px #1a1a2e',
+                    borderRadius: '16px',
+                    boxShadow: '4px 4px 0px #1a1a2e',
                     padding: '1.5rem',
                     position: 'relative'
                   }}
                 >
-                  {/* Top Bar */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: color, color: '#ffffff', border: '2px solid #1a1a2e', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
                         Q{idx + 1}
                       </div>
-                      <select
-                        value={q.type}
-                        onChange={e => updateQuestion(idx, 'type', e.target.value)}
-                        style={{ background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.4rem 1rem', fontWeight: 800, color: '#1a1a2e', fontSize: '0.85rem' }}
-                      >
-                        <option value="MCQ">Multiple Choice (MCQ)</option>
-                        <option value="SHORT_ANSWER">Short Answer</option>
-                        <option value="ESSAY">Essay</option>
-                      </select>
+
+                      {/* Question type selector pill toggle */}
+                      <div style={{ display: 'flex', gap: '0.25rem', background: '#f8fafc', padding: '3px', border: '2px solid #1a1a2e', borderRadius: '50px' }}>
+                        {['MCQ', 'SHORT_ANSWER', 'ESSAY'].map(t => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => updateQuestion(idx, 'type', t)}
+                            style={{
+                              padding: '0.3rem 0.75rem',
+                              background: q.type === t ? '#1a1a2e' : 'transparent',
+                              color: q.type === t ? '#ffffff' : '#1a1a2e',
+                              border: 'none',
+                              borderRadius: '50px',
+                              fontWeight: 900,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {t === 'SHORT_ANSWER' ? 'Short Answer' : t}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -448,7 +570,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                           onClick={() => removeQuestion(idx)}
                           style={{ background: '#ffebee', color: '#d32f2f', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '4px 8px', fontWeight: 800, cursor: 'pointer' }}
                         >
-                          🗑️
+                          ❌
                         </button>
                       )}
                     </div>
@@ -472,7 +594,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                   {/* MCQ Options */}
                   {q.type === 'MCQ' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>Options (Select radio button for correct answer):</label>
+                      <label style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>Options (Select radio for correct answer):</label>
                       {q.options?.map((opt: any, optIdx: number) => {
                         const optLabel = String.fromCharCode(65 + optIdx)
                         const isCorrect = q.correctOption === optIdx
@@ -502,13 +624,13 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                               type="text"
                               required
                               value={opt.text}
-                              onChange={e => updateMcqOption(idx, optIdx, e.target.value)}
+                              onChange={e => updateMcqOption(idx, optIdx, e.target.value, opt.imageUrl)}
                               placeholder={`Option ${optLabel}...`}
                               style={{ flex: 1, border: 'none', background: 'transparent', fontWeight: 700, color: '#1a1a2e', outline: 'none' }}
                             />
                             {isCorrect && (
                               <span style={{ fontSize: '0.75rem', background: '#00c853', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.1rem 0.5rem', fontWeight: 900 }}>
-                                Correct Answer
+                                Correct
                               </span>
                             )}
                           </div>
@@ -517,22 +639,21 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                     </div>
                   )}
 
-                  {/* Short Answer / Essay Mark Scheme */}
+                  {/* Short Answer / Essay Fields */}
                   {(q.type === 'SHORT_ANSWER' || q.type === 'ESSAY') && (
                     <div style={{ background: '#f8fafc', padding: '1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
                       <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>
-                        {q.type === 'SHORT_ANSWER' ? 'Mark Scheme / Model Answer (AI Grading Target)' : 'Marking Criteria (Bullet points for AI Grading)'}
+                        {q.type === 'SHORT_ANSWER' ? 'Write the ideal answer — AI will grade against this' : 'List the key points AI should look for, one per line'}
                       </label>
                       <textarea
                         rows={3}
                         value={q.markScheme || ''}
                         onChange={e => updateQuestion(idx, 'markScheme', e.target.value)}
-                        placeholder={q.type === 'SHORT_ANSWER' ? 'Write the exact model answer or key required points...' : 'List key arguments, facts or structures AI should check for...'}
+                        placeholder={q.type === 'SHORT_ANSWER' ? 'Model answer text...' : 'Key point 1\nKey point 2\nKey point 3'}
                         style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '10px', padding: '10px', color: '#1a1a2e', fontWeight: 700 }}
                       />
                     </div>
                   )}
-
                 </div>
               )
             })}
@@ -580,7 +701,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                   cursor: 'pointer'
                 }}
               >
-                Preview & review →
+                Review & publish →
               </button>
             </div>
           </div>
@@ -589,95 +710,119 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
       {/* STEP 3: REVIEW & PUBLISH */}
       {step === 3 && (
-        <div className="card" style={{ padding: '2rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Step 3 — Review and Publish</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem' }}>
+          
+          {/* Main Review Section */}
+          <div className="card" style={{ padding: '2rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Section C — Review & Publish</h3>
 
-          {/* Summary Box */}
-          <div style={{ background: '#f8fafc', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Quiz Title</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>{title}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Topic</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>{topic || 'General'}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Questions</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#2979ff' }}>{questions.length} Questions</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Marks</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#00c853' }}>{totalMarks} Marks</div>
-            </div>
-          </div>
-
-          {/* Questions Preview */}
-          <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1rem' }}>Student Preview</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-            {questions.map((q, idx) => (
-              <div key={idx} style={{ background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1a1a2e', marginBottom: '0.5rem' }}>
-                  Q{idx + 1}. {q.text} ({q.maxMarks} marks)
-                </div>
-                {q.type === 'MCQ' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                    {q.options?.map((opt: any, oIdx: number) => (
-                      <div key={oIdx} style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', background: oIdx === q.correctOption ? '#dcfce7' : '#f8fafc', border: '1.5px solid #1a1a2e', borderRadius: '50px', fontWeight: 700 }}>
-                        {String.fromCharCode(65 + oIdx)}. {opt.text} {oIdx === q.correctOption && '✓'}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {q.type !== 'MCQ' && (
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                    Target Mark Scheme: {q.markScheme || 'Model answer evaluation'}
-                  </div>
-                )}
+            <div style={{ background: '#f8fafc', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Quiz Title</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>{title}</div>
               </div>
-            ))}
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Questions</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#2979ff' }}>{questions.length} Questions</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Marks</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#00c853' }}>{totalMarks} Marks</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleSave('DRAFT')}
+                style={{
+                  flex: 1,
+                  background: '#ffffff',
+                  color: '#1a1a2e',
+                  border: '3px solid #1a1a2e',
+                  borderRadius: '50px',
+                  boxShadow: '4px 4px 0px #1a1a2e',
+                  padding: '0.85rem 1.5rem',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Save as draft
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => setShowPublishModal(true)}
+                style={{
+                  flex: 2,
+                  background: '#00c853',
+                  color: '#ffffff',
+                  border: '3px solid #1a1a2e',
+                  borderRadius: '50px',
+                  boxShadow: '4px 4px 0px #1a1a2e',
+                  padding: '0.85rem 1.5rem',
+                  fontWeight: 900,
+                  fontSize: '1rem',
+                  cursor: 'pointer'
+                }}
+              >
+                🚀 Publish quiz
+              </button>
+            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleSave('DRAFT')}
-              style={{
-                flex: 1,
-                background: '#ffab00',
-                color: '#1a1a2e',
-                border: '3px solid #1a1a2e',
-                borderRadius: '50px',
-                boxShadow: '4px 4px 0px #1a1a2e',
-                padding: '0.85rem 1.5rem',
-                fontWeight: 900,
-                fontSize: '1rem',
-                cursor: 'pointer'
-              }}
-            >
-              Save as draft
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => handleSave('PUBLISHED')}
-              style={{
-                flex: 2,
-                background: '#00c853',
-                color: '#ffffff',
-                border: '3px solid #1a1a2e',
-                borderRadius: '50px',
-                boxShadow: '4px 4px 0px #1a1a2e',
-                padding: '0.85rem 1.5rem',
-                fontWeight: 900,
-                fontSize: '1rem',
-                cursor: 'pointer'
-              }}
-            >
-              {loading ? 'Publishing...' : '🚀 Publish quiz to active students'}
-            </button>
+          {/* Live Student Preview Panel */}
+          <div style={{ background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e', padding: '1.5rem' }}>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1rem' }}>Live Student Preview</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {questions.map((q, idx) => (
+                <div key={idx} style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e', marginBottom: '0.5rem' }}>
+                    Q{idx + 1}. {q.text || 'Question text'} ({q.maxMarks} marks)
+                  </div>
+                  {q.type === 'MCQ' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {q.options?.map((opt: any, oIdx: number) => (
+                        <div key={oIdx} style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', fontWeight: 700 }}>
+                          {String.fromCharCode(65 + oIdx)}. {opt.text || `Option ${oIdx + 1}`}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showPublishModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ maxWidth: '450px', width: '100%', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🚀</div>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.5rem' }}>Publish this quiz?</h3>
+            <p style={{ color: '#64748b', fontWeight: 600, marginBottom: '1.5rem' }}>
+              All enrolled students in this subject and branch will be notified immediately.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => handleSave('PUBLISHED')}
+                disabled={loading}
+                style={{ flex: 1, background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.75rem', fontWeight: 900, cursor: 'pointer' }}
+              >
+                {loading ? 'Publishing...' : 'Yes, Publish now'}
+              </button>
+              <button
+                onClick={() => setShowPublishModal(false)}
+                style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', borderRadius: '50px', padding: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -60,17 +60,25 @@ model User {
 }
 
 model StudentProfile {
-  id              String         @id @default(uuid())
-  userId          String         @unique
-  address         String?
-  phone           String?
-  parentId        String?
-  paymentStatus   String         @default("Pending")
-  stars           Int            @default(0)
-  medals          Int            @default(0)
-  scholarshipFlag Boolean        @default(false)
-  parent          ParentProfile? @relation(fields: [parentId], references: [id])
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(uuid())
+  userId             String         @unique
+  address            String?
+  phone              String?
+  parentId           String?
+  paymentStatus      String         @default("Pending")
+  stars              Int            @default(0)
+  medals             Int            @default(0)
+  helixScore         Int            @default(0)
+  totalStars         Int            @default(0)
+  goldMedals         Int            @default(0)
+  silverMedals       Int            @default(0)
+  bronzeMedals       Int            @default(0)
+  quizCount          Int            @default(0)
+  perfectScores      Int            @default(0)
+  scholarshipFlag    Boolean        @default(false)
+  scholarshipFlagged Boolean        @default(false)
+  parent             ParentProfile? @relation(fields: [parentId], references: [id])
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ParentProfile {
@@ -279,43 +287,49 @@ model StudentEnrollment {
 }
 
 model Quiz {
-  id                          String        @id @default(uuid())
-  batchId                     String?
-  subjectId                   String?
-  branchId                    String?
-  teacherId                   String?
-  linkedSessionId             String?
-  title                       String
-  description                 String?
-  chapter                     String?
-  topic                       String?
-  subtopic                    String?
-  status                      String        @default("DRAFT")
-  dueDate                     DateTime?
-  scheduledDate               DateTime?
+  id                         String        @id @default(uuid())
+  batchId                    String?
+  subjectId                  String?
+  branchId                   String?
+  teacherId                  String?
+  linkedSessionId            String?
+  title                      String
+  description                String?
+  chapter                    String?
+  topic                      String?
+  subtopic                   String?
+  status                     String        @default("DRAFT")
+  dueDate                    DateTime?
+  scheduledDate              DateTime?
+  timeLimitMins              Int?
+  allowOneAttempt            Boolean       @default(true)
   showAnswersAfterSubmission Boolean       @default(true)
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
-  questions                   Question[]
-  subject                     Subject?      @relation(fields: [subjectId], references: [id])
-  linkedSession               ClassSession? @relation(fields: [linkedSessionId], references: [id], onDelete: SetNull)
-  attempts                    QuizAttempt[]
+  instructions               String?
+  markingMode                String        @default("AUTO_AI") // AUTO_AI or MANUAL_ONLY
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+  questions                  Question[]
+  subject                    Subject?      @relation(fields: [subjectId], references: [id])
+  linkedSession              ClassSession? @relation(fields: [linkedSessionId], references: [id], onDelete: SetNull)
+  attempts                   QuizAttempt[]
 }
 
 model Question {
-  id            String   @id @default(uuid())
-  quizId        String
-  type          String
-  text          String
-  options       String?
-  correctOption Int?
-  markScheme    String?
-  maxMarks      Int      @default(10)
-  orderIndex    Int      @default(0)
-  points        Int      @default(10)
-  createdAt     DateTime @default(now())
-  answers       Answer[]
-  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  quizId          String
+  type            String   // MCQ, SHORT_ANSWER, ESSAY
+  text            String
+  options         String?
+  correctOption   Int?
+  markScheme      String?
+  markingCriteria String?
+  maxMarks        Int      @default(10)
+  wordLimit       Int?
+  orderIndex      Int      @default(0)
+  points          Int      @default(10)
+  createdAt       DateTime @default(now())
+  answers         Answer[]
+  quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model QuizAttempt {
@@ -327,7 +341,13 @@ model QuizAttempt {
   score              Int       @default(0)
   maxPossibleScore   Int       @default(0)
   status             String    @default("SUBMITTED")
+  markingStatus      String    @default("fully_graded") // auto_graded, ai_grading, ai_graded, pending_review, teacher_grading, fully_graded
   helixPointsAwarded Int       @default(0)
+  bonusPoints        Int       @default(0)
+  starsAwarded       Int       @default(0)
+  medalAwarded       String    @default("none") // gold, silver, bronze, none
+  percentageScore    Float     @default(0)
+  rankInBatch        Int?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   answers            Answer[]
@@ -338,22 +358,37 @@ model QuizAttempt {
 }
 
 model Answer {
-  id               String      @id @default(uuid())
-  attemptId        String
-  questionId       String
-  selectedOption   Int?
-  selectedOptionId String?
-  answerText       String?
-  shortAnswerText  String?
-  isCorrect        Boolean?
-  marksAwarded     Int         @default(0)
-  aiFeedback       String?
-  pointsAwarded    Int         @default(0)
-  createdAt        DateTime    @default(now())
-  question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  attempt          QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  id                String      @id @default(uuid())
+  attemptId         String
+  questionId        String
+  selectedOption    Int?
+  selectedOptionId  String?
+  answerText        String?
+  shortAnswerText   String?
+  isCorrect         Boolean?
+  marksAwarded      Float       @default(0)
+  aiFeedback        String?
+  keyPointsCovered  String?     // JSON string
+  keyPointsMissed   String?     // JSON string
+  gradingMethod     String      @default("auto") // auto, ai, teacher
+  overrideByTeacher Boolean     @default(false)
+  teacherFeedback   String?
+  pointsAwarded     Int         @default(0)
+  createdAt         DateTime    @default(now())
+  question          Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt           QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@unique([attemptId, questionId])
+}
+
+model AIGradingLog {
+  id               String   @id @default(uuid())
+  questionId       String
+  studentId        String
+  promptSent       String
+  responseReceived String
+  marksAwarded     Float
+  createdAt        DateTime @default(now())
 }
 
 model AttendanceRecord {

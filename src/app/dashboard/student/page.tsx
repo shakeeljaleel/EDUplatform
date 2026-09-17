@@ -6,6 +6,7 @@ import StudentBatchHeaderBanner from '@/components/StudentBatchHeaderBanner'
 import StatusBadge from '@/components/StatusBadge'
 import { BookOpen, CheckSquare, Star, Award, Clock, TrendingUp, Sparkles, ChevronRight, MessageSquare } from '@/components/Icons'
 import { getSubjectColor } from '@/lib/subjectColors'
+import StudentLeaderboard from '@/components/StudentLeaderboard'
 
 export default async function StudentDashboard() {
   const session = await getSession()
@@ -652,63 +653,8 @@ export default async function StudentDashboard() {
         </div>
       </div>
 
-      {/* BATCH LEADERBOARD - Fix 9 & Fix 4 */}
-      {leaderboard.length > 0 && (
-        <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '2.5rem', fontWeight: 900 }}>
-            <span style={{ fontSize: '2rem' }}>🏆</span> Batch Leaderboard
-          </h2>
-          <div className="sketch-table-container" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', overflow: 'hidden', background: '#ffffff' }}>
-            <table className="sketch-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '3px solid #1a1a2e' }}>
-                  <th style={{ width: '100px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Rank</th>
-                  <th style={{ textAlign: 'left', padding: '1rem', fontWeight: 900 }}>Student Name</th>
-                  <th style={{ width: '140px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Stars ⭐</th>
-                  <th style={{ width: '140px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Medals 🏅</th>
-                  <th style={{ width: '160px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Helix Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.slice(0, 5).map((s) => {
-                  const isRanked = s.rank > 0
-                  const rankBg = s.rank === 1 ? '#ffd700'
-                                : s.rank === 2 ? '#c0c0c0'
-                                : s.rank === 3 ? '#cd7f32'
-                                : '#ffffff'
-
-                  return (
-                    <tr key={s.id} style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: s.id === studentUserId ? 'rgba(0, 200, 83, 0.08)' : 'transparent' }}>
-                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          width: s.rank <= 3 && isRanked ? '42px' : '36px',
-                          height: s.rank <= 3 && isRanked ? '42px' : '36px',
-                          borderRadius: s.rank <= 3 && isRanked ? '50%' : '8px',
-                          border: '3px solid #1a1a2e',
-                          background: isRanked ? rankBg : '#ffffff',
-                          color: '#1a1a2e',
-                          fontWeight: 900,
-                          fontSize: s.rank <= 3 && isRanked ? '1.2rem' : '0.9rem',
-                          boxShadow: '3px 3px 0px #1a1a2e'
-                        }}>
-                          {s.rank === 1 ? '🏆' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : isRanked ? s.rank : '-'}
-                        </div>
-                      </td>
-                      <td style={{ fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>
-                        {s.name} {s.id === studentUserId && <span style={{ color: '#00c853', fontSize: '0.8rem', marginLeft: '0.5rem', fontWeight: 900, border: '2px solid #00c853', padding: '2px 8px', borderRadius: '8px' }}>YOU</span>}
-                      </td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>{s.stars}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>{s.medals}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: '#00c853', padding: '0.75rem' }}>{s.score} pts</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* BATCH LEADERBOARD */}
+      <StudentLeaderboard currentUserId={studentUserId} />
 
       {/* MY ENROLLED SUBJECTS - Fix 6 & Fix 7 & Fix 2D */}
       <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem', fontWeight: 900 }}>My Enrolled Subjects</h2>

@@ -407,7 +407,33 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                     </div>
                   </div>
 
-                  {/* Fix 5: Quick Action Grid — 8 Solid Color Action Buttons */}
+                  {/* Part 1.1: Hero Action Button for Quizzes & Assessments */}
+                  <Link 
+                    href={`/dashboard/teacher/subjects/${cls.subject.id}/quizzes?branchId=${cls.branch.id}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.65rem',
+                      width: '100%',
+                      padding: '0.85rem 1.25rem',
+                      borderRadius: '50px',
+                      fontWeight: 900,
+                      fontSize: '0.95rem',
+                      color: '#ffffff',
+                      background: '#1a1a2e',
+                      border: '3px solid #1a1a2e',
+                      boxShadow: '5px 5px 0px rgba(0,0,0,0.3)',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      marginBottom: '0.75rem',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span>📝</span> Quizzes & assessments
+                  </Link>
+
+                  {/* Quick Action Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                     <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/grading`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#aa00ff', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
                       🤖 AI Grading

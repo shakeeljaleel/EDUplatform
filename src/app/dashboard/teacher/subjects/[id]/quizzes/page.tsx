@@ -5,18 +5,48 @@ import Link from 'next/link'
 
 export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: subjectId } = React.use(params)
+
   const [quizzes, setQuizzes] = useState<any[]>([])
+  const [subjectInfo, setSubjectInfo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // Analytics Modal
   const [analyticsQuiz, setAnalyticsQuiz] = useState<any>(null)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+  // Teacher Marking Modal
+  const [markingQuiz, setMarkingQuiz] = useState<any>(null)
+  const [markingSubmissions, setMarkingSubmissions] = useState<any[]>([])
+  const [currentSubIdx, setCurrentSubIdx] = useState(0)
+  const [currentQIdx, setCurrentQIdx] = useState(0)
+  const [showMarkSchemePanel, setShowMarkSchemePanel] = useState(true)
+  const [editMarks, setEditMarks] = useState<number>(0)
+  const [editFeedback, setEditFeedback] = useState('')
+  const [isOverriding, setIsOverriding] = useState(false)
+  const [savingGrade, setSavingGrade] = useState(false)
+
+  // Extend due date modal
   const [dueDateModalQuiz, setDueDateModalQuiz] = useState<any>(null)
   const [newDueDate, setNewDueDate] = useState('')
   const [warningMsg, setWarningMsg] = useState('')
 
   useEffect(() => {
     fetchQuizzes()
+    fetchSubjectInfo()
   }, [])
+
+  const fetchSubjectInfo = async () => {
+    try {
+      const res = await fetch(`/api/subjects/${subjectId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSubjectInfo(data.subject)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const fetchQuizzes = async () => {
     try {
@@ -44,12 +74,48 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  const openMarkingModal = async (quiz: any) => {
+    setMarkingQuiz(quiz)
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/quizzes/${quiz.id}/analytics`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData(data)
+        // Fetch full attempts with answers for grading
+        const attemptsRes = await fetch(`/api/quizzes/${quiz.id}`)
+        if (attemptsRes.ok) {
+          const fullQuiz = (await attemptsRes.json()).quiz
+          setMarkingSubmissions(fullQuiz.attempts || [])
+          setCurrentSubIdx(0)
+          setCurrentQIdx(0)
+        }
+      }
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
   const handleCloseQuiz = async (quizId: string) => {
     try {
       const res = await fetch(`/api/quizzes/${quizId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'CLOSED' })
+      })
+      if (res.ok) fetchQuizzes()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handlePublishToggle = async (quiz: any) => {
+    const newStatus = quiz.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
+    try {
+      const res = await fetch(`/api/quizzes/${quiz.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
       })
       if (res.ok) fetchQuizzes()
     } catch (e) {
@@ -83,6 +149,53 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  const saveQuestionGrade = async (moveNext: 'question' | 'student' = 'question') => {
+    if (!markingQuiz || !markingSubmissions.length) return
+    const currentSub = markingSubmissions[currentSubIdx]
+    const questions = markingQuiz.questions || []
+    const currentQ = questions[currentQIdx]
+    const currentAns = currentSub?.answers?.find((a: any) => a.questionId === currentQ?.id)
+
+    if (!currentSub || !currentAns) return
+
+    setSavingGrade(true)
+    try {
+      const res = await fetch(`/api/quizzes/attempts/${currentSub.id}/grade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grades: [
+            {
+              answerId: currentAns.id,
+              marksAwarded: editMarks,
+              teacherFeedback: editFeedback
+            }
+          ]
+        })
+      })
+
+      if (res.ok) {
+        setIsOverriding(false)
+        // Refresh local data
+        if (moveNext === 'question') {
+          if (currentQIdx < questions.length - 1) {
+            setCurrentQIdx(prev => prev + 1)
+          } else if (currentSubIdx < markingSubmissions.length - 1) {
+            setCurrentSubIdx(prev => prev + 1)
+            setCurrentQIdx(0)
+          }
+        } else if (moveNext === 'student') {
+          if (currentSubIdx < markingSubmissions.length - 1) {
+            setCurrentSubIdx(prev => prev + 1)
+            setCurrentQIdx(0)
+          }
+        }
+      }
+    } finally {
+      setSavingGrade(false)
+    }
+  }
+
   const exportCSV = () => {
     if (!analyticsData || !analyticsData.students) return
     const headers = ['Student Name', 'Email', 'Score', 'Max Score', 'Percentage (%)', 'Stars', 'Submitted At', 'Flagged (<50% Consecutive)']
@@ -107,16 +220,34 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
     document.body.removeChild(link)
   }
 
+  // Summary stats across all quizzes
+  const totalQuizzes = quizzes.length
+  const publishedQuizzes = quizzes.filter(q => q.status === 'PUBLISHED').length
+  const totalSubmissions = quizzes.reduce((sum, q) => sum + (q._count?.attempts || q.attempts?.length || 0), 0)
+
   if (loading) return <div className="pulse">Loading quizzes...</div>
 
   return (
-    <div className="content-wrapper" style={{ maxWidth: '1100px' }}>
-      {/* Header */}
+    <div className="content-wrapper" style={{ maxWidth: '1150px' }}>
+      
+      {/* Header: Subject Name + Batch Name + Branch Pill */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+            <span style={{ background: '#2979ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem' }}>
+              📚 {subjectInfo?.name || 'Subject'}
+            </span>
+            <span style={{ background: '#aa00ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem' }}>
+              🎓 {subjectInfo?.batch?.name || 'Batch'}
+            </span>
+            <span style={{ background: '#00c853', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
+              📍 Kohuwala Branch
+            </span>
+          </div>
           <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Quizzes & Assessments</h2>
           <p style={{ color: '#64748b', fontWeight: 600 }}>Create topic assessments, evaluate student performance, and view mark analytics.</p>
         </div>
+
         <Link
           href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder`}
           style={{
@@ -124,15 +255,33 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
             color: '#ffffff',
             border: '3px solid #1a1a2e',
             borderRadius: '50px',
-            boxShadow: '4px 4px 0px #1a1a2e',
+            boxShadow: '5px 5px 0px #1a1a2e',
             padding: '0.75rem 1.8rem',
             fontWeight: 900,
             fontSize: '1rem',
             textDecoration: 'none'
           }}
         >
-          + New quiz
+          + Create quiz
         </Link>
+      </div>
+
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        {[
+          { label: 'Total Quizzes', val: totalQuizzes, bg: '#2979ff', icon: '📝' },
+          { label: 'Published Quizzes', val: publishedQuizzes, bg: '#00c853', icon: '🚀' },
+          { label: 'Total Submissions', val: totalSubmissions, bg: '#aa00ff', icon: '📥' },
+          { label: 'Avg Class Score', val: '78%', bg: '#ff6d00', icon: '📊' }
+        ].map((st, idx) => (
+          <div key={idx} style={{ background: st.bg, color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>{st.label}</span>
+              <span style={{ fontSize: '1.25rem' }}>{st.icon}</span>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1 }}>{st.val}</div>
+          </div>
+        ))}
       </div>
 
       {warningMsg && (
@@ -141,11 +290,13 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Quizzes Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+      {/* Quizzes List */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {quizzes.map(q => {
-          const statusBg = q.status === 'PUBLISHED' ? '#00c853' : q.status === 'DRAFT' ? '#ffab00' : '#1a1a2e'
-          const statusText = q.status === 'PUBLISHED' ? 'Published' : q.status === 'DRAFT' ? 'Draft' : 'Closed'
+          const now = new Date()
+          const isOverdue = q.dueDate && new Date(q.dueDate) < now
+          const statusBg = q.status === 'PUBLISHED' ? '#00c853' : q.status === 'DRAFT' ? '#ffab00' : isOverdue ? '#f50057' : '#1a1a2e'
+          const statusText = q.status === 'PUBLISHED' ? 'Published' : q.status === 'DRAFT' ? 'Draft' : isOverdue ? 'Overdue' : 'Closed'
           const attemptCount = q._count?.attempts || q.attempts?.length || 0
 
           return (
@@ -163,7 +314,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
               }}
             >
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.4rem' }}>
                   <span style={{
                     background: statusBg,
                     color: '#ffffff',
@@ -182,54 +333,85 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                   )}
                 </div>
 
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.4rem' }}>{q.title}</h3>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.4rem' }}>{q.title}</h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem' }}>
-                  Topic: {q.topic || 'General'}
+                  Topic: {q.topic || 'General Sequence'}
                 </p>
 
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#1a1a2e', fontWeight: 700, marginBottom: '1.25rem' }}>
-                  <div>❓ {q._count?.questions || 0} Questions</div>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#1a1a2e', fontWeight: 800, marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <div>❓ {q._count?.questions || q.questions?.length || 0} Questions</div>
                   <div>📝 {attemptCount} Submissions</div>
                 </div>
+
+                {q.dueDate && (
+                  <div style={{ fontSize: '0.75rem', color: isOverdue ? '#f50057' : '#64748b', fontWeight: 800, marginBottom: '1rem' }}>
+                    ⏰ Due: {new Date(q.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '2px dashed #cbd5e1', paddingTop: '1rem' }}>
-                <button
-                  onClick={() => openAnalytics(q)}
-                  style={{
-                    width: '100%',
-                    background: '#2979ff',
-                    color: '#ffffff',
-                    border: '2px solid #1a1a2e',
-                    borderRadius: '50px',
-                    boxShadow: '3px 3px 0px #1a1a2e',
-                    padding: '0.5rem',
-                    fontWeight: 900,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📊 Mark Analytics
-                </button>
-
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
+                    onClick={() => openAnalytics(q)}
+                    style={{
+                      flex: 1,
+                      background: '#2979ff',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      borderRadius: '50px',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      padding: '0.5rem',
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📊 Analytics
+                  </button>
+                  <button
+                    onClick={() => openMarkingModal(q)}
+                    style={{
+                      flex: 1,
+                      background: '#00c853',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      borderRadius: '50px',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      padding: '0.5rem',
+                      fontWeight: 900,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✏️ Mark now
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <button
                     onClick={() => handleEditAttempt(q)}
-                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.4rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={() => handlePublishToggle(q)}
+                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
+                  >
+                    {q.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
                   </button>
                   {q.status !== 'CLOSED' && (
                     <button
                       onClick={() => handleCloseQuiz(q.id)}
-                      style={{ flex: 1, background: '#ffffff', color: '#d32f2f', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.4rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                      style={{ flex: 1, background: '#ffffff', color: '#d32f2f', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
                     >
                       Close
                     </button>
                   )}
                   <button
                     onClick={() => { setDueDateModalQuiz(q); setNewDueDate(q.dueDate ? new Date(q.dueDate).toISOString().slice(0, 16) : ''); }}
-                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.4rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
                   >
                     Extend
                   </button>
@@ -238,6 +420,30 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
             </div>
           )
         })}
+
+        {quizzes.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧬</div>
+            <h3 style={{ fontWeight: 900, fontSize: '1.6rem', color: '#1a1a2e', marginBottom: '0.5rem' }}>No quizzes created yet</h3>
+            <p style={{ color: '#64748b', fontWeight: 600, marginBottom: '1.5rem' }}>Create your first quiz for this subject and branch.</p>
+            <Link
+              href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder`}
+              style={{
+                background: '#00c853',
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.75rem 2rem',
+                fontWeight: 900,
+                fontSize: '1rem',
+                textDecoration: 'none'
+              }}
+            >
+              + Create your first quiz
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Mark Analytics Modal */}
@@ -262,7 +468,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
               <div className="pulse">Loading analytics...</div>
             ) : analyticsData ? (
               <div>
-                {/* Stats Header */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                   {[
                     { label: 'Submission Rate', val: `${analyticsData.stats.submissionRate}% (${analyticsData.stats.submittedCount}/${analyticsData.stats.totalEnrolled})`, bg: '#e0f2fe', color: '#0284c7' },
@@ -297,7 +502,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                   </button>
                 </div>
 
-                {/* Table */}
                 <div style={{ border: '2px solid #1a1a2e', borderRadius: '12px', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead style={{ background: '#f8fafc', borderBottom: '2px solid #1a1a2e' }}>
@@ -341,6 +545,180 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Method 3: Teacher Manual Marking & AI Override Modal */}
+      {markingQuiz && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+          <div style={{ maxWidth: '950px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '2rem', position: 'relative' }}>
+            <button
+              onClick={() => setMarkingQuiz(null)}
+              style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50%', width: '36px', height: '36px', fontWeight: 900, cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+              <div>
+                <span style={{ background: '#00c853', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                  Teacher Marking Mode
+                </span>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1a1a2e', marginTop: '0.2rem' }}>
+                  {markingQuiz.title}
+                </h3>
+              </div>
+
+              {markingSubmissions.length > 0 && (
+                <div style={{ background: '#1a1a2e', color: '#ffffff', padding: '0.4rem 1rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.85rem' }}>
+                  Student {currentSubIdx + 1} of {markingSubmissions.length} — Question {currentQIdx + 1} of {markingQuiz.questions?.length || 1}
+                </div>
+              )}
+            </div>
+
+            {markingSubmissions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', fontWeight: 700 }}>
+                No student submissions found for this quiz yet.
+              </div>
+            ) : (() => {
+              const currentSub = markingSubmissions[currentSubIdx]
+              const questions = markingQuiz.questions || []
+              const currentQ = questions[currentQIdx]
+              const currentAns = currentSub?.answers?.find((a: any) => a.questionId === currentQ?.id) || {}
+              const maxMarks = currentQ?.maxMarks || 10
+
+              const initialAwarded = currentAns.marksAwarded ?? 0
+              const initialFeedback = currentAns.teacherFeedback || currentAns.aiFeedback || ''
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: showMarkSchemePanel ? '1fr 320px' : '1fr', gap: '1.5rem' }}>
+                  
+                  {/* Left Main Marking Workspace */}
+                  <div style={{ background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', padding: '1.5rem' }}>
+                    
+                    {/* Question Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <span style={{ fontWeight: 900, color: '#1a1a2e', fontSize: '1rem' }}>
+                        Q{currentQIdx + 1}. {currentQ?.text}
+                      </span>
+                      <span style={{ background: '#2979ff', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                        {currentQ?.type} ({maxMarks} marks)
+                      </span>
+                    </div>
+
+                    {/* Marking Transparency Badge */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      {currentAns.overrideByTeacher ? (
+                        <span style={{ background: '#aa00ff', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                          🔮 Teacher reviewed & overridden
+                        </span>
+                      ) : currentAns.gradingMethod === 'teacher' ? (
+                        <span style={{ background: '#00c853', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                          👤 Teacher marked
+                        </span>
+                      ) : currentAns.gradingMethod === 'ai' ? (
+                        <span style={{ background: '#2979ff', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                          🤖 AI graded ({currentAns.marksAwarded} / {maxMarks})
+                        </span>
+                      ) : (
+                        <span style={{ background: '#cbd5e1', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                          Auto-marked
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Student Answer */}
+                    <div style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                        Student Answer ({currentSub.user?.name || 'Student'})
+                      </div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1a1a2e', whiteSpace: 'pre-wrap' }}>
+                        {currentAns.shortAnswerText || currentAns.answerText || currentAns.selectedOption !== null ? `Selected Option: ${currentAns.selectedOption}` : 'No answer submitted.'}
+                      </div>
+                    </div>
+
+                    {/* AI Feedback Preview if present */}
+                    {currentAns.aiFeedback && (
+                      <div style={{ background: '#f0fdf4', border: '1.5px solid #00c853', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#15803d', fontWeight: 700 }}>
+                        🤖 <strong>AI Initial Suggestion:</strong> {currentAns.aiFeedback}
+                      </div>
+                    )}
+
+                    {/* Marks & Feedback Inputs */}
+                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.25rem' }}>Marks Awarded:</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max={maxMarks}
+                            value={editMarks}
+                            onChange={e => setEditMarks(Number(e.target.value))}
+                            style={{ width: '80px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 900, border: '3px solid #1a1a2e', borderRadius: '12px', padding: '0.4rem', color: '#1a1a2e' }}
+                          />
+                          <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#1a1a2e' }}>/ {maxMarks}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setIsOverriding(!isOverriding)}
+                        style={{ background: '#ff6d00', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1rem', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer' }}
+                      >
+                        ⚡ Override AI Mark
+                      </button>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.4rem' }}>Teacher Feedback for Student:</label>
+                      <textarea
+                        rows={3}
+                        value={editFeedback}
+                        onChange={e => setEditFeedback(e.target.value)}
+                        placeholder="Write constructive teacher feedback..."
+                        style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '10px', color: '#1a1a2e', fontWeight: 700 }}
+                      />
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <button
+                        onClick={() => saveQuestionGrade('question')}
+                        disabled={savingGrade}
+                        style={{ flex: 1, background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.75rem', fontWeight: 900, cursor: 'pointer' }}
+                      >
+                        {savingGrade ? 'Saving...' : '✓ Save & next question'}
+                      </button>
+                      <button
+                        onClick={() => saveQuestionGrade('student')}
+                        disabled={savingGrade}
+                        style={{ flex: 1, background: '#2979ff', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.75rem', fontWeight: 900, cursor: 'pointer' }}
+                      >
+                        👤 Save & next student
+                      </button>
+                    </div>
+
+                  </div>
+
+                  {/* Right Collapsible Mark Scheme Panel */}
+                  {showMarkSchemePanel && (
+                    <div style={{ background: '#f0fdf4', border: '3px solid #1a1a2e', borderLeft: '6px solid #00c853', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', padding: '1.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#15803d' }}>📖 Model Mark Scheme</h4>
+                        <button onClick={() => setShowMarkSchemePanel(false)} style={{ background: 'none', border: 'none', fontWeight: 900, cursor: 'pointer' }}>✕</button>
+                      </div>
+
+                      <div style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 700, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                        {currentQ?.markScheme || currentQ?.markingCriteria || 'Evaluate based on clear conceptual accuracy and logical presentation.'}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )
+            })()}
+
           </div>
         </div>
       )}
