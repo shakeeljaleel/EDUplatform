@@ -9,6 +9,7 @@ interface EmptyStateProps {
   actionLabel?: string
   actionHref?: string
   onAction?: () => void
+  containerStyle?: React.CSSProperties
 }
 
 export default function EmptyState({
@@ -17,51 +18,82 @@ export default function EmptyState({
   description,
   actionLabel,
   actionHref,
-  onAction
+  onAction,
+  containerStyle
 }: EmptyStateProps) {
   return (
     <div style={{
       padding: '3.5rem 2rem',
       textAlign: 'center',
-      background: 'rgba(255, 255, 255, 0.8)',
-      borderRadius: 'var(--radius-md)',
-      border: '2px dashed var(--border-color, #e2e8f0)',
+      background: '#f0fdf4',
+      borderRadius: '16px',
+      border: '3px solid #1a1a2e',
+      boxShadow: '5px 5px 0px #1a1a2e',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      margin: '1.5rem 0'
+      margin: '1.5rem 0',
+      ...containerStyle
     }}>
       <div style={{
         width: '64px',
         height: '64px',
         borderRadius: '50%',
-        background: 'var(--bg-accent, #f0fdf4)',
+        background: '#ffffff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: '1rem',
-        border: '1px solid var(--accent-primary)'
+        border: '3px solid #1a1a2e',
+        boxShadow: '3px 3px 0px #1a1a2e'
       }}>
         {icon}
       </div>
 
-      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+      <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.5rem' }}>
         {title}
       </h3>
       
-      <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+      <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '1.5rem', fontWeight: 600 }}>
         {description}
       </p>
 
       {actionLabel && actionHref && (
-        <Link href={actionHref} className="btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.875rem', fontWeight: 800 }}>
+        <Link
+          href={actionHref}
+          style={{
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 900,
+            background: '#00c853',
+            color: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '50px',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            textDecoration: 'none',
+            display: 'inline-block'
+          }}
+        >
           {actionLabel}
         </Link>
       )}
 
       {actionLabel && !actionHref && onAction && (
-        <button onClick={onAction} className="btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.875rem', fontWeight: 800 }}>
+        <button
+          onClick={onAction}
+          style={{
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 900,
+            background: '#00c853',
+            color: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '50px',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            cursor: 'pointer'
+          }}
+        >
           {actionLabel}
         </button>
       )}

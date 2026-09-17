@@ -105,14 +105,152 @@ export default function StudentBuzzerPage() {
 
   if (!activeSession) {
     return (
-      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '4rem 1rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎙</div>
-        <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '1rem' }}>Join Buzzer Quiz</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Your teacher will share a Session ID. Enter it below to join the live quiz!</p>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <input className="input-field" value={sessionIdInput} onChange={e => setSessionIdInput(e.target.value)} placeholder="Paste Session ID here..." onKeyDown={e => { if (e.key === 'Enter') joinSession() }} />
-          <button className="btn-primary" onClick={joinSession}>Join</button>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
+        {/* Large Vivid Hero Section */}
+        <div style={{
+          background: '#f50057',
+          color: '#ffffff',
+          padding: '3rem 2rem',
+          borderRadius: '24px',
+          border: '4px solid #1a1a2e',
+          boxShadow: '8px 8px 0px #1a1a2e',
+          textAlign: 'center',
+          marginBottom: '2.5rem'
+        }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>⚡</div>
+          <h1 style={{ fontSize: '2.75rem', fontWeight: 900, margin: '0 0 0.5rem 0', color: '#ffffff' }}>
+            Speed Buzzer Quiz ⚡
+          </h1>
+          <p style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, opacity: 0.95, color: '#ffffff' }}>
+            Join your teacher's live quiz session
+          </p>
         </div>
+
+        {/* Session ID Join Section */}
+        <div style={{
+          background: '#ffffff',
+          padding: '2rem',
+          borderRadius: '20px',
+          border: '4px solid #1a1a2e',
+          boxShadow: '8px 8px 0px #1a1a2e',
+          marginBottom: '3.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1.5rem'
+        }}>
+          <input
+            value={sessionIdInput}
+            onChange={e => setSessionIdInput(e.target.value)}
+            placeholder="Enter session ID..."
+            onKeyDown={e => { if (e.key === 'Enter') joinSession() }}
+            style={{
+              width: '100%',
+              padding: '1.25rem 1.5rem',
+              fontSize: '1.5rem',
+              fontWeight: 800,
+              borderRadius: '16px',
+              border: '3px solid #1a1a2e',
+              outline: 'none',
+              color: '#1a1a2e',
+              boxShadow: 'inset 2px 2px 4px rgba(0,0,0,0.05)'
+            }}
+          />
+          <button
+            onClick={joinSession}
+            className="buzzer-pulse-btn"
+            style={{
+              background: '#00c853',
+              color: '#ffffff',
+              fontSize: '1.2rem',
+              fontWeight: 900,
+              padding: '16px 48px',
+              borderRadius: '50px',
+              border: '3px solid #1a1a2e',
+              boxShadow: '6px 6px 0px #1a1a2e',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            ⚡ Join
+          </button>
+        </div>
+
+        {/* How It Works Section */}
+        <div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '1.5rem', textAlign: 'center', color: '#1a1a2e' }}>
+            How it works
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+            {/* Card 1 - Green */}
+            <div style={{
+              background: '#00c853',
+              color: '#ffffff',
+              padding: '1.75rem',
+              borderRadius: '16px',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔑</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.5rem', color: '#ffffff' }}>
+                1. Get the code
+              </h3>
+              <p style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, opacity: 0.95, color: '#ffffff', lineHeight: 1.4 }}>
+                Your teacher shares a session ID at the start of class
+              </p>
+            </div>
+
+            {/* Card 2 - Blue */}
+            <div style={{
+              background: '#2979ff',
+              color: '#ffffff',
+              padding: '1.75rem',
+              borderRadius: '16px',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.5rem', color: '#ffffff' }}>
+                2. Join the session
+              </h3>
+              <p style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, opacity: 0.95, color: '#ffffff', lineHeight: 1.4 }}>
+                Enter the code above and wait for the question
+              </p>
+            </div>
+
+            {/* Card 3 - Red */}
+            <div style={{
+              background: '#f50057',
+              color: '#ffffff',
+              padding: '1.75rem',
+              borderRadius: '16px',
+              border: '3px solid #1a1a2e',
+              boxShadow: '5px 5px 0px #1a1a2e'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔔</div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.5rem', color: '#ffffff' }}>
+                3. Hit the buzzer!
+              </h3>
+              <p style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, opacity: 0.95, color: '#ffffff', lineHeight: 1.4 }}>
+                Tap BUZZ first and answer to win points for your team
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes buzzerPulseGlow {
+            0% { boxShadow: 6px 6px 0px #1a1a2e; }
+            50% { boxShadow: 0 0 20px rgba(0,200,83,0.5), 6px 6px 0px #1a1a2e; }
+            100% { boxShadow: 6px 6px 0px #1a1a2e; }
+          }
+          .buzzer-pulse-btn {
+            animation: buzzerPulseGlow 2s infinite ease-in-out;
+          }
+        `}</style>
       </div>
     )
   }
@@ -120,12 +258,12 @@ export default function StudentBuzzerPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#1a1a2e' }}>
       {/* Header */}
-      <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #1a1a2e' }}>
+      <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #ffffff' }}>
         <div>
-          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live Session</div>
-          <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>{activeSession.title}</h2>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live Session</div>
+          <h2 style={{ color: 'white', fontSize: '1.25rem', fontWeight: 900 }}>{activeSession.title}</h2>
         </div>
-        <span style={{ padding: '0.35rem 1rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 700, background: activeSession.status === 'ACTIVE' ? '#00c853' : '#ff6d00', color: '#ffffff' }}>
+        <span style={{ padding: '0.35rem 1rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 900, background: activeSession.status === 'ACTIVE' ? '#00c853' : '#ff6d00', color: '#ffffff', border: '2px solid #1a1a2e' }}>
           {activeSession.status}
         </span>
       </div>
@@ -146,7 +284,7 @@ export default function StudentBuzzerPage() {
           <div style={{ textAlign: 'center', color: 'white' }}>
             <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>🏆</div>
             <h2 style={{ fontSize: '2.5rem', fontWeight: 900 }}>Session Ended!</h2>
-            <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
+            <p style={{ color: 'rgba(255,255,255,0.8)', marginTop: '0.5rem', fontWeight: 700 }}>
               {(() => {
                 const sorted = [...teams].sort((a: any, b: any) => b.score - a.score)
                 const topScore = sorted[0]?.score || 0
@@ -160,15 +298,15 @@ export default function StudentBuzzerPage() {
             </p>
           </div>
         ) : isSetup ? (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)' }}>
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-            <h2 style={{ fontSize: '1.5rem', color: 'white' }}>Waiting for teacher to start...</h2>
+            <h2 style={{ fontSize: '1.5rem', color: 'white', fontWeight: 900 }}>Waiting for teacher to start...</h2>
           </div>
         ) : currentRound ? (
           <>
-            <div style={{ background: '#24243e', borderRadius: '16px', padding: '2rem', maxWidth: '600px', width: '100%', textAlign: 'center', border: '3px solid #1a1a2e', boxShadow: '5px 5px 0px #1a1a2e' }}>
-              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>Current Question</div>
-              <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', lineHeight: 1.4 }}>{currentRound.question}</p>
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2rem', maxWidth: '600px', width: '100%', textAlign: 'center', border: '4px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e' }}>
+              <div style={{ fontSize: '0.75rem', color: '#aa00ff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>Current Question</div>
+              <p style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1a1a2e', lineHeight: 1.4 }}>{currentRound.question}</p>
             </div>
 
             {/* Big Enormous Buzzer Button */}
@@ -180,11 +318,11 @@ export default function StudentBuzzerPage() {
                 onClick={handleBuzz}
                 disabled={buzzed}
                 style={{
-                  width: '250px', height: '250px', borderRadius: '50%', border: '3px solid #1a1a2e', cursor: buzzed ? 'default' : 'pointer',
+                  width: '250px', height: '250px', borderRadius: '50%', border: '4px solid #1a1a2e', cursor: buzzed ? 'default' : 'pointer',
                   background: buzzed
                     ? buzzResult === 'first' ? '#00c853' : '#757575'
                     : '#f50057',
-                  boxShadow: buzzed ? 'none' : '5px 5px 0px #1a1a2e',
+                  boxShadow: buzzed ? 'none' : '6px 6px 0px #1a1a2e',
                   animation: buzzed ? 'none' : 'pulse 1.5s ease-in-out infinite',
                   transform: isAnimating ? 'scale(0.93)' : 'scale(1)',
                   transition: 'all 0.15s ease',
@@ -198,20 +336,20 @@ export default function StudentBuzzerPage() {
             </div>
 
             {buzzResult === 'first' && (
-              <div style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '12px', padding: '1rem 2rem', textAlign: 'center' }}>
-                <div style={{ color: '#6ee7b7', fontWeight: 800, fontSize: '1.25rem' }}>🎉 First buzz! Waiting for teacher's call...</div>
+              <div style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1rem 2rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e' }}>
+                <div style={{ fontWeight: 900, fontSize: '1.25rem' }}>🎉 First buzz! Waiting for teacher's call...</div>
               </div>
             )}
             {buzzResult === 'late' && (
-              <div style={{ background: 'rgba(107,114,128,0.2)', border: '1px solid rgba(107,114,128,0.4)', borderRadius: '12px', padding: '1rem 2rem', textAlign: 'center' }}>
-                <div style={{ color: '#9ca3af', fontWeight: 700, fontSize: '1rem' }}>Someone buzzed first. Better luck next round!</div>
+              <div style={{ background: '#757575', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1rem 2rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e' }}>
+                <div style={{ fontWeight: 800, fontSize: '1rem' }}>Someone buzzed first. Better luck next round!</div>
               </div>
             )}
           </>
         ) : (
-          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
+          <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏸</div>
-            <p>Waiting for teacher to open the next question...</p>
+            <p style={{ fontWeight: 800, fontSize: '1.1rem' }}>Waiting for teacher to open the next question...</p>
           </div>
         )}
       </div>

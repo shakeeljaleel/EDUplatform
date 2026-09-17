@@ -92,7 +92,9 @@ export default async function StudentDashboard() {
     }
   })
 
-  const activeEnrollment = subjectEnrollments.find(e => e.status === 'active')
+  const activeEnrollment = subjectEnrollments.find(e => ['active', 'admin_approved', 'ACTIVE', 'APPROVED'].includes(e.status))
+  const isStudentActive = subjectEnrollments.some(e => ['active', 'admin_approved', 'ACTIVE', 'APPROVED'].includes(e.status))
+  const studentStatusLabel = isStudentActive ? 'Active' : (subjectEnrollments.length > 0 ? 'Pending' : 'Pending')
 
   let myRank = 0
   let myPercentile = 0
@@ -100,7 +102,10 @@ export default async function StudentDashboard() {
 
   if (activeEnrollment) {
     const batchStudents = await prisma.studentEnrollment.findMany({
-      where: { batchId: activeEnrollment.batchId, status: 'active' },
+      where: {
+        batchId: activeEnrollment.batchId,
+        status: { in: ['active', 'admin_approved', 'ACTIVE', 'APPROVED'] }
+      },
       select: { studentId: true }
     })
 
@@ -136,10 +141,18 @@ export default async function StudentDashboard() {
       }
     })
 
-    allStats.sort((a, b) => b.score - a.score)
-    myRank = allStats.findIndex(s => s.id === studentUserId) + 1
-    myPercentile = Math.round(((allStats.length - myRank) / Math.max(1, allStats.length)) * 100)
-    leaderboard = allStats.map((s, idx) => ({ ...s, rank: idx + 1 }))
+    const hasNonZeroScores = allStats.some(s => s.score > 0)
+
+    if (hasNonZeroScores) {
+      allStats.sort((a, b) => b.score - a.score)
+      myRank = allStats.findIndex(s => s.id === studentUserId) + 1
+      myPercentile = Math.round(((allStats.length - myRank) / Math.max(1, allStats.length)) * 100)
+      leaderboard = allStats.map((s, idx) => ({ ...s, rank: idx + 1 }))
+    } else {
+      myRank = 0
+      myPercentile = 0
+      leaderboard = allStats.map(s => ({ ...s, rank: 0 }))
+    }
   }
 
   // Calculate comparative analytics for Exams using single batch query
@@ -232,7 +245,7 @@ export default async function StudentDashboard() {
   // Calculate attendance stats
   const totalClasses = attendance.length
   const presentCount = attendance.filter(a => a.status !== 'ABSENT').length
-  const attendanceRate = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 100
+  const attendanceRate = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0
 
   // Fetch Batch Insights (Exam Sessions)
   const examSessions = await prisma.examSession.findMany({
@@ -257,39 +270,72 @@ export default async function StudentDashboard() {
       <StudentBatchHeaderBanner currentBatch={activeEnrollment?.batch || null} />
 
       {/* Pending Tasks & Quick Resume Panel */}
-      <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '5px 5px 0px #1a1a2e', borderLeft: '8px solid var(--accent-primary)' }}>
+      <div className="card" style={{
+        marginBottom: '2.5rem',
+        background: '#ffffff',
+        border: '3px solid #1a1a2e',
+        borderRadius: '16px',
+        boxShadow: '5px 5px 0px #1a1a2e',
+        padding: '1.5rem'
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--accent-primary)' }}>⚡ Active Learning Stream</span>
+            <span style={{
+              fontSize: '0.8rem',
+              fontWeight: 900,
+              color: '#ffffff',
+              background: '#ff6d00',
+              padding: '4px 14px',
+              borderRadius: '50px',
+              border: '2px solid #1a1a2e',
+              display: 'inline-block',
+              marginBottom: '0.4rem',
+              boxShadow: '2px 2px 0px #1a1a2e'
+            }}>
+              ⚡ Active learning stream
+            </span>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '0.25rem' }}>Pending Tasks & Upcoming Lessons</h2>
           </div>
           {upcomingClasses.length > 0 && (
-            <Link href={`/dashboard/student/subjects/${upcomingClasses[0].subjectId}`} className="btn-primary" style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem' }}>
+            <Link
+              href={`/dashboard/student/subjects/${upcomingClasses[0].subjectId}`}
+              style={{
+                background: '#00c853',
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.65rem 1.25rem',
+                fontSize: '0.875rem',
+                fontWeight: 900,
+                textDecoration: 'none'
+              }}
+            >
               ▶ Resume Lesson: {upcomingClasses[0].title}
             </Link>
           )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-          <div style={{ background: 'rgba(255,255,255,0.7)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Upcoming Session</span>
-            <div style={{ fontWeight: 800, fontSize: '1rem', marginTop: '0.25rem' }}>
+          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '2px solid #1a1a2e' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800 }}>Upcoming Session</span>
+            <div style={{ fontWeight: 900, fontSize: '1rem', marginTop: '0.25rem' }}>
               {upcomingClasses.length > 0 ? upcomingClasses[0].title : 'No sessions scheduled'}
             </div>
             {upcomingClasses.length > 0 && (
-              <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.75rem', color: '#2979ff', fontWeight: 800 }}>
                 {new Date(upcomingClasses[0].scheduledDate).toLocaleDateString()} at {new Date(upcomingClasses[0].scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.7)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Recent Announcements</span>
-            <div style={{ fontWeight: 800, fontSize: '1rem', marginTop: '0.25rem' }}>
+          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '2px solid #1a1a2e' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800 }}>Recent Announcements</span>
+            <div style={{ fontWeight: 900, fontSize: '1rem', marginTop: '0.25rem' }}>
               {announcements.length > 0 ? announcements[0].title : 'No new announcements'}
             </div>
             {announcements.length > 0 && (
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
                 {announcements[0].subject.name}
               </span>
             )}
@@ -339,9 +385,11 @@ export default async function StudentDashboard() {
             <span style={{ fontSize: '1.5rem' }}>📋</span>
           </div>
           <div style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
-            {attendanceRate}%
+            {totalClasses > 0 ? `${attendanceRate}%` : '-- %'}
           </div>
-          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700, color: '#ffffff' }}>{presentCount} sessions of {totalClasses}</p>
+          <p style={{ fontSize: '0.875rem', marginTop: '1rem', fontWeight: 700, color: '#ffffff' }}>
+            {totalClasses > 0 ? `${presentCount} sessions of ${totalClasses}` : 'No sessions recorded yet'}
+          </p>
         </div>
 
         {/* Card 3 - Student Status - Solid Electric Blue */}
@@ -360,11 +408,25 @@ export default async function StudentDashboard() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
             <span style={{
-              background: 'rgba(255,255,255,0.25)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)',
-              padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800
+              background: isStudentActive ? '#00c853' : '#ff6d00',
+              color: '#ffffff',
+              border: '2px solid #1a1a2e',
+              padding: '4px 14px',
+              borderRadius: '50px',
+              fontSize: '0.85rem',
+              fontWeight: 900,
+              boxShadow: '2px 2px 0px #1a1a2e'
             }}>
-              💳 {profile?.paymentStatus || 'Pending'}
+              Status: {studentStatusLabel}
             </span>
+            {profile?.paymentStatus && (
+              <span style={{
+                background: 'rgba(255,255,255,0.25)', color: '#ffffff', border: '1.5px solid rgba(255,255,255,0.4)',
+                padding: '4px 12px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800
+              }}>
+                💳 {profile.paymentStatus}
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
             <div>
@@ -392,22 +454,31 @@ export default async function StudentDashboard() {
             <h3 style={{ fontSize: '1rem', color: '#ffffff', fontWeight: 800 }}>Class Rank</h3>
             <span style={{ fontSize: '1.5rem' }}>🏆</span>
           </div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
-            #{myRank || '--'}
+          <div style={{ fontSize: myRank > 0 ? '3.5rem' : '2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
+            {myRank > 0 ? `#${myRank}` : 'Unranked'}
           </div>
-          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900, color: '#ffffff' }}>Top {Math.max(1, 100 - (myPercentile || 0))}% of batch</p>
+          <p style={{ fontSize: '1rem', marginTop: '1.5rem', fontWeight: 900, color: '#ffffff' }}>
+            {myRank > 0 ? `Top ${Math.max(1, 100 - (myPercentile || 0))}% of batch` : 'No ranking yet'}
+          </p>
         </div>
       </div>
 
       {/* BATCH INSIGHTS PANEL */}
       {examSessions.length > 0 && (
         <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: 900 }}>
             <span style={{ fontSize: '2rem' }}>🧬</span> Exam Session Insights
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
             {examSessions.map(s => (
-              <div key={s.id} className="premium-card-v2" style={{ borderLeft: '10px solid var(--accent-primary)' }}>
+              <div key={s.id} className="card" style={{
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                borderLeft: '10px solid #2979ff',
+                background: '#ffffff',
+                padding: '1.5rem'
+              }}>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h4 style={{ fontSize: '1.25rem', fontWeight: 900 }}>{s.title}</h4>
                   <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
@@ -418,16 +489,16 @@ export default async function StudentDashboard() {
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid var(--success)' }}>
-                    <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '0.25rem' }}>Class Highlights:</strong>
+                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.05)', border: '2px solid #00c853' }}>
+                    <strong style={{ color: '#00c853', display: 'block', marginBottom: '0.25rem' }}>Class Highlights:</strong>
                     {s.highlights || 'No highlights recorded for this session.'}
                   </div>
-                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid var(--error)' }}>
-                    <strong style={{ color: 'var(--error)', display: 'block', marginBottom: '0.25rem' }}>Common Challenges:</strong>
+                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', border: '2px solid #f50057' }}>
+                    <strong style={{ color: '#f50057', display: 'block', marginBottom: '0.25rem' }}>Common Challenges:</strong>
                     {s.lows || 'No specific challenges noted.'}
                   </div>
-                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: 'var(--bg-accent)', border: '2px dashed var(--dna-blue)' }}>
-                    <strong style={{ color: 'var(--dna-blue)', display: 'block', marginBottom: '0.25rem' }}>Examiner\'s Suggestions:</strong>
+                  <div style={{ fontSize: '0.9rem', padding: '1rem', borderRadius: '12px', background: '#f8fafc', border: '2px solid #2979ff' }}>
+                    <strong style={{ color: '#2979ff', display: 'block', marginBottom: '0.25rem' }}>Examiner's Suggestions:</strong>
                     {s.suggestions || 'No suggestions recorded yet.'}
                   </div>
                 </div>
@@ -438,15 +509,21 @@ export default async function StudentDashboard() {
       )}
 
       <div style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <BookOpen size={28} color="#10b981" />
+        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 900 }}>
+          <BookOpen size={28} color="#00c853" />
           Academic Roadmap (Upcoming Classes)
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {upcomingClasses.map((c, idx) => (
-            <div key={c.id} className="premium-card-v2 stagger-2" style={{ boxShadow: '12px 12px 0 var(--dna-blue)', overflow: 'visible' }}>
+          {upcomingClasses.map((c) => (
+            <div key={c.id} className="card" style={{
+              background: '#ffffff',
+              border: '3px solid #1a1a2e',
+              borderRadius: '16px',
+              boxShadow: '5px 5px 0px #1a1a2e',
+              padding: '1.5rem'
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--dna-blue)', background: 'rgba(59, 130, 246, 0.1)', padding: '4px 12px', borderRadius: '8px', border: '2px solid var(--dna-blue)' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 900, textTransform: 'uppercase', color: '#2979ff', background: 'rgba(41, 121, 255, 0.1)', padding: '4px 12px', borderRadius: '8px', border: '2px solid #1a1a2e' }}>
                   {new Date(c.scheduledDate).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                 </span>
                 <span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-primary)' }}>
@@ -454,11 +531,11 @@ export default async function StudentDashboard() {
                 </span>
               </div>
               <h3 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>{c.title}</h3>
-              <div style={{ fontSize: '1rem', color: 'var(--accent-primary)', fontWeight: 900, marginBottom: '1.5rem' }}>{c.subject.name}</div>
+              <div style={{ fontSize: '1rem', color: '#00c853', fontWeight: 900, marginBottom: '1.5rem' }}>{c.subject.name}</div>
               
               {c.syllabusObjectives.length > 0 && (
-                <div style={{ background: 'var(--bg-accent)', padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', border: 'var(--sketch-border)', boxShadow: '4px 4px 0 var(--text-primary)', filter: 'url(#rough-edge)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Learning Objective</div>
+                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', border: '2px solid #1a1a2e' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#aa00ff', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Learning Objective</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>{c.syllabusObjectives[0].code}: {c.syllabusObjectives[0].description}</div>
                 </div>
               )}
@@ -467,10 +544,10 @@ export default async function StudentDashboard() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                   {c.resources.map(r => (
                     <a key={r.id} href={r.url} target="_blank" rel="noreferrer" style={{ 
-                      fontSize: '0.8rem', padding: '0.5rem 1rem', borderRadius: '12px', 
-                      background: 'white', border: '2px solid var(--text-primary)', color: 'var(--text-primary)', 
+                      fontSize: '0.8rem', padding: '0.5rem 1rem', borderRadius: '50px', 
+                      background: 'white', border: '2px solid #1a1a2e', color: '#1a1a2e', 
                       textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem',
-                      fontWeight: 800, boxShadow: '2px 2px 0 var(--text-primary)'
+                      fontWeight: 900, boxShadow: '2px 2px 0px #1a1a2e'
                     }}>
                       {r.type === 'VIDEO' ? '📺' : '📄'} {r.title}
                     </a>
@@ -482,11 +559,17 @@ export default async function StudentDashboard() {
           {upcomingClasses.length === 0 && (
             <div style={{ gridColumn: '1/-1' }}>
               <EmptyState 
-                icon={<BookOpen size={36} color="var(--accent-primary)" />}
+                icon={<BookOpen size={36} color="#00c853" />}
                 title="No Upcoming Classes Scheduled" 
                 description="You are all caught up! There are no pending live sessions or class deadlines scheduled right now."
-                actionLabel="Explore Quizzes & Materials"
+                actionLabel="Explore quizzes & materials"
                 actionHref="/dashboard/student/quizzes"
+                containerStyle={{
+                  border: '3px solid #1a1a2e',
+                  borderRadius: '16px',
+                  boxShadow: '5px 5px 0px #1a1a2e',
+                  background: '#f0fdf4'
+                }}
               />
             </div>
           )}
@@ -494,116 +577,129 @@ export default async function StudentDashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
-        {/* Performance Charts */}
-        <div className="card">
-          <h3 style={{ marginBottom: '1.5rem' }}>Subject Performance (Avg %)</h3>
-          <div style={{ height: '240px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '1.5rem', background: 'rgba(255,255,255,0.4)', borderRadius: '16px', border: '3px solid var(--text-primary)', filter: 'url(#rough-edge)' }}>
+        {/* Performance Charts - Fix 8: Comic Treatment */}
+        <div className="card" style={{
+          background: '#ffffff',
+          border: '3px solid #1a1a2e',
+          borderRadius: '16px',
+          boxShadow: '5px 5px 0px #1a1a2e',
+          padding: '1.5rem'
+        }}>
+          <h3 style={{ marginBottom: '1.5rem', fontWeight: 900 }}>Subject Performance (Avg %)</h3>
+          <div style={{ height: '240px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '1.5rem', background: '#f8fafc', borderRadius: '16px', border: '2px solid #1a1a2e' }}>
             {examData.map((e) => {
               const pct = Math.min(100, Math.max(5, e.pct || 0))
               const avgPct = Math.min(100, Math.max(5, e.classAvg || 0))
               return (
                 <div key={e.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', position: 'relative' }}>
-                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '3px dashed #f59e0b', zIndex: 1, opacity: 0.6 }}></div>
+                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '3px dashed #ff6d00', zIndex: 1, opacity: 0.8 }}></div>
                    <div style={{ 
                      width: '80%', height: `${pct}%`, 
-                     background: 'var(--accent-primary)', 
-                     border: '3px solid var(--text-primary)',
+                     background: '#2979ff', 
+                     border: '2px solid #1a1a2e',
                      borderRadius: '4px 4px 0 0', position: 'absolute', bottom: '0', zIndex: 2, 
                      transition: 'height 1s ease',
-                     boxShadow: '4px 4px 0 var(--text-primary)'
+                     boxShadow: '3px 3px 0px #1a1a2e'
                    }}>
                       <div style={{ position: 'absolute', top: '-25px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 900 }}>{Math.round(pct)}%</div>
                    </div>
                 </div>
               )
             })}
-            {examData.length === 0 && <p style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)' }}>No data available</p>}
+            {examData.length === 0 && <p style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>No data available</p>}
           </div>
           <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.8rem', fontWeight: 900 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '12px', background: 'var(--accent-primary)', border: '2px solid var(--text-primary)' }}></div> Your Score</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '3px', background: '#f59e0b' }}></div> Class Avg</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '12px', background: '#2979ff', border: '2px solid #1a1a2e' }}></div> Your Score</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '3px', background: '#ff6d00' }}></div> Class Avg</span>
           </div>
         </div>
 
-        <div className="card">
-          <h3 style={{ marginBottom: '1.5rem' }}>Practice Quiz Analytics</h3>
-          <div style={{ height: '240px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '1.5rem', background: 'rgba(255,255,255,0.4)', borderRadius: '16px', border: '3px solid var(--text-primary)', filter: 'url(#rough-edge)' }}>
+        <div className="card" style={{
+          background: '#ffffff',
+          border: '3px solid #1a1a2e',
+          borderRadius: '16px',
+          boxShadow: '5px 5px 0px #1a1a2e',
+          padding: '1.5rem'
+        }}>
+          <h3 style={{ marginBottom: '1.5rem', fontWeight: 900 }}>Practice Quiz Analytics</h3>
+          <div style={{ height: '240px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '1.5rem', background: '#f8fafc', borderRadius: '16px', border: '2px solid #1a1a2e' }}>
             {quizData.map((q) => {
               const pct = Math.min(100, Math.max(5, q.pct || 0))
               const avgPct = Math.min(100, Math.max(5, q.classAvg || 0))
               return (
                 <div key={q.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', position: 'relative' }}>
-                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '3px dashed var(--dna-purple)', zIndex: 1, opacity: 0.6 }}></div>
+                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '3px dashed #aa00ff', zIndex: 1, opacity: 0.8 }}></div>
                    <div style={{ 
                      width: '80%', height: `${pct}%`, 
-                     background: 'var(--dna-blue)', 
-                     border: '3px solid var(--text-primary)',
+                     background: '#00c853', 
+                     border: '2px solid #1a1a2e',
                      borderRadius: '4px 4px 0 0', position: 'absolute', bottom: '0', zIndex: 2, 
                      transition: 'height 1s ease',
-                     boxShadow: '4px 4px 0 var(--text-primary)'
+                     boxShadow: '3px 3px 0px #1a1a2e'
                    }}>
                       <div style={{ position: 'absolute', top: '-25px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 900 }}>{Math.round(pct)}%</div>
                    </div>
                 </div>
               )
             })}
-            {quizData.length === 0 && <p style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)' }}>No data available</p>}
+            {quizData.length === 0 && <p style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>No data available</p>}
           </div>
           <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.8rem', fontWeight: 900 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '12px', background: 'var(--dna-blue)', border: '2px solid var(--text-primary)' }}></div> Your Score</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '3px', background: 'var(--dna-purple)' }}></div> Class Avg</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '12px', background: '#00c853', border: '2px solid #1a1a2e' }}></div> Your Score</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '12px', height: '3px', background: '#aa00ff' }}></div> Class Avg</span>
           </div>
         </div>
       </div>
 
-      {/* BATCH LEADERBOARD */}
+      {/* BATCH LEADERBOARD - Fix 9 & Fix 4 */}
       {leaderboard.length > 0 && (
         <div style={{ marginBottom: '4rem' }}>
-          <h2 style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '2.5rem' }}>
+          <h2 style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '2.5rem', fontWeight: 900 }}>
             <span style={{ fontSize: '2rem' }}>🏆</span> Batch Leaderboard
           </h2>
-          <div className="sketch-table-container">
+          <div className="sketch-table-container" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', overflow: 'hidden', background: '#ffffff' }}>
             <table className="sketch-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr>
-                  <th style={{ width: '100px', textAlign: 'center' }}>Rank</th>
-                  <th style={{ textAlign: 'left' }}>Student Name</th>
-                  <th style={{ width: '140px', textAlign: 'center' }}>Stars ⭐</th>
-                  <th style={{ width: '140px', textAlign: 'center' }}>Medals 🏅</th>
-                  <th style={{ width: '160px', textAlign: 'center' }}>Helix Score</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '3px solid #1a1a2e' }}>
+                  <th style={{ width: '100px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Rank</th>
+                  <th style={{ textAlign: 'left', padding: '1rem', fontWeight: 900 }}>Student Name</th>
+                  <th style={{ width: '140px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Stars ⭐</th>
+                  <th style={{ width: '140px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Medals 🏅</th>
+                  <th style={{ width: '160px', textAlign: 'center', padding: '1rem', fontWeight: 900 }}>Helix Score</th>
                 </tr>
               </thead>
               <tbody>
                 {leaderboard.slice(0, 5).map((s) => {
-                  const rankBg = s.rank === 1 ? 'linear-gradient(135deg, #ffd700, #ffae00)'
-                                : s.rank === 2 ? 'linear-gradient(135deg, #e0e0e0, #9e9e9e)'
-                                : s.rank === 3 ? 'linear-gradient(135deg, #cd7f32, #8b4513)'
+                  const isRanked = s.rank > 0
+                  const rankBg = s.rank === 1 ? '#ffd700'
+                                : s.rank === 2 ? '#c0c0c0'
+                                : s.rank === 3 ? '#cd7f32'
                                 : '#ffffff'
-                  const rankGlow = s.rank === 1 ? '0 0 14px rgba(255, 215, 0, 0.7)'
-                                 : s.rank === 2 ? '0 0 10px rgba(158, 158, 158, 0.5)'
-                                 : s.rank === 3 ? '0 0 10px rgba(205, 127, 50, 0.5)'
-                                 : 'none'
 
                   return (
-                    <tr key={s.id} style={{ backgroundColor: s.id === studentUserId ? 'rgba(0, 200, 83, 0.08)' : 'transparent' }}>
-                      <td style={{ textAlign: 'center' }}>
+                    <tr key={s.id} style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: s.id === studentUserId ? 'rgba(0, 200, 83, 0.08)' : 'transparent' }}>
+                      <td style={{ textAlign: 'center', padding: '0.75rem' }}>
                         <div style={{
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px',
-                          borderRadius: '12px', border: s.rank <= 3 ? 'none' : '2px solid var(--text-primary)',
-                          background: rankBg,
-                          color: s.rank <= 3 ? '#ffffff' : 'var(--text-primary)',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: s.rank <= 3 && isRanked ? '42px' : '36px',
+                          height: s.rank <= 3 && isRanked ? '42px' : '36px',
+                          borderRadius: s.rank <= 3 && isRanked ? '50%' : '8px',
+                          border: '3px solid #1a1a2e',
+                          background: isRanked ? rankBg : '#ffffff',
+                          color: '#1a1a2e',
                           fontWeight: 900,
-                          boxShadow: rankGlow
+                          fontSize: s.rank <= 3 && isRanked ? '1.2rem' : '0.9rem',
+                          boxShadow: '3px 3px 0px #1a1a2e'
                         }}>
-                          {s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : s.rank}
+                          {s.rank === 1 ? '🏆' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : isRanked ? s.rank : '-'}
                         </div>
                       </td>
-                      <td style={{ fontWeight: 900, fontSize: '1.1rem' }}>
+                      <td style={{ fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>
                         {s.name} {s.id === studentUserId && <span style={{ color: '#00c853', fontSize: '0.8rem', marginLeft: '0.5rem', fontWeight: 900, border: '2px solid #00c853', padding: '2px 8px', borderRadius: '8px' }}>YOU</span>}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.stars}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem' }}>{s.medals}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: '#00c853' }}>{s.score} pts</td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>{s.stars}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', padding: '0.75rem' }}>{s.medals}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.1rem', color: '#00c853', padding: '0.75rem' }}>{s.score} pts</td>
                     </tr>
                   )
                 })}
@@ -613,17 +709,13 @@ export default async function StudentDashboard() {
         </div>
       )}
 
+      {/* MY ENROLLED SUBJECTS - Fix 6 & Fix 7 */}
       <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem', fontWeight: 900 }}>My Enrolled Subjects</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem', marginBottom: '4rem' }}>
         {subjectEnrollments.map((e, idx) => {
           const subjectColor = e.subject.colour || getSubjectColor(e.subject.name, idx)
           const teachersAtBranch = e.subject.branchTeachers.filter((bt: any) => bt.branchId === e.branchId)
           const teacherNames = teachersAtBranch.map((bt: any) => bt.teacher.name).join(', ')
-
-          const subjectData = subjectsWithObjectives.find(s => s.id === e.subject.id)
-          const totalObjectives = subjectData?.syllabusObjectives.length || 0
-          const taughtObjectives = subjectData?.syllabusObjectives.filter(obj => obj.classes.length > 0).length || 0
-          const syllabusPct = totalObjectives > 0 ? Math.round((taughtObjectives / totalObjectives) * 100) : 0
 
           return (
             <div
@@ -643,55 +735,120 @@ export default async function StudentDashboard() {
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 900, opacity: 0.95 }}>
-                      {e.batch?.name || 'Batch'}
-                    </span>
-                    <span style={{
-                      background: e.branch?.colour || '#00c853',
-                      color: '#ffffff',
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '50px',
-                      fontSize: '0.725rem',
-                      fontWeight: 900,
-                      border: '1.5px solid #1a1a2e'
-                    }}>
-                      📍 {e.branch?.name || 'Branch'}
-                    </span>
-                  </div>
+                  <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 900, opacity: 0.95, background: 'rgba(0,0,0,0.25)', padding: '2px 10px', borderRadius: '6px' }}>
+                    {e.batch?.name || 'Batch'}
+                  </span>
 
                   <span style={{
                     background: e.status === 'active' ? '#00c853' : e.status === 'admin_approved' ? '#2979ff' : '#ff6d00',
                     color: '#ffffff',
-                    padding: '0.2rem 0.6rem',
+                    padding: '0.2rem 0.60rem',
                     borderRadius: '50px',
                     fontSize: '0.725rem',
                     fontWeight: 900,
-                    border: '1.5px solid #1a1a2e'
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '2px 2px 0px #1a1a2e'
                   }}>
                     {e.status}
                   </span>
                 </div>
 
                 <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', margin: '0.25rem 0' }}>{e.subject.name}</h3>
-                
+
+                {/* Branch Pill - Fix 7 */}
+                <div style={{ marginTop: '0.4rem', marginBottom: '0.5rem' }}>
+                  <span style={{
+                    background: '#00c853',
+                    color: '#ffffff',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '50px',
+                    fontSize: '0.8rem',
+                    fontWeight: 900,
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '2px 2px 0px #1a1a2e',
+                    display: 'inline-block'
+                  }}>
+                    📍 {e.branch?.name || 'Main Campus'}
+                  </span>
+                </div>
+
                 <div style={{ marginTop: '0.35rem', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(0,0,0,0.25)', padding: '0.4rem 0.75rem', borderRadius: '8px', display: 'inline-block' }}>
                   {teacherNames ? `👨‍🏫 Teacher(s): ${teacherNames}` : '⚠️ No teacher assigned at this branch'}
                 </div>
               </div>
 
-              {/* Quick Action Buttons - Solid colors with comic border & hard shadow */}
+              {/* Quick Action Buttons - Fix 6: Solid colors with comic border & hard shadow */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
+                <Link
+                  prefetch={true}
+                  href={`/dashboard/student/subjects/${e.subject.id}/grading`}
+                  style={{
+                    padding: '0.65rem 0.5rem',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    background: '#2979ff',
+                    color: '#ffffff',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontWeight: 900,
+                    borderRadius: '50px',
+                    textDecoration: 'none'
+                  }}
+                >
                   🤖 AI Marking
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
+                <Link
+                  prefetch={true}
+                  href={`/dashboard/student/subjects/${e.subject.id}/forum`}
+                  style={{
+                    padding: '0.65rem 0.5rem',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    background: '#aa00ff',
+                    color: '#ffffff',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontWeight: 900,
+                    borderRadius: '50px',
+                    textDecoration: 'none'
+                  }}
+                >
                   💬 Q&A Forum
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
+                <Link
+                  prefetch={true}
+                  href={`/dashboard/student/subjects/${e.subject.id}/calendar`}
+                  style={{
+                    padding: '0.65rem 0.5rem',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    background: '#ff6d00',
+                    color: '#ffffff',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontWeight: 900,
+                    borderRadius: '50px',
+                    textDecoration: 'none'
+                  }}
+                >
                   📅 Schedule
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
+                <Link
+                  prefetch={true}
+                  href={`/dashboard/student/subjects/${e.subject.id}/recordings`}
+                  style={{
+                    padding: '0.65rem 0.5rem',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    background: '#f50057',
+                    color: '#ffffff',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontWeight: 900,
+                    borderRadius: '50px',
+                    textDecoration: 'none'
+                  }}
+                >
                   📹 Recordings
                 </Link>
               </div>
@@ -700,10 +857,20 @@ export default async function StudentDashboard() {
         })}
 
         {subjectEnrollments.length === 0 && (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', background: '#ffffff', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
-            <BookOpen size={36} color="#94a3b8" style={{ marginBottom: '0.5rem' }} />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#475569' }}>No enrolled subjects found</h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Explore available batches and enrol in subjects to get started.</p>
+          <div style={{ gridColumn: '1/-1' }}>
+            <EmptyState
+              icon={<BookOpen size={36} color="#00c853" />}
+              title="No enrolled subjects found"
+              description="Explore available batches and enrol in subjects to get started."
+              actionLabel="Enrol in a batch"
+              actionHref="/dashboard/student"
+              containerStyle={{
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                background: '#f0fdf4'
+              }}
+            />
           </div>
         )}
       </div>

@@ -66,15 +66,25 @@ export default function StudentBatchHeaderBanner({ currentBatch }: StudentBatchH
         </div>
 
         <button
-          className="btn-primary"
           onClick={() => setModalOpen(true)}
           style={{
-            padding: '0.75rem 1.5rem', fontSize: '0.9rem', fontWeight: 800,
-            display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap'
+            background: '#2979ff',
+            color: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '50px',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.9rem',
+            fontWeight: 900,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer'
           }}
         >
-          <GraduationCap size={18} />
-          {currentBatch ? 'Switch / Enroll in Batch' : '🎓 Enroll in a Batch'}
+          <GraduationCap size={18} color="#ffffff" />
+          {currentBatch ? 'Switch / Enrol in batch' : '🎓 Enrol in a batch'}
         </button>
       </div>
 
