@@ -63,7 +63,6 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
         if (initialLinkedSessionId) {
           const match = data.sessions.find((s: any) => s.id === initialLinkedSessionId)
           if (match) {
-            const dateStr = new Date(match.scheduledDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
             if (!title) setTitle(`Quiz: ${match.title}`)
             if (!topic) setTopic(match.title)
           }
@@ -225,14 +224,30 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
         </Link>
       </div>
 
-      {/* Stepper Header */}
+      {/* Step Indicator Tabs — Fix 4: Comic treatment */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
         {[
           { num: 1, title: '1. Quiz setup' },
           { num: 2, title: '2. Question builder' },
           { num: 3, title: '3. Review & publish' }
         ].map(s => {
-          const active = step === s.num
+          const isCompleted = step > s.num
+          const isCurrent = step === s.num
+
+          let tabBg = '#ffffff'
+          let tabColor = '#64748b'
+          let tabShadow = 'none'
+
+          if (isCompleted) {
+            tabBg = '#00c853'
+            tabColor = '#ffffff'
+            tabShadow = '3px 3px 0px #1a1a2e'
+          } else if (isCurrent) {
+            tabBg = '#1a1a2e'
+            tabColor = '#ffffff'
+            tabShadow = '4px 4px 0px #2979ff'
+          }
+
           return (
             <button
               key={s.num}
@@ -240,17 +255,17 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
               style={{
                 flex: 1,
                 padding: '0.85rem 1rem',
-                background: active ? '#1a1a2e' : '#ffffff',
-                color: active ? '#ffffff' : '#1a1a2e',
-                border: '3px solid #1a1a2e',
+                background: tabBg,
+                color: tabColor,
+                border: '2px solid #1a1a2e',
                 borderRadius: '50px',
-                boxShadow: active ? '4px 4px 0px #2979ff' : '2px 2px 0px #1a1a2e',
+                boxShadow: tabShadow,
                 fontWeight: 900,
                 fontSize: '0.95rem',
                 cursor: 'pointer'
               }}
             >
-              {s.title}
+              {s.title} {isCompleted ? '✓' : ''}
             </button>
           )
         })}
@@ -265,12 +280,13 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
       {/* STEP 1: QUIZ SETUP */}
       {step === 1 && (
         <div className="card" style={{ padding: '2rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Section A — Quiz Setup</h3>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Quiz setup</h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Fix 6: Comic inputs with focus styles */}
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Quiz Title <span style={{ color: '#f50057' }}>*</span>
+                Quiz title <span style={{ color: '#f50057' }}>*</span>
               </label>
               <input
                 type="text"
@@ -284,7 +300,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Topic Name
+                Topic name
               </label>
               <input
                 type="text"
@@ -297,7 +313,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Link to Lesson (Optional)
+                Link to lesson (Optional)
               </label>
               <select
                 value={linkedSessionId}
@@ -318,7 +334,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Due Date & Time <span style={{ color: '#f50057' }}>*</span>
+                Due date & time <span style={{ color: '#f50057' }}>*</span>
               </label>
               <input
                 type="datetime-local"
@@ -330,18 +346,38 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Time Limit Toggle */}
-            <div style={{ background: '#f8fafc', padding: '1.25rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+            <div style={{ background: '#ffffff', padding: '1.25rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hasTimeLimit ? '1rem' : 0 }}>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#1a1a2e' }}>Enable Time Limit</div>
+                  <div style={{ fontWeight: 800, color: '#1a1a2e' }}>Enable time limit</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Set a countdown timer for students taking this quiz</div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={hasTimeLimit}
-                  onChange={e => setHasTimeLimit(e.target.checked)}
-                  style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#00c853' }}
-                />
+                {/* Fix 8: Toggle switch component */}
+                <div
+                  onClick={() => setHasTimeLimit(!hasTimeLimit)}
+                  style={{
+                    width: '48px',
+                    height: '26px',
+                    background: hasTimeLimit ? '#00c853' : '#d1d5db',
+                    border: '2px solid #1a1a2e',
+                    borderRadius: '50px',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s ease'
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    background: '#ffffff',
+                    border: '1.5px solid #1a1a2e',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    top: '2px',
+                    left: hasTimeLimit ? '24px' : '2px',
+                    transition: 'left 0.2s ease'
+                  }} />
+                </div>
               </div>
 
               {hasTimeLimit && (
@@ -361,29 +397,30 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                         cursor: 'pointer'
                       }}
                     >
-                      {mins} Mins
+                      {mins} mins
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Marking Mode Toggle */}
-            <div style={{ background: '#f0fdf4', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1.25rem' }}>
-              <label style={{ display: 'block', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.5rem' }}>
-                Grading Method
+            {/* Fix 7: Grading Method toggle with white section background */}
+            <div style={{ background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1.25rem' }}>
+              <label style={{ display: 'block', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.75rem' }}>
+                Grading method
               </label>
-              <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setMarkingMode('AUTO_AI')}
                   style={{
                     flex: 1,
-                    padding: '0.6rem 1rem',
+                    padding: '0.75rem 1rem',
                     background: markingMode === 'AUTO_AI' ? '#00c853' : '#ffffff',
                     color: markingMode === 'AUTO_AI' ? '#ffffff' : '#1a1a2e',
-                    border: '2px solid #1a1a2e',
-                    borderRadius: '50px',
+                    border: '3px solid #1a1a2e',
+                    borderRadius: '12px',
+                    boxShadow: '4px 4px 0px #1a1a2e',
                     fontWeight: 900,
                     cursor: 'pointer'
                   }}
@@ -395,46 +432,87 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                   onClick={() => setMarkingMode('MANUAL_ONLY')}
                   style={{
                     flex: 1,
-                    padding: '0.6rem 1rem',
+                    padding: '0.75rem 1rem',
                     background: markingMode === 'MANUAL_ONLY' ? '#aa00ff' : '#ffffff',
                     color: markingMode === 'MANUAL_ONLY' ? '#ffffff' : '#1a1a2e',
-                    border: '2px solid #1a1a2e',
-                    borderRadius: '50px',
+                    border: '3px solid #1a1a2e',
+                    borderRadius: '12px',
+                    boxShadow: '4px 4px 0px #1a1a2e',
                     fontWeight: 900,
                     cursor: 'pointer'
                   }}
                 >
-                  👤 Teacher Manual Marking Only
+                  👤 Teacher manual marking only
                 </button>
               </div>
             </div>
 
-            {/* Toggles */}
+            {/* Fix 8: Sliding toggle switches */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+              <div
+                onClick={() => setShowAnswersAfterSubmission(!showAnswersAfterSubmission)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px', cursor: 'pointer' }}
+              >
                 <span style={{ fontWeight: 800, color: '#1a1a2e', fontSize: '0.9rem' }}>Show correct answers after submission</span>
-                <input
-                  type="checkbox"
-                  checked={showAnswersAfterSubmission}
-                  onChange={e => setShowAnswersAfterSubmission(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00c853' }}
-                />
+                <div
+                  style={{
+                    width: '48px',
+                    height: '26px',
+                    background: showAnswersAfterSubmission ? '#00c853' : '#d1d5db',
+                    border: '2px solid #1a1a2e',
+                    borderRadius: '50px',
+                    position: 'relative',
+                    transition: 'background 0.2s ease'
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    background: '#ffffff',
+                    border: '1.5px solid #1a1a2e',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    top: '2px',
+                    left: showAnswersAfterSubmission ? '24px' : '2px',
+                    transition: 'left 0.2s ease'
+                  }} />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+              <div
+                onClick={() => setAllowOneAttempt(!allowOneAttempt)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.85rem 1rem', border: '2px solid #1a1a2e', borderRadius: '12px', cursor: 'pointer' }}
+              >
                 <span style={{ fontWeight: 800, color: '#1a1a2e', fontSize: '0.9rem' }}>Allow one attempt only</span>
-                <input
-                  type="checkbox"
-                  checked={allowOneAttempt}
-                  onChange={e => setAllowOneAttempt(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00c853' }}
-                />
+                <div
+                  style={{
+                    width: '48px',
+                    height: '26px',
+                    background: allowOneAttempt ? '#00c853' : '#d1d5db',
+                    border: '2px solid #1a1a2e',
+                    borderRadius: '50px',
+                    position: 'relative',
+                    transition: 'background 0.2s ease'
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    background: '#ffffff',
+                    border: '1.5px solid #1a1a2e',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    top: '2px',
+                    left: allowOneAttempt ? '24px' : '2px',
+                    transition: 'left 0.2s ease'
+                  }} />
+                </div>
               </div>
             </div>
 
             <div>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, color: '#1a1a2e' }}>
-                Instructions for Students (Optional)
+                Instructions for students (Optional)
               </label>
               <textarea
                 rows={2}
@@ -476,12 +554,13 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
       {/* STEP 2: QUESTION BUILDER */}
       {step === 2 && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: '#1a1a2e', color: '#ffffff', padding: '1rem 1.5rem', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '4px 4px 0px #2979ff' }}>
+          {/* Fix 1: White background section header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: '#ffffff', color: '#1a1a2e', padding: '1.25rem 1.5rem', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e' }}>
             <div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 900 }}>Question Builder</h4>
-              <p style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{questions.length} Question{questions.length !== 1 ? 's' : ''} added</p>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1a1a2e' }}>Question builder</h4>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>{questions.length} Question{questions.length !== 1 ? 's' : ''} added</p>
             </div>
-            <div style={{ background: '#00c853', color: '#ffffff', border: '2px solid #ffffff', borderRadius: '50px', padding: '0.4rem 1.2rem', fontWeight: 900, fontSize: '0.95rem' }}>
+            <div style={{ background: '#00c853', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.4rem 1.2rem', fontWeight: 900, fontSize: '0.95rem' }}>
               Total: {totalMarks} marks
             </div>
           </div>
@@ -503,34 +582,45 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: color, color: '#ffffff', border: '2px solid #1a1a2e', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
+                      {/* Fix 10: 40px diameter circle number badge */}
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: color, color: '#ffffff', border: '2px solid #1a1a2e', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
                         Q{idx + 1}
                       </div>
 
-                      {/* Question type selector pill toggle */}
-                      <div style={{ display: 'flex', gap: '0.25rem', background: '#f8fafc', padding: '3px', border: '2px solid #1a1a2e', borderRadius: '50px' }}>
-                        {['MCQ', 'SHORT_ANSWER', 'ESSAY'].map(t => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => updateQuestion(idx, 'type', t)}
-                            style={{
-                              padding: '0.3rem 0.75rem',
-                              background: q.type === t ? '#1a1a2e' : 'transparent',
-                              color: q.type === t ? '#ffffff' : '#1a1a2e',
-                              border: 'none',
-                              borderRadius: '50px',
-                              fontWeight: 900,
-                              fontSize: '0.75rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {t === 'SHORT_ANSWER' ? 'Short Answer' : t}
-                          </button>
-                        ))}
+                      {/* Fix 2: Clear active / unselected question type pills */}
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        {[
+                          { id: 'MCQ', label: 'MCQ' },
+                          { id: 'SHORT_ANSWER', label: 'Short Answer' },
+                          { id: 'ESSAY', label: 'Essay' }
+                        ].map(t => {
+                          const isSelected = q.type === t.id
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => updateQuestion(idx, 'type', t.id)}
+                              style={{
+                                padding: '0.4rem 0.9rem',
+                                background: isSelected ? '#1a1a2e' : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#64748b',
+                                border: '2px solid #1a1a2e',
+                                borderRadius: '50px',
+                                boxShadow: isSelected ? '2px 2px 0px #1a1a2e' : 'none',
+                                fontWeight: 900,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              {t.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 
+                    {/* Fix 5: Action icons styling */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <label style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>Marks:</label>
                       <input
@@ -541,36 +631,41 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                         onChange={e => updateQuestion(idx, 'maxMarks', parseInt(e.target.value) || 1)}
                         style={{ width: '70px', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '10px', padding: '6px 10px', fontWeight: 800, color: '#1a1a2e' }}
                       />
+
                       <button
                         type="button"
+                        title="Move Up"
                         onClick={() => moveQuestion(idx, -1)}
                         disabled={idx === 0}
-                        style={{ background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '4px 8px', fontWeight: 900, cursor: 'pointer' }}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: '2px solid #1a1a2e', boxShadow: '2px 2px 0px #1a1a2e', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         ↑
                       </button>
                       <button
                         type="button"
+                        title="Move Down"
                         onClick={() => moveQuestion(idx, 1)}
                         disabled={idx === questions.length - 1}
-                        style={{ background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '4px 8px', fontWeight: 900, cursor: 'pointer' }}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: '2px solid #1a1a2e', boxShadow: '2px 2px 0px #1a1a2e', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         ↓
                       </button>
                       <button
                         type="button"
+                        title="Duplicate"
                         onClick={() => duplicateQuestion(idx)}
-                        style={{ background: '#e0f2fe', color: '#0284c7', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '4px 8px', fontWeight: 800, cursor: 'pointer' }}
+                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: '2px solid #1a1a2e', boxShadow: '2px 2px 0px #1a1a2e', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         📋
                       </button>
                       {questions.length > 1 && (
                         <button
                           type="button"
+                          title="Delete"
                           onClick={() => removeQuestion(idx)}
-                          style={{ background: '#ffebee', color: '#d32f2f', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '4px 8px', fontWeight: 800, cursor: 'pointer' }}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f50057', color: '#ffffff', border: '2px solid #1a1a2e', boxShadow: '2px 2px 0px #1a1a2e', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >
-                          ❌
+                          ✕
                         </button>
                       )}
                     </div>
@@ -579,7 +674,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                   {/* Question Text */}
                   <div style={{ marginBottom: '1.25rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>
-                      Question Text <span style={{ color: '#f50057' }}>*</span>
+                      Question text <span style={{ color: '#f50057' }}>*</span>
                     </label>
                     <textarea
                       rows={2}
@@ -591,7 +686,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                     />
                   </div>
 
-                  {/* MCQ Options */}
+                  {/* Fix 3: Dynamic switching between MCQ / Short Answer / Essay layouts */}
                   {q.type === 'MCQ' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
                       <label style={{ fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>Options (Select radio for correct answer):</label>
@@ -639,17 +734,31 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                     </div>
                   )}
 
-                  {/* Short Answer / Essay Fields */}
-                  {(q.type === 'SHORT_ANSWER' || q.type === 'ESSAY') && (
+                  {q.type === 'SHORT_ANSWER' && (
                     <div style={{ background: '#f8fafc', padding: '1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
                       <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>
-                        {q.type === 'SHORT_ANSWER' ? 'Write the ideal answer — AI will grade against this' : 'List the key points AI should look for, one per line'}
+                        Write the ideal answer — AI will grade against this
                       </label>
                       <textarea
                         rows={3}
                         value={q.markScheme || ''}
                         onChange={e => updateQuestion(idx, 'markScheme', e.target.value)}
-                        placeholder={q.type === 'SHORT_ANSWER' ? 'Model answer text...' : 'Key point 1\nKey point 2\nKey point 3'}
+                        placeholder="Write the exact model answer or key required points..."
+                        style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '10px', padding: '10px', color: '#1a1a2e', fontWeight: 700 }}
+                      />
+                    </div>
+                  )}
+
+                  {q.type === 'ESSAY' && (
+                    <div style={{ background: '#f8fafc', padding: '1rem', border: '2px solid #1a1a2e', borderRadius: '12px' }}>
+                      <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 800, fontSize: '0.85rem', color: '#1a1a2e' }}>
+                        List the key points AI should look for, one per line
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={q.markScheme || ''}
+                        onChange={e => updateQuestion(idx, 'markScheme', e.target.value)}
+                        placeholder="Key point 1&#10;Key point 2&#10;Key point 3"
                         style={{ width: '100%', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '10px', padding: '10px', color: '#1a1a2e', fontWeight: 700 }}
                       />
                     </div>
@@ -659,13 +768,15 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
             })}
           </div>
 
+          {/* Fix 9: Comic treatment for action buttons */}
           <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <button
               type="button"
               onClick={addQuestion}
+              className="btn-bob"
               style={{
-                background: '#ffffff',
-                color: '#1a1a2e',
+                background: '#2979ff',
+                color: '#ffffff',
                 border: '3px solid #1a1a2e',
                 borderRadius: '50px',
                 boxShadow: '4px 4px 0px #1a1a2e',
@@ -682,7 +793,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                style={{ background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', borderRadius: '50px', padding: '0.75rem 1.5rem', fontWeight: 800, cursor: 'pointer' }}
+                style={{ background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.75rem 1.5rem', fontWeight: 800, cursor: 'pointer' }}
               >
                 ← Back
               </button>
@@ -690,7 +801,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                 type="button"
                 onClick={() => setStep(3)}
                 style={{
-                  background: '#2979ff',
+                  background: '#f50057',
                   color: '#ffffff',
                   border: '3px solid #1a1a2e',
                   borderRadius: '50px',
@@ -714,11 +825,11 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
           
           {/* Main Review Section */}
           <div className="card" style={{ padding: '2rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Section C — Review & Publish</h3>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1.5rem' }}>Section C — Review & publish</h3>
 
             <div style={{ background: '#f8fafc', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Quiz Title</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Quiz title</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>{title}</div>
               </div>
               <div>
@@ -726,7 +837,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#2979ff' }}>{questions.length} Questions</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Marks</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total marks</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#00c853' }}>{totalMarks} Marks</div>
               </div>
             </div>
@@ -775,7 +886,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
 
           {/* Live Student Preview Panel */}
           <div style={{ background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e', padding: '1.5rem' }}>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1rem' }}>Live Student Preview</h4>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '1rem' }}>Live student preview</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {questions.map((q, idx) => (
                 <div key={idx} style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem' }}>

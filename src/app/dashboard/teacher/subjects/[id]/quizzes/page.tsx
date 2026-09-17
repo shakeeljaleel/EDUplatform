@@ -176,7 +176,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
 
       if (res.ok) {
         setIsOverriding(false)
-        // Refresh local data
         if (moveNext === 'question') {
           if (currentQIdx < questions.length - 1) {
             setCurrentQIdx(prev => prev + 1)
@@ -225,6 +224,27 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
   const publishedQuizzes = quizzes.filter(q => q.status === 'PUBLISHED').length
   const totalSubmissions = quizzes.reduce((sum, q) => sum + (q._count?.attempts || q.attempts?.length || 0), 0)
 
+  // Fix 2: Calculate real average score percentage or show '--' if 0 submissions
+  let totalPctSum = 0
+  let totalAttemptsCount = 0
+  quizzes.forEach(q => {
+    const qAttempts = q.attempts || []
+    const qMax = q.questions?.reduce((acc: number, qu: any) => acc + (qu.maxMarks || qu.points || 10), 0) || 1
+    qAttempts.forEach((att: any) => {
+      if (att.status === 'GRADED') {
+        const pct = (att.score / (att.maxPossibleScore || qMax)) * 100
+        totalPctSum += pct
+        totalAttemptsCount++
+      }
+    })
+  })
+  const avgClassScoreStr = totalAttemptsCount > 0 ? `${Math.round(totalPctSum / totalAttemptsCount)}%` : '--'
+
+  // Fix 3: Capitalize subject name
+  const formattedSubjectName = subjectInfo?.name
+    ? (subjectInfo.name.charAt(0).toUpperCase() + subjectInfo.name.slice(1))
+    : 'Subject'
+
   if (loading) return <div className="pulse">Loading quizzes...</div>
 
   return (
@@ -235,7 +255,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
             <span style={{ background: '#2979ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem' }}>
-              📚 {subjectInfo?.name || 'Subject'}
+              📚 {formattedSubjectName}
             </span>
             <span style={{ background: '#aa00ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem' }}>
               🎓 {subjectInfo?.batch?.name || 'Batch'}
@@ -248,14 +268,16 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
           <p style={{ color: '#64748b', fontWeight: 600 }}>Create topic assessments, evaluate student performance, and view mark analytics.</p>
         </div>
 
+        {/* Fix 7: '+ Create quiz' button with comic treatment and btn-bob */}
         <Link
           href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder`}
+          className="btn-bob"
           style={{
             background: '#00c853',
             color: '#ffffff',
             border: '3px solid #1a1a2e',
             borderRadius: '50px',
-            boxShadow: '5px 5px 0px #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
             padding: '0.75rem 1.8rem',
             fontWeight: 900,
             fontSize: '1rem',
@@ -266,17 +288,17 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
-      {/* Stats Row */}
+      {/* Stats Row — Fix 1: Sentence case & Fix 4: Comic treatment */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
         {[
-          { label: 'Total Quizzes', val: totalQuizzes, bg: '#2979ff', icon: '📝' },
-          { label: 'Published Quizzes', val: publishedQuizzes, bg: '#00c853', icon: '🚀' },
-          { label: 'Total Submissions', val: totalSubmissions, bg: '#aa00ff', icon: '📥' },
-          { label: 'Avg Class Score', val: '78%', bg: '#ff6d00', icon: '📊' }
+          { label: 'Total quizzes', val: totalQuizzes, bg: '#2979ff', icon: '📝' },
+          { label: 'Published quizzes', val: publishedQuizzes, bg: '#00c853', icon: '🚀' },
+          { label: 'Total submissions', val: totalSubmissions, bg: '#aa00ff', icon: '📥' },
+          { label: 'Avg class score', val: avgClassScoreStr, bg: '#ff6d00', icon: '📊' }
         ].map((st, idx) => (
-          <div key={idx} style={{ background: st.bg, color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', padding: '1.25rem' }}>
+          <div key={idx} style={{ background: st.bg, color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', padding: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase' }}>{st.label}</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 900 }}>{st.label}</span>
               <span style={{ fontSize: '1.25rem' }}>{st.icon}</span>
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1 }}>{st.val}</div>
@@ -421,13 +443,23 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
           )
         })}
 
+        {/* Fix 6: Empty state container comic treatment & Fix 7: '+ Create your first quiz' button */}
         {quizzes.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
+          <div style={{
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            padding: '4rem',
+            background: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '16px',
+            boxShadow: '5px 5px 0px #1a1a2e'
+          }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧬</div>
             <h3 style={{ fontWeight: 900, fontSize: '1.6rem', color: '#1a1a2e', marginBottom: '0.5rem' }}>No quizzes created yet</h3>
             <p style={{ color: '#64748b', fontWeight: 600, marginBottom: '1.5rem' }}>Create your first quiz for this subject and branch.</p>
             <Link
               href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder`}
+              className="btn-bob"
               style={{
                 background: '#00c853',
                 color: '#ffffff',
@@ -437,7 +469,8 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                 padding: '0.75rem 2rem',
                 fontWeight: 900,
                 fontSize: '1rem',
-                textDecoration: 'none'
+                textDecoration: 'none',
+                display: 'inline-block'
               }}
             >
               + Create your first quiz
@@ -476,7 +509,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                     { label: 'Lowest Score', val: `${analyticsData.stats.lowestScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#ffebee', color: '#d32f2f' }
                   ].map((st, i) => (
                     <div key={i} style={{ background: st.bg, border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', textAlign: 'center', boxShadow: '3px 3px 0px #1a1a2e' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1a1a2e', textTransform: 'uppercase', marginBottom: '0.2rem' }}>{st.label}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.2rem' }}>{st.label}</div>
                       <div style={{ fontSize: '1.1rem', fontWeight: 900, color: st.color }}>{st.val}</div>
                     </div>
                   ))}
@@ -549,7 +582,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Method 3: Teacher Manual Marking & AI Override Modal */}
+      {/* Teacher Manual Marking Modal */}
       {markingQuiz && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
           <div style={{ maxWidth: '950px', width: '100%', maxHeight: '90vh', overflowY: 'auto', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '2rem', position: 'relative' }}>
@@ -588,16 +621,9 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
               const currentAns = currentSub?.answers?.find((a: any) => a.questionId === currentQ?.id) || {}
               const maxMarks = currentQ?.maxMarks || 10
 
-              const initialAwarded = currentAns.marksAwarded ?? 0
-              const initialFeedback = currentAns.teacherFeedback || currentAns.aiFeedback || ''
-
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: showMarkSchemePanel ? '1fr 320px' : '1fr', gap: '1.5rem' }}>
-                  
-                  {/* Left Main Marking Workspace */}
                   <div style={{ background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', padding: '1.5rem' }}>
-                    
-                    {/* Question Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                       <span style={{ fontWeight: 900, color: '#1a1a2e', fontSize: '1rem' }}>
                         Q{currentQIdx + 1}. {currentQ?.text}
@@ -607,7 +633,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                       </span>
                     </div>
 
-                    {/* Marking Transparency Badge */}
                     <div style={{ marginBottom: '1.25rem' }}>
                       {currentAns.overrideByTeacher ? (
                         <span style={{ background: '#aa00ff', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
@@ -628,9 +653,8 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                       )}
                     </div>
 
-                    {/* Student Answer */}
                     <div style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '0.4rem' }}>
                         Student Answer ({currentSub.user?.name || 'Student'})
                       </div>
                       <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1a1a2e', whiteSpace: 'pre-wrap' }}>
@@ -638,14 +662,12 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                       </div>
                     </div>
 
-                    {/* AI Feedback Preview if present */}
                     {currentAns.aiFeedback && (
                       <div style={{ background: '#f0fdf4', border: '1.5px solid #00c853', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#15803d', fontWeight: 700 }}>
                         🤖 <strong>AI Initial Suggestion:</strong> {currentAns.aiFeedback}
                       </div>
                     )}
 
-                    {/* Marks & Feedback Inputs */}
                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.25rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.25rem' }}>Marks Awarded:</label>
@@ -681,7 +703,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                       />
                     </div>
 
-                    {/* Buttons */}
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
                       <button
                         onClick={() => saveQuestionGrade('question')}
@@ -701,7 +722,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
 
                   </div>
 
-                  {/* Right Collapsible Mark Scheme Panel */}
                   {showMarkSchemePanel && (
                     <div style={{ background: '#f0fdf4', border: '3px solid #1a1a2e', borderLeft: '6px solid #00c853', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', padding: '1.25rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
