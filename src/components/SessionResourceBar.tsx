@@ -43,28 +43,50 @@ export default function SessionResourceBar({ sessionId }: { sessionId: string })
   }
 
   return (
-    <div style={{ marginTop: '0.5rem', background: 'rgba(16, 185, 129, 0.03)', padding: '0.75rem', borderRadius: '12px', border: '1px dashed rgba(16, 185, 129, 0.2)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent-primary)', letterSpacing: '0.05em' }}>
-          📂 Pre-Class Resources ({resources.length})
+    <div style={{ marginTop: '0.75rem', background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '12px', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1a1a2e', letterSpacing: '0.02em' }}>
+          📂 Pre-class resources ({resources.length})
         </span>
         <button 
           onClick={() => setShowAdd(!showAdd)} 
-          style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'white', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', borderRadius: '4px', cursor: 'pointer' }}
+          style={{ fontSize: '0.75rem', padding: '0.3rem 0.85rem', background: showAdd ? '#f50057' : '#00c853', border: '2px solid #1a1a2e', color: '#ffffff', borderRadius: '50px', cursor: 'pointer', fontWeight: 800, boxShadow: '2px 2px 0px #1a1a2e' }}
         >
-          {showAdd ? '✕ Cancel' : '+ Add Resource'}
+          {showAdd ? '✕ Cancel' : '+ Add resource'}
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
         {resources.map(r => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: '#ffffff', padding: '0.4rem 0.8rem', borderRadius: '50px', border: '2px solid #1a1a2e', fontSize: '0.8rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
             <span>{r.type === 'VIDEO' ? '🎥' : r.type === 'PDF' ? '📄' : '🔗'}</span>
-            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{r.title}</a>
-            <button onClick={() => handleDelete(r.id)} style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: 0, marginLeft: '4px' }}>✕</button>
+            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: '#1a1a2e', fontWeight: 700, textDecoration: 'none' }}>{r.title}</a>
+            <button
+              onClick={() => handleDelete(r.id)}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                background: '#f50057',
+                color: '#ffffff',
+                border: '2px solid #1a1a2e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.8rem',
+                fontWeight: 900,
+                cursor: 'pointer',
+                marginLeft: '4px',
+                boxShadow: '1px 1px 0px #1a1a2e',
+                padding: 0
+              }}
+              title="Delete resource"
+            >
+              ✕
+            </button>
           </div>
         ))}
-        {resources.length === 0 && !showAdd && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No resources added yet.</span>}
+        {resources.length === 0 && !showAdd && <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>No pre-class resources added yet.</span>}
       </div>
 
       {showAdd && (

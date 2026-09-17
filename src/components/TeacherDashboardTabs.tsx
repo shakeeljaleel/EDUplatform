@@ -105,8 +105,69 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
     }
   }
 
+  // Compute counts for stat cards
+  const uniqueSubjectsCount = new Set(classList.map(c => c.subject.id)).size
+  const uniqueBatchesCount = new Set(classList.map(c => c.subject.batch.id)).size
+  const totalRosterStudentsCount = classList.reduce((sum, c) => sum + (c.studentCount || 0), 0)
+
   return (
     <div>
+      {/* STAT CARDS — Fix 6: Solid Color Comic Treatment & Sentence Case */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2.5rem'
+      }}>
+        <div style={{
+          background: '#00bcd4',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Assigned subjects</span>
+            <span style={{ fontSize: '1.5rem' }}>📚</span>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{uniqueSubjectsCount}</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Active courses taught</div>
+        </div>
+
+        <div style={{
+          background: '#2979ff',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Assigned batches</span>
+            <span style={{ fontSize: '1.5rem' }}>🎓</span>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{uniqueBatchesCount}</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Academic streams</div>
+        </div>
+
+        <div style={{
+          background: '#aa00ff',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Total roster students</span>
+            <span style={{ fontSize: '1.5rem' }}>👥</span>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{totalRosterStudentsCount}</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Active enrolled students</div>
+        </div>
+      </div>
+
       {/* TABS NAVIGATION */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
         <button
@@ -181,29 +242,31 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                   }}
                 >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <span style={{
                         backgroundColor: '#ffffff',
-                        color: cls.subject.colour || '#2979ff',
+                        color: '#1a1a2e',
                         fontWeight: 900,
                         fontSize: '0.75rem',
                         padding: '0.25rem 0.65rem',
                         borderRadius: '50px',
-                        border: '1.5px solid #1a1a2e'
+                        border: '2px solid #1a1a2e'
                       }}>
                         {cls.subject.batch.name}
                       </span>
 
+                      {/* Fix 13: Green Branch Pill */}
                       <span style={{
-                        backgroundColor: cls.branch.colour || '#00c853',
+                        backgroundColor: '#00c853',
                         color: '#ffffff',
                         fontWeight: 900,
                         fontSize: '0.75rem',
                         padding: '0.25rem 0.65rem',
                         borderRadius: '50px',
-                        border: '1.5px solid #1a1a2e'
+                        border: '2px solid #1a1a2e',
+                        boxShadow: '2px 2px 0px #1a1a2e'
                       }}>
-                        📍 {cls.branch.name}
+                        📍 {cls.branch.name || 'Main Campus'}
                       </span>
                     </div>
 
@@ -311,19 +374,31 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                     </div>
                   </div>
 
-                  {/* Quick Action Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/grading`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
-                      🤖 AI Marking
+                  {/* Fix 5: Quick Action Grid — 8 Solid Color Action Buttons */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/grading`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#aa00ff', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      🤖 AI Grading
                     </Link>
-                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/forum`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/buzzer`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#f50057', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      ⚡ Speed Buzzer
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/forum`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#2979ff', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
                       💬 Q&A Forum
                     </Link>
-                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/recordings`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
-                      📹 Recordings
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/performance`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#00bcd4', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      📊 Mark Analytics
                     </Link>
-                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/calendar`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/lesson-planner`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#ff6d00', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      🧠 AI Planner
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/syllabus`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#00c853', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      🎯 Syllabus
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/calendar`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#ffab00', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
                       📅 Schedule
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/recordings`} style={{ padding: '0.55rem 0.4rem', borderRadius: '50px', fontWeight: 900, fontSize: '0.75rem', color: '#ffffff', background: '#795548', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      📹 Recordings
                     </Link>
                   </div>
                 </div>

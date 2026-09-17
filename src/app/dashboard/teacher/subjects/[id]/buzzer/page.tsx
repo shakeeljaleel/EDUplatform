@@ -217,68 +217,128 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
 
   // ── CREATE VIEW ────────────────────────────────────────────────────────────
   if (view === 'create') {
+    const assignedIds = new Set(teams.flatMap(t => t.memberIds))
+    const unassignedStudents = students.filter(s => !assignedIds.has(s.id))
+    const circleColors = ['#2979ff', '#f50057', '#00c853', '#aa00ff', '#ff6d00', '#00bcd4', '#ffab00']
+
     return (
-      <div style={{ maxWidth: '800px' }}>
+      <div style={{ maxWidth: '850px' }}>
         <div style={{ marginBottom: '2rem' }}>
-          <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>← Back</button>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, marginTop: '1rem' }}>Create Buzzer Quiz</h2>
+          <button onClick={() => setView('list')} className="comic-btn-secondary" style={{ background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.4rem 1.2rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem' }}>← Back</button>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, marginTop: '1rem', color: '#1a1a2e' }}>Create Buzzer Quiz</h2>
         </div>
         <form onSubmit={createSession} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Session Details</h3>
-            <input className="input-field" required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Genetics Chapter Buzzer Quiz" />
+          {/* Session Details */}
+          <div className="card" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.5rem' }}>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e' }}>Session details</h3>
+            <input className="input-field" required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Genetics Chapter Buzzer Quiz" style={{ border: '2px solid #1a1a2e', borderRadius: '10px', padding: '0.75rem 1rem', fontSize: '1rem', fontWeight: 600 }} />
           </div>
 
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Questions</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {questions.map((q, i) => (
-                <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--text-secondary)', minWidth: '24px', fontSize: '0.9rem' }}>Q{i + 1}</span>
-                  <input className="input-field" value={q} onChange={e => { const updated = [...questions]; updated[i] = e.target.value; setQuestions(updated) }} placeholder={`Question ${i + 1}`} />
-                  {questions.length > 1 && <button type="button" onClick={() => setQuestions(questions.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '1.2rem', cursor: 'pointer' }}>×</button>}
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={() => setQuestions([...questions, ''])} className="btn-secondary" style={{ marginTop: '1rem', fontSize: '0.875rem' }}>+ Add Question</button>
-          </div>
-
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Teams</h3>
+          {/* Questions Section */}
+          <div className="card" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.5rem' }}>
+            <h3 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e' }}>Questions</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {questions.map((q, i) => {
+                const color = circleColors[i % circleColors.length]
+                return (
+                  <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, border: '2px solid #1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontWeight: 800, fontSize: '0.85rem', flexShrink: 0, boxShadow: '2px 2px 0px #1a1a2e' }}>
+                      Q{i + 1}
+                    </div>
+                    <input className="input-field" value={q} onChange={e => { const updated = [...questions]; updated[i] = e.target.value; setQuestions(updated) }} placeholder={`Question ${i + 1}`} style={{ flex: 1, border: '2px solid #1a1a2e', borderRadius: '10px', padding: '0.6rem 1rem', fontSize: '0.95rem' }} />
+                    {questions.length > 1 && (
+                      <button type="button" onClick={() => setQuestions(questions.filter((_, j) => j !== i))} style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#f50057', color: '#ffffff', border: '2px solid #1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900, cursor: 'pointer', flexShrink: 0, boxShadow: '2px 2px 0px #1a1a2e' }} title="Delete question">
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <button type="button" onClick={() => setQuestions([...questions, ''])} style={{ marginTop: '1.25rem', background: '#00c853', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1.25rem', fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer' }}>
+              + Add question
+            </button>
+          </div>
+
+          {/* Teams Setup */}
+          <div className="card" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.5rem' }}>
+            <h3 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e' }}>Teams setup</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
               {teams.map((team, ti) => (
-                <div key={ti} style={{ padding: '1rem', background: 'var(--bg-primary)', borderRadius: '12px', border: `2px solid ${team.color}33` }}>
-                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <input value={team.name} onChange={e => { const t = [...teams]; t[ti].name = e.target.value; setTeams(t) }} className="input-field" style={{ flex: 1 }} placeholder="Team name" />
-                    <input type="color" value={team.color} onChange={e => { const t = [...teams]; t[ti].color = e.target.value; setTeams(t) }} style={{ width: '50px', height: '50px', padding: '4px', borderRadius: '8px', border: '1px solid var(--bg-tertiary)', cursor: 'pointer' }} />
+                <div key={ti} style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '14px', border: '2px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center' }}>
+                    <input value={team.name} onChange={e => { const t = [...teams]; t[ti].name = e.target.value; setTeams(t) }} className="input-field" style={{ flex: 1, border: '2px solid #1a1a2e', borderRadius: '8px', padding: '0.5rem 0.75rem', fontWeight: 800, fontSize: '1rem' }} placeholder="Team name" />
+                    <input type="color" value={team.color} onChange={e => { const t = [...teams]; t[ti].color = e.target.value; setTeams(t) }} style={{ width: '42px', height: '42px', padding: '2px', borderRadius: '8px', border: '2px solid #1a1a2e', cursor: 'pointer', boxShadow: '2px 2px 0px #1a1a2e' }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Add Students:</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      {students.map(s => {
-                        const inThisTeam = team.memberIds.includes(s.id)
-                        const inOtherTeam = teams.some((t, idx) => idx !== ti && t.memberIds.includes(s.id))
-                        return (
-                          <button type="button" key={s.id} disabled={inOtherTeam && !inThisTeam} onClick={() => {
-                            const t = [...teams]
-                            if (inThisTeam) t[ti].memberIds = t[ti].memberIds.filter(id => id !== s.id)
-                            else t[ti].memberIds = [...t[ti].memberIds, s.id]
-                            setTeams(t)
-                          }} style={{ padding: '0.3rem 0.75rem', borderRadius: '99px', border: `1px solid ${inThisTeam ? team.color : 'var(--bg-tertiary)'}`, background: inThisTeam ? `${team.color}22` : 'white', color: inOtherTeam && !inThisTeam ? 'var(--text-secondary)' : 'var(--text-primary)', fontSize: '0.8rem', cursor: inOtherTeam && !inThisTeam ? 'not-allowed' : 'pointer', opacity: inOtherTeam && !inThisTeam ? 0.4 : 1 }}>
-                            {s.name}
-                          </button>
-                        )
-                      })}
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Assigned students ({team.memberIds.length})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', minHeight: '44px', padding: '0.5rem', background: '#ffffff', borderRadius: '10px', border: '2px dashed #cbd5e1' }}>
+                      {team.memberIds.length === 0 ? (
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic', alignSelf: 'center' }}>No students assigned yet</span>
+                      ) : (
+                        team.memberIds.map(stId => {
+                          const st = students.find(s => s.id === stId)
+                          if (!st) return null
+                          return (
+                            <div key={st.id} style={{ background: team.color, color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '2px 2px 0px #1a1a2e', padding: '0.25rem 0.75rem', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span>{st.name}</span>
+                              <button type="button" onClick={() => {
+                                const t = [...teams]
+                                t[ti].memberIds = t[ti].memberIds.filter(id => id !== st.id)
+                                setTeams(t)
+                              }} style={{ background: '#1a1a2e', color: '#ffffff', border: 'none', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 900 }} title="Remove student">
+                                ✕
+                              </button>
+                            </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={() => setTeams([...teams, { name: `Team ${String.fromCharCode(65 + teams.length)}`, color: '#7c3aed', memberIds: [] }])} className="btn-secondary" style={{ fontSize: '0.875rem' }}>+ Add Team</button>
             </div>
+
+            {/* Unassigned Students Pool */}
+            <div style={{ padding: '1.25rem', background: '#fffbe8', borderRadius: '14px', border: '2px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 800, marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Unassigned students pool ({unassignedStudents.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                {unassignedStudents.length === 0 ? (
+                  <span style={{ fontSize: '0.85rem', color: '#00c853', fontWeight: 700 }}>✅ All students are assigned to teams!</span>
+                ) : (
+                  unassignedStudents.map(st => (
+                    <div key={st.id} style={{ background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '2px 2px 0px #1a1a2e', padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{st.name}</span>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        {teams.map((t, ti) => (
+                          <button key={ti} type="button" onClick={() => {
+                            const newTeams = [...teams]
+                            newTeams[ti].memberIds = [...newTeams[ti].memberIds, st.id]
+                            setTeams(newTeams)
+                          }} style={{ background: t.color, color: '#ffffff', border: '1px solid #1a1a2e', borderRadius: '50px', padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer' }} title={`Add to ${t.name}`}>
+                            + {t.name.replace('Team ', '')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <button type="button" onClick={() => setTeams([...teams, { name: `Team ${String.fromCharCode(65 + teams.length)}`, color: teams.length % 2 === 0 ? '#00bcd4' : '#aa00ff', memberIds: [] }])} style={{ background: '#2979ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1.25rem', fontWeight: 800, fontSize: '0.875rem', cursor: 'pointer' }}>
+              + Add team
+            </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn-primary" disabled={creating}>{creating ? 'Creating...' : '🚀 Create & Launch Setup'}</button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <button type="submit" disabled={creating} style={{ background: '#f50057', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.85rem 2.5rem', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.15s ease' }}>
+              {creating ? 'Creating setup...' : 'Create & launch setup'}
+            </button>
           </div>
         </form>
       </div>
@@ -290,39 +350,51 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
     <div style={{ maxWidth: '900px' }}>
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Live Buzzer Quiz</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Create and host real-time buzzer quiz sessions for your class.</p>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Live Buzzer Quiz</h2>
+          <p style={{ color: '#64748b', fontWeight: 600 }}>Create and host real-time buzzer quiz sessions for your class.</p>
         </div>
-        <button className="btn-primary" onClick={() => setView('create')}>+ New Session</button>
+        <button onClick={() => setView('create')} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.7rem 1.8rem', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}>
+          + New session
+        </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {sessions.map((s, idx) => (
-          <div key={s.id} className={`card stagger-${(idx % 5) + 1}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div key={s.id} className={`card stagger-${(idx % 5) + 1}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.25rem 1.5rem' }}>
             <div>
-              <h3 style={{ marginBottom: '0.25rem' }}>{s.title}</h3>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: '1rem' }}>
-                <span>{s.teams?.length} teams</span>
-                <span>{s.rounds?.length} questions</span>
+              <h3 style={{ marginBottom: '0.35rem', fontSize: '1.2rem', fontWeight: 800, color: '#1a1a2e' }}>{s.title}</h3>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', gap: '1rem' }}>
+                <span>{s.teams?.length || 0} teams</span>
+                <span>•</span>
+                <span>{s.rounds?.length || 0} questions</span>
+                <span>•</span>
                 <span>{new Date(s.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <span style={{ padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 700, background: s.status === 'ENDED' ? 'rgba(156,163,175,0.15)' : s.status === 'ACTIVE' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: s.status === 'ENDED' ? '#6b7280' : s.status === 'ACTIVE' ? 'var(--success)' : 'var(--warning)' }}>
-                {s.status}
+              <span style={{ padding: '0.35rem 0.9rem', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 800, border: '2px solid #1a1a2e', background: s.status === 'ENDED' ? '#e2e8f0' : s.status === 'ACTIVE' ? '#dcfce7' : '#fef3c7', color: s.status === 'ENDED' ? '#475569' : s.status === 'ACTIVE' ? '#15803d' : '#b45309' }}>
+                {s.status === 'ENDED' ? 'Ended' : s.status === 'ACTIVE' ? 'Active' : 'Setup'}
               </span>
-              {s.status !== 'ENDED' && <button className="btn-primary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }} onClick={() => openExistingSession(s)}>Host View →</button>}
-              <button onClick={() => deleteSession(s.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.5rem' }} title="Delete Session">🗑</button>
+              {s.status !== 'ENDED' && (
+                <button onClick={() => openExistingSession(s)} style={{ background: '#2979ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1.25rem', fontSize: '0.875rem', fontWeight: 800, cursor: 'pointer' }}>
+                  Host view →
+                </button>
+              )}
+              <button onClick={() => deleteSession(s.id)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f50057', color: '#ffffff', border: '2px solid #1a1a2e', boxShadow: '2px 2px 0px #1a1a2e', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900 }} title="Delete Session">
+                ✕
+              </button>
             </div>
           </div>
         ))}
         {sessions.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎙</div>
-            <p>No buzzer sessions yet. Create one to get started!</p>
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b', border: '3px dashed #1a1a2e', borderRadius: '16px', background: '#f8fafc' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎙</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.5rem' }}>No buzzer sessions yet</h3>
+            <p style={{ fontWeight: 600 }}>Create your first interactive buzzer quiz session to engage your students!</p>
           </div>
         )}
       </div>
     </div>
   )
 }
+

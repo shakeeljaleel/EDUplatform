@@ -220,26 +220,32 @@ export async function GET() {
     tomorrow.setDate(tomorrow.getDate() + 1)
     tomorrow.setHours(10, 0, 0, 0)
 
-    const session = await prisma.classSession.create({
-      data: {
-        subjectId: subject.id,
-        title: 'Advanced Mitochondrial Research',
-        description: 'Deep dive into ATP synthesis and mitochondrial DNA.',
-        scheduledDate: tomorrow,
-        durationMins: 90,
-        status: 'SCHEDULED',
-      },
+    let session = await prisma.classSession.findFirst({
+      where: { subjectId: subject.id, title: 'Advanced Mitochondrial Research' }
     })
 
-    await prisma.classResource.create({
-      data: {
-        sessionId: session.id,
-        title: 'Mitochondria Diagram PDF',
-        url: 'https://example.com/mitochondria.pdf',
-        type: 'PDF',
-        isPreWatch: true,
-      },
-    })
+    if (!session) {
+      session = await prisma.classSession.create({
+        data: {
+          subjectId: subject.id,
+          title: 'Advanced Mitochondrial Research',
+          description: 'Deep dive into ATP synthesis and mitochondrial DNA.',
+          scheduledDate: tomorrow,
+          durationMins: 90,
+          status: 'SCHEDULED',
+        },
+      })
+
+      await prisma.classResource.create({
+        data: {
+          sessionId: session.id,
+          title: 'Mitochondria Diagram PDF',
+          url: 'https://example.com/mitochondria.pdf',
+          type: 'PDF',
+          isPreWatch: true,
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,

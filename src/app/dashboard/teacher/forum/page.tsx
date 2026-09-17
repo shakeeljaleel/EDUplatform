@@ -52,49 +52,62 @@ export default async function TeacherForumHubPage() {
         Select a Discussion Board
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {teacherAssignments.map(ta => (
           <div key={ta.id} className="card" style={{
-            padding: '1.5rem',
-            borderRadius: '18px',
-            borderLeft: '6px solid #2563eb',
-            background: 'var(--bg-secondary)',
+            padding: '1.75rem',
+            borderRadius: '16px',
+            border: '3px solid #1a1a2e',
+            boxShadow: '5px 5px 0px #1a1a2e',
+            background: '#ffffff',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '1.25rem'
+            gap: '1.5rem'
           }}>
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#2563eb', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+              <div style={{
+                display: 'inline-block',
+                background: '#00c853',
+                color: '#ffffff',
+                border: '2px solid #1a1a2e',
+                borderRadius: '50px',
+                padding: '0.25rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                boxShadow: '2px 2px 0px #1a1a2e',
+                marginBottom: '0.75rem'
+              }}>
                 {ta.subject.batch.name}
               </div>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.5rem' }}>
                 {ta.subject.name}
               </h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <p style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>
                 Active class discussion board & Q&A.
               </p>
             </div>
 
             <Link
               href={`/dashboard/teacher/subjects/${ta.subject.id}/forum`}
-              className="btn-primary"
+              className="comic-btn"
               style={{
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                background: '#aa00ff',
                 color: '#ffffff',
-                padding: '0.75rem 1.25rem',
-                borderRadius: '12px',
-                fontWeight: 800,
-                fontSize: '0.9rem',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.75rem 1.5rem',
+                fontWeight: 900,
+                fontSize: '0.95rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                textDecoration: 'none',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
+                textDecoration: 'none'
               }}
             >
-              Open Forum Board <ArrowRight size={16} />
+              Open forum board <ArrowRight size={18} />
             </Link>
           </div>
         ))}

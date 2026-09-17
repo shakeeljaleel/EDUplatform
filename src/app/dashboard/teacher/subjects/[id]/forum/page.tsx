@@ -72,24 +72,44 @@ export default function TeacherForumPage({ params }: { params: Promise<{ id: str
 
   return (
     <div style={{ maxWidth: '1000px' }}>
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Class Discussion Forum</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage discussions, answer questions, and pin important posts.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Class Discussion Forum</h2>
+            <span style={{ background: '#2979ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '2px 2px 0px #1a1a2e', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 800 }}>
+              🛡️ Profanity Filter: Active
+            </span>
+          </div>
+          <p style={{ color: '#64748b', fontWeight: 600 }}>Manage discussions, answer questions, and pin important posts.</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowNewPost(!showNewPost)}>
-          {showNewPost ? 'Cancel' : '+ New Announcement/Post'}
+        <button
+          onClick={() => setShowNewPost(!showNewPost)}
+          style={{
+            background: showNewPost ? '#f50057' : '#00c853',
+            color: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '50px',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            padding: '0.7rem 1.8rem',
+            fontWeight: 900,
+            fontSize: '1rem',
+            cursor: 'pointer'
+          }}
+        >
+          {showNewPost ? 'Cancel' : '+ New post'}
         </button>
       </div>
 
       {showNewPost && (
-        <div className="card fade-in" style={{ marginBottom: '2rem', border: '1px solid var(--accent-primary)', boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Start a New Discussion</h3>
+        <div className="card fade-in" style={{ marginBottom: '2rem', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e' }}>Start a new discussion</h3>
           <form onSubmit={handlePost} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input type="text" className="input-field" required value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Discussion Title" />
-            <textarea className="input-field" required value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Type your message here..." style={{ minHeight: '100px', resize: 'vertical' }} />
+            <input type="text" className="input-field" required value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Discussion Title" style={{ border: '2px solid #1a1a2e', borderRadius: '10px', padding: '0.75rem 1rem', fontWeight: 600 }} />
+            <textarea className="input-field" required value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Type your message here..." style={{ minHeight: '120px', resize: 'vertical', border: '2px solid #1a1a2e', borderRadius: '10px', padding: '0.75rem 1rem', fontWeight: 600 }} />
             <div>
-              <button type="submit" className="btn-primary">Post to Forum</button>
+              <button type="submit" style={{ background: '#2979ff', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.65rem 1.75rem', fontWeight: 900, fontSize: '0.95rem', cursor: 'pointer' }}>
+                Post to forum
+              </button>
             </div>
           </form>
         </div>
@@ -97,14 +117,14 @@ export default function TeacherForumPage({ params }: { params: Promise<{ id: str
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {posts.map(post => (
-          <div key={post.id} className="card stagger-2" style={{ borderLeft: post.pinned ? '4px solid #f59e0b' : 'none' }}>
-            {post.pinned && <div style={{ color: '#f59e0b', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '4px' }}>📌 PINNED</div>}
+          <div key={post.id} className="card stagger-2" style={{ border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff', padding: '1.5rem' }}>
+            {post.pinned && <div style={{ color: '#ff6d00', fontSize: '0.8rem', fontWeight: 800, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>📌 PINNED ANNOUNCEMENT</div>}
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{post.title}</h3>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-                  <span style={{ fontWeight: 600, color: post.author.role === 'TEACHER' ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1a1a2e' }}>{post.title}</h3>
+                <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                  <span style={{ fontWeight: 800, color: post.author.role === 'TEACHER' ? '#aa00ff' : '#1a1a2e' }}>
                     {post.author.name} {post.author.role === 'TEACHER' && '👨‍🏫'}
                   </span>
                   • 
@@ -112,24 +132,24 @@ export default function TeacherForumPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => togglePin(post.id, !post.pinned)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: 0.6 }} title="Pin Post">📌</button>
-                <button onClick={() => deletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: 0.6, color: 'var(--error)' }} title="Delete Post">🗑️</button>
+                <button onClick={() => togglePin(post.id, !post.pinned)} style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', padding: '0.3rem 0.6rem' }} title="Pin Post">📌</button>
+                <button onClick={() => deletePost(post.id)} style={{ background: '#fff0f3', border: '2px solid #1a1a2e', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', padding: '0.3rem 0.6rem' }} title="Delete Post">🗑️</button>
               </div>
             </div>
             
-            <div style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '1.5rem', whiteSpace: 'pre-wrap', background: 'rgba(16,185,129,0.02)', padding: '1rem', borderRadius: '8px' }}>
+            <div style={{ fontSize: '0.95rem', color: '#1a1a2e', fontWeight: 600, marginBottom: '1.5rem', whiteSpace: 'pre-wrap', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '2px solid #1a1a2e' }}>
               {post.content}
             </div>
 
             {/* Replies */}
-            <div style={{ marginLeft: '1.5rem', borderLeft: '2px solid var(--bg-tertiary)', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ marginLeft: '1rem', borderLeft: '3px solid #1a1a2e', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {post.replies.map((reply: any) => (
-                <div key={reply.id} style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--bg-tertiary)' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <strong style={{ color: reply.author.role === 'TEACHER' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{reply.author.name}</strong>
+                <div key={reply.id} style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '2px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.4rem', display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                    <strong style={{ color: reply.author.role === 'TEACHER' ? '#aa00ff' : '#1a1a2e' }}>{reply.author.name}</strong>
                     <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{reply.content}</div>
+                  <div style={{ fontSize: '0.9rem', color: '#1a1a2e', fontWeight: 600 }}>{reply.content}</div>
                 </div>
               ))}
               
@@ -140,18 +160,21 @@ export default function TeacherForumPage({ params }: { params: Promise<{ id: str
                   placeholder="Write a reply..." 
                   value={replyContent[post.id] || ''}
                   onChange={e => setReplyContent({ ...replyContent, [post.id]: e.target.value })}
-                  style={{ flex: 1, padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                  style={{ flex: 1, border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.5rem 1.25rem', fontSize: '0.9rem', fontWeight: 600 }}
                   onKeyDown={e => { if (e.key === 'Enter') handleReply(post.id) }}
                 />
-                <button className="btn-secondary" onClick={() => handleReply(post.id)} style={{ padding: '0.5rem 1rem' }}>Reply</button>
+                <button onClick={() => handleReply(post.id)} style={{ background: '#aa00ff', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1.25rem', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}>
+                  Reply
+                </button>
               </div>
             </div>
           </div>
         ))}
         {posts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💬</div>
-            <p>No discussions yet. Be the first to start one!</p>
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b', border: '3px dashed #1a1a2e', borderRadius: '16px', background: '#f8fafc' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>💬</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.5rem' }}>No discussions yet</h3>
+            <p style={{ fontWeight: 600 }}>Be the first to post an announcement or start a discussion with your students!</p>
           </div>
         )}
       </div>

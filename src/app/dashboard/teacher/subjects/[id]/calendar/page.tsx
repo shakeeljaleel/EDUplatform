@@ -95,43 +95,56 @@ export default function TeacherCalendarPage({ params }: { params: Promise<{ id: 
   if (loading && sessions.length === 0) return <div className="pulse">Loading calendar...</div>
 
   return (
-    <div className="content-wrapper">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="content-wrapper" style={{ maxWidth: '1100px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 900 }}>Lesson Planner & Calendar</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Map your academic year and schedule classes.</p>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Lesson Planner & Calendar</h2>
+          <p style={{ color: '#64748b', fontWeight: 600 }}>Map your academic year and schedule classes.</p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditingSession(null); setFormData({ title: '', description: '', scheduledDate: '', durationMins: 60, syllabusCodes: '' }); setShowModal(true); }}>
-          + Schedule Class
+        <button
+          style={{
+            background: '#00c853',
+            color: '#ffffff',
+            border: '3px solid #1a1a2e',
+            borderRadius: '50px',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            padding: '0.7rem 1.8rem',
+            fontWeight: 900,
+            fontSize: '1rem',
+            cursor: 'pointer'
+          }}
+          onClick={() => { setEditingSession(null); setFormData({ title: '', description: '', scheduledDate: '', durationMins: 60, syllabusCodes: '' }); setShowModal(true); }}
+        >
+          + Schedule class
         </button>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card" style={{ padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: 'var(--bg-secondary)' }}>
+          <thead style={{ backgroundColor: '#f8fafc', borderBottom: '3px solid #1a1a2e' }}>
             <tr>
-              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Date & Time</th>
-              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Topic / Title</th>
-              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Status</th>
-              <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Actions</th>
+              <th style={{ textAlign: 'left', padding: '1rem 1.25rem', fontSize: '0.8rem', textTransform: 'uppercase', color: '#1a1a2e', fontWeight: 800 }}>Date & time</th>
+              <th style={{ textAlign: 'left', padding: '1rem 1.25rem', fontSize: '0.8rem', textTransform: 'uppercase', color: '#1a1a2e', fontWeight: 800 }}>Topic / title</th>
+              <th style={{ textAlign: 'left', padding: '1rem 1.25rem', fontSize: '0.8rem', textTransform: 'uppercase', color: '#1a1a2e', fontWeight: 800 }}>Status</th>
+              <th style={{ textAlign: 'left', padding: '1rem 1.25rem', fontSize: '0.8rem', textTransform: 'uppercase', color: '#1a1a2e', fontWeight: 800 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {sessions.map(s => (
-              <tr key={s.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
-                <td style={{ padding: '1rem', fontWeight: 700 }}>
+              <tr key={s.id} style={{ borderBottom: '2px solid #e2e8f0' }}>
+                <td style={{ padding: '1.25rem', fontWeight: 800, color: '#1a1a2e', fontSize: '0.95rem', verticalAlign: 'top', width: '220px' }}>
                   {new Date(s.scheduledDate).toLocaleString('en-GB', { 
                     weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
                   })}
                 </td>
-                <td style={{ padding: '1rem' }}>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem' }}>{s.title}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{s.description}</div>
+                <td style={{ padding: '1.25rem', verticalAlign: 'top' }}>
+                  <div style={{ fontWeight: 900, fontSize: '1.2rem', marginBottom: '0.35rem', color: '#1a1a2e' }}>{s.title}</div>
+                  <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem' }}>{s.description}</div>
                   
                   {s.syllabusObjectives?.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
                       {s.syllabusObjectives.map((o: any) => (
-                        <span key={o.id} title={o.description} className="badge" style={{ fontSize: '0.65rem', background: 'rgba(124, 58, 237, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
+                        <span key={o.id} title={o.description} style={{ fontSize: '0.75rem', background: '#f3e8ff', color: '#7e22ce', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontWeight: 800, boxShadow: '2px 2px 0px #1a1a2e' }}>
                           🎯 {o.code}
                         </span>
                       ))}
@@ -140,23 +153,75 @@ export default function TeacherCalendarPage({ params }: { params: Promise<{ id: 
 
                   <SessionResourceBar sessionId={s.id} />
                 </td>
-                <td style={{ padding: '1rem' }}>
-                  <span className={`badge ${
-                    s.status === 'SCHEDULED' ? 'badge-pending' : 
-                    s.status === 'TAUGHT' ? 'badge-paid' : 
-                    s.status === 'RESCHEDULED' ? 'badge-pending' : 'badge-level'
-                  }`}>
-                    {s.status}
+                <td style={{ padding: '1.25rem', verticalAlign: 'top' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '0.3rem 0.85rem',
+                    borderRadius: '50px',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '2px 2px 0px #1a1a2e',
+                    background: s.status === 'TAUGHT' ? '#00c853' : s.status === 'SCHEDULED' ? '#ffab00' : '#ff6d00',
+                    color: s.status === 'TAUGHT' ? '#ffffff' : '#1a1a2e'
+                  }}>
+                    {s.status === 'TAUGHT' ? 'Taught' : s.status === 'SCHEDULED' ? 'Scheduled' : s.status === 'RESCHEDULED' ? 'Rescheduled' : s.status}
                   </span>
                 </td>
-                <td style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }} onClick={() => openEdit(s)}>Edit</button>
+                <td style={{ padding: '1.25rem', verticalAlign: 'top' }}>
+                  <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => openEdit(s)}
+                      style={{
+                        background: '#ffffff',
+                        color: '#1a1a2e',
+                        border: '2px solid #1a1a2e',
+                        borderRadius: '50px',
+                        boxShadow: '3px 3px 0px #1a1a2e',
+                        padding: '0.4rem 1rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit
+                    </button>
                     {s.status !== 'TAUGHT' && s.status !== 'CANCELLED' && (
-                      <button className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', background: 'var(--success)', color: 'white', border: 'none' }} onClick={() => handleStatusUpdate(s.id, 'TAUGHT')}>Mark Taught</button>
+                      <button
+                        onClick={() => handleStatusUpdate(s.id, 'TAUGHT')}
+                        style={{
+                          background: '#00c853',
+                          color: '#ffffff',
+                          border: '2px solid #1a1a2e',
+                          borderRadius: '50px',
+                          boxShadow: '3px 3px 0px #1a1a2e',
+                          padding: '0.4rem 1rem',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Mark Taught
+                      </button>
                     )}
                     {s.status !== 'CANCELLED' && (
-                      <Link href={`/dashboard/teacher/subjects/${id}/sessions/${s.id}/attendance`} className="btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)' }}>Attendance</Link>
+                      <Link
+                        href={`/dashboard/teacher/subjects/${id}/sessions/${s.id}/attendance`}
+                        style={{
+                          background: '#ffffff',
+                          color: '#1a1a2e',
+                          border: '2px solid #1a1a2e',
+                          borderRadius: '50px',
+                          boxShadow: '3px 3px 0px #1a1a2e',
+                          padding: '0.4rem 1rem',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          textDecoration: 'none',
+                          display: 'inline-block'
+                        }}
+                      >
+                        Attendance
+                      </Link>
                     )}
                   </div>
                 </td>

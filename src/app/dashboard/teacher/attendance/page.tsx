@@ -27,7 +27,7 @@ export default async function GlobalAttendancePage() {
           batch: true,
           _count: {
             select: {
-              studentEnrollments: { where: { status: 'active' } }
+              studentEnrollments: { where: { status: { in: ['active', 'admin_approved', 'ACTIVE', 'APPROVED'] } } }
             }
           }
         }
@@ -66,30 +66,31 @@ export default async function GlobalAttendancePage() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-start',
-        marginBottom: '2rem',
+        marginBottom: '2.5rem',
         flexWrap: 'wrap',
         gap: '1rem'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15))',
+              width: '48px',
+              height: '48px',
+              borderRadius: '14px',
+              background: '#00bcd4',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--primary)',
-              border: '1px solid rgba(16, 185, 129, 0.3)'
+              color: '#ffffff',
+              border: '3px solid #1a1a2e',
+              boxShadow: '3px 3px 0px #1a1a2e'
             }}>
               <CheckSquare size={24} />
             </div>
             <div>
-              <h1 style={{ fontSize: '1.875rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+              <h1 style={{ fontSize: '1.875rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
                 Attendance Intelligence
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600 }}>
                 Track class participation, manage student roll calls, and monitor attendance metrics across all your active courses.
               </p>
             </div>
@@ -98,73 +99,86 @@ export default async function GlobalAttendancePage() {
 
         <Link 
           href="/dashboard/teacher" 
-          className="btn-back" 
+          style={{
+            background: '#1a1a2e',
+            color: '#ffffff',
+            padding: '0.65rem 1.25rem',
+            borderRadius: '50px',
+            border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            fontWeight: 900,
+            fontSize: '0.875rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            textDecoration: 'none'
+          }}
         >
-          <ArrowLeft size={16} /> Back to Dashboard
+          <ArrowLeft size={16} color="#ffffff" /> Back to dashboard
         </Link>
       </div>
 
-      {/* Summary Stat Boxes */}
+      {/* Summary Stat Boxes — Fix 8: Solid Color Comic Treatment */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '1.25rem',
+        gap: '1.5rem',
         marginBottom: '2.5rem'
       }}>
+        {/* Total Class Sessions — Solid Blue */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%)',
+          background: '#2979ff',
+          color: '#ffffff',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.05)'
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}>Total Class Sessions</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)' }}>
-              <Calendar size={18} />
-            </span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Total class sessions</span>
+            <span style={{ fontSize: '1.5rem' }}>📅</span>
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{totalSessions}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Active scheduled lectures</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{totalSessions}</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Active scheduled lectures</div>
         </div>
 
+        {/* Pending Roll Calls — Solid Orange */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%)',
+          background: '#ff6d00',
+          color: '#ffffff',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
-          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.05)'
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--warning-amber)' }}>Pending Roll Calls</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--warning-amber)' }}>
-              <Clock size={18} />
-            </span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Pending roll calls</span>
+            <span style={{ fontSize: '1.5rem' }}>⏳</span>
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{pendingSessionsCount}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Requires teacher action</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{pendingSessionsCount}</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Requires teacher action</div>
         </div>
 
+        {/* Avg Attendance Rate — Solid Green */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)',
+          background: '#00c853',
+          color: '#ffffff',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
-          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.05)'
+          border: '3px solid #1a1a2e',
+          boxShadow: '5px 5px 0px #1a1a2e'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2563eb' }}>Avg Attendance Rate</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.15)', color: '#2563eb' }}>
-              <TrendingUp size={18} />
-            </span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Avg attendance rate</span>
+            <span style={{ fontSize: '1.5rem' }}>📈</span>
           </div>
-          <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>{overallAttendancePct}%</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Physical + Online combined</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>{overallAttendancePct}%</div>
+          <div style={{ fontSize: '0.8rem', color: '#ffffff', marginTop: '0.5rem', fontWeight: 700 }}>Physical + Online combined</div>
         </div>
       </div>
 
-      {/* Main Content Cards Grid / Box List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Main Content Cards Grid — Fix 9: Comic Treatment */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {classSessions.map(s => {
           const totalStudents = s.subject._count.studentEnrollments
           const physical = s.attendance.filter((a: any) => a.status === 'PHYSICAL').length
@@ -190,63 +204,63 @@ export default async function GlobalAttendancePage() {
                 gap: '1.5rem',
                 alignItems: 'center',
                 padding: '1.5rem',
-                borderRadius: '18px',
-                borderLeft: isFullyMarked ? '6px solid var(--primary)' : '6px solid var(--warning-amber)',
-                background: 'var(--bg-secondary)',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
-                transition: 'all 0.2s ease'
+                borderRadius: '16px',
+                border: '3px solid #1a1a2e',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                borderLeft: isFullyMarked ? '8px solid #00c853' : '8px solid #ff6d00',
+                background: '#ffffff'
               }}
             >
-              {/* Box 1: Colored Date & Time Badge */}
+              {/* Box 1: Solid Dark Date Block */}
               <div style={{
-                background: isFullyMarked 
-                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05))' 
-                  : 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05))',
-                border: isFullyMarked ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '16px',
+                background: '#1a1a2e',
+                color: '#ffffff',
+                border: '2px solid #1a1a2e',
+                borderRadius: '12px',
                 padding: '1rem 1.25rem',
                 textAlign: 'center',
-                minWidth: '105px'
+                minWidth: '110px',
+                boxShadow: '2px 2px 0px #1a1a2e'
               }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: isFullyMarked ? 'var(--primary)' : 'var(--warning-amber)', letterSpacing: '0.05em' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: isFullyMarked ? '#00c853' : '#ff6d00', letterSpacing: '0.05em' }}>
                   {sessionDate.split(' ')[0]}
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0.1rem 0' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffffff', margin: '0.1rem 0' }}>
                   {sessionDate.split(' ').slice(1).join(' ')}
                 </div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
-                  <Clock size={12} /> {sessionTime}
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                  <Clock size={12} color="#ffffff" /> {sessionTime}
                 </div>
               </div>
 
-              {/* Box 2: Subject, Branch & Detailed Breakdown */}
+              {/* Box 2: Subject, Branch & Breakdown */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
                   <span style={{
                     padding: '0.2rem 0.65rem',
-                    borderRadius: '20px',
+                    borderRadius: '50px',
                     fontSize: '0.75rem',
-                    fontWeight: 700,
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    color: '#2563eb',
-                    border: '1px solid rgba(59, 130, 246, 0.2)'
+                    fontWeight: 900,
+                    background: '#2979ff',
+                    color: '#ffffff',
+                    border: '1.5px solid #1a1a2e'
                   }}>
                     📍 {s.subject?.batch?.name || 'Main Campus'}
                   </span>
                   <span style={{
                     padding: '0.2rem 0.65rem',
-                    borderRadius: '20px',
+                    borderRadius: '50px',
                     fontSize: '0.75rem',
-                    fontWeight: 700,
-                    background: 'rgba(139, 92, 246, 0.1)',
-                    color: '#7c3aed',
-                    border: '1px solid rgba(139, 92, 246, 0.2)'
+                    fontWeight: 900,
+                    background: '#aa00ff',
+                    color: '#ffffff',
+                    border: '1.5px solid #1a1a2e'
                   }}>
                     📚 {s.subject.name}
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.8rem' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '0.8rem' }}>
                   {s.title}
                 </h3>
 
@@ -257,13 +271,14 @@ export default async function GlobalAttendancePage() {
                     alignItems: 'center', 
                     gap: '0.4rem', 
                     padding: '0.35rem 0.75rem', 
-                    borderRadius: '8px', 
-                    background: 'var(--bg-tertiary)',
-                    color: 'var(--text-secondary)',
+                    borderRadius: '50px', 
+                    background: '#fff3e0',
+                    color: '#ff6d00',
                     fontSize: '0.85rem',
-                    fontWeight: 500
+                    fontWeight: 800,
+                    border: '2px solid #1a1a2e'
                   }}>
-                    <AlertCircle size={14} /> No students enrolled in subject
+                    <AlertCircle size={14} color="#ff6d00" /> No students enrolled in subject
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -273,14 +288,13 @@ export default async function GlobalAttendancePage() {
                         alignItems: 'center',
                         gap: '0.35rem',
                         padding: '0.35rem 0.75rem',
-                        borderRadius: '10px',
-                        background: 'rgba(16, 185, 129, 0.12)',
-                        color: 'var(--primary)',
+                        borderRadius: '50px',
+                        background: '#00c853',
+                        color: '#ffffff',
                         fontSize: '0.85rem',
-                        fontWeight: 700,
-                        border: '1px solid rgba(16, 185, 129, 0.2)'
+                        fontWeight: 900,
+                        border: '1.5px solid #1a1a2e'
                       }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></span>
                         Physical: {physical}
                       </div>
 
@@ -289,14 +303,13 @@ export default async function GlobalAttendancePage() {
                         alignItems: 'center',
                         gap: '0.35rem',
                         padding: '0.35rem 0.75rem',
-                        borderRadius: '10px',
-                        background: 'rgba(59, 130, 246, 0.12)',
-                        color: '#2563eb',
+                        borderRadius: '50px',
+                        background: '#2979ff',
+                        color: '#ffffff',
                         fontSize: '0.85rem',
-                        fontWeight: 700,
-                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                        fontWeight: 900,
+                        border: '1.5px solid #1a1a2e'
                       }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }}></span>
                         Online: {online}
                       </div>
 
@@ -305,14 +318,13 @@ export default async function GlobalAttendancePage() {
                         alignItems: 'center',
                         gap: '0.35rem',
                         padding: '0.35rem 0.75rem',
-                        borderRadius: '10px',
-                        background: 'rgba(239, 68, 68, 0.12)',
-                        color: 'var(--error)',
+                        borderRadius: '50px',
+                        background: '#f50057',
+                        color: '#ffffff',
                         fontSize: '0.85rem',
-                        fontWeight: 700,
-                        border: '1px solid rgba(239, 68, 68, 0.2)'
+                        fontWeight: 900,
+                        border: '1.5px solid #1a1a2e'
                       }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--error)' }}></span>
                         Absent: {absent}
                       </div>
 
@@ -322,32 +334,29 @@ export default async function GlobalAttendancePage() {
                           alignItems: 'center',
                           gap: '0.35rem',
                           padding: '0.35rem 0.75rem',
-                          borderRadius: '10px',
-                          background: 'rgba(245, 158, 11, 0.15)',
-                          color: 'var(--warning-amber)',
+                          borderRadius: '50px',
+                          background: '#ff6d00',
+                          color: '#ffffff',
                           fontSize: '0.85rem',
-                          fontWeight: 700,
-                          border: '1px solid rgba(245, 158, 11, 0.3)'
+                          fontWeight: 900,
+                          border: '1.5px solid #1a1a2e'
                         }}>
-                          <Clock size={13} /> Unmarked: {unmarked}
+                          <Clock size={13} color="#ffffff" /> Unmarked: {unmarked}
                         </div>
                       )}
                     </div>
 
                     {/* Progress Bar Container */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: '380px', marginTop: '0.2rem' }}>
-                      <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                      <div style={{ flex: 1, height: '8px', borderRadius: '4px', background: '#e2e8f0', border: '1px solid #1a1a2e', overflow: 'hidden' }}>
                         <div style={{ 
                           width: `${markedPct}%`, 
                           height: '100%', 
-                          background: isFullyMarked 
-                            ? 'linear-gradient(90deg, #10b981, #059669)' 
-                            : 'linear-gradient(90deg, #f59e0b, #d97706)',
-                          borderRadius: '4px',
+                          background: isFullyMarked ? '#00c853' : '#ff6d00',
                           transition: 'width 0.4s ease'
                         }} />
                       </div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', minWidth: '70px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', minWidth: '70px' }}>
                         {markedCount} / {totalStudents} ({markedPct}%)
                       </span>
                     </div>
@@ -359,21 +368,24 @@ export default async function GlobalAttendancePage() {
               <div>
                 <Link 
                   href={`/dashboard/teacher/subjects/${s.subjectId}/sessions/${s.id}/attendance`} 
-                  className={unmarked > 0 ? "btn-primary" : "btn-secondary"} 
                   style={{ 
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    padding: '0.75rem 1.25rem', 
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    boxShadow: unmarked > 0 ? '0 4px 14px rgba(16, 185, 129, 0.25)' : 'none',
+                    padding: '0.65rem 1.25rem', 
+                    fontSize: '0.85rem',
+                    fontWeight: 900,
+                    borderRadius: '50px',
+                    background: unmarked > 0 ? '#00c853' : '#ffffff',
+                    color: unmarked > 0 ? '#ffffff' : '#1a1a2e',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    textDecoration: 'none',
                     whiteSpace: 'nowrap'
                   }}
                 >
                   <CheckSquare size={16} />
-                  {unmarked > 0 ? 'Mark Attendance' : 'View Breakdown'}
+                  {unmarked > 0 ? 'Mark attendance' : 'View breakdown'}
                 </Link>
               </div>
             </div>
@@ -384,7 +396,7 @@ export default async function GlobalAttendancePage() {
           <EmptyState
             title="No Active Class Sessions"
             description="You currently don't have any class sessions scheduled or pending attendance review."
-            actionLabel="Back to Dashboard"
+            actionLabel="Back to dashboard"
             actionHref="/dashboard/teacher"
           />
         )}
