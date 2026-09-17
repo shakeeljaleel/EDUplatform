@@ -8,36 +8,45 @@ export default async function GlobalAttendancePage() {
   const session = await getSession()
   if (!session || session.user.role !== 'TEACHER') return null
 
-  const classSessions = await prisma.classSession.findMany({
-    where: {
-      subject: {
-        branchTeachers: {
-          some: {
-            teacherId: session.user.id
-          }
-        }
-      },
-      status: {
-        not: 'CANCELLED'
-      }
-    },
-    include: {
-      subject: {
-        include: {
-          batch: true,
-          _count: {
-            select: {
-              studentEnrollments: { where: { status: { in: ['active', 'admin_approved', 'ACTIVE', 'APPROVED'] } } }
+  let classSessions: any[] = []
+  let fetchError = false
+
+  try {
+    const rawSessions = await prisma.classSession.findMany({
+      where: {
+        subject: {
+          branchTeachers: {
+            some: {
+              teacherId: session.user.id
             }
           }
+        },
+        status: {
+          not: 'CANCELLED'
         }
       },
-      attendance: true
-    },
-    orderBy: {
-      scheduledDate: 'desc'
-    }
-  })
+      include: {
+        subject: {
+          include: {
+            batch: true,
+            _count: {
+              select: {
+                studentEnrollments: { where: { status: { in: ['active', 'admin_approved', 'ACTIVE', 'APPROVED'] } } }
+              }
+            }
+          }
+        },
+        attendance: true
+      },
+      orderBy: {
+        scheduledDate: 'desc'
+      }
+    })
+    classSessions = rawSessions.filter(s => s.subject && s.subject.batch)
+  } catch (err) {
+    console.error('GlobalAttendancePage database query error:', err)
+    fetchError = true
+  }
 
   // Calculate high-level summary metrics
   const totalSessions = classSessions.length
@@ -51,7 +60,7 @@ export default async function GlobalAttendancePage() {
     if (markedCount < totalStudents && totalStudents > 0) {
       pendingSessionsCount++
     }
-    totalMarkedAttendance += s.attendance.filter(a => a.status === 'PHYSICAL' || a.status === 'ONLINE').length
+    totalMarkedAttendance += s.attendance.filter((a: any) => a.status === 'PHYSICAL' || a.status === 'ONLINE').length
     totalPossibleAttendance += totalStudents
   })
 

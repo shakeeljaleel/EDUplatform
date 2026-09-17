@@ -1,35 +1,47 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { Sparkles, ArrowRight, CheckSquare } from 'lucide-react'
+import { Sparkles, ArrowRight, AlertTriangle } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 
 export default async function TeacherGradingHubPage() {
   const session = await getSession()
   if (!session || session.user.role !== 'TEACHER') return null
 
-  // Fetch teacher's subjects and recent AI gradings
-  const teacherAssignments = await prisma.subjectBranchTeacher.findMany({
-    where: { teacherId: session.user.id },
-    include: {
-      subject: {
-        include: {
-          batch: true,
-          paperGradings: {
-            include: { student: true },
-            orderBy: { createdAt: 'desc' },
-            take: 5
+  const isGeminiConfigured = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '')
+
+  let teacherAssignments: any[] = []
+  let fetchError = false
+
+  try {
+    const rawAssignments = await prisma.subjectBranchTeacher.findMany({
+      where: { teacherId: session.user.id },
+      include: {
+        subject: {
+          include: {
+            batch: true,
+            paperGradings: {
+              include: { student: true },
+              orderBy: { createdAt: 'desc' },
+              take: 5
+            }
           }
-        }
-      },
-      branch: true
-    }
-  })
+        },
+        branch: true
+      }
+    })
+
+    // Filter out null/invalid subject or batch relations
+    teacherAssignments = rawAssignments.filter(ta => ta.subject && ta.subject.batch)
+  } catch (err) {
+    console.error('TeacherGradingHubPage database error:', err)
+    fetchError = true
+  }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '3rem' }}>
       {/* Header Banner */}
-      <div style={{ marginBottom: '2.5rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           <div style={{
             width: '44px',
@@ -40,23 +52,69 @@ export default async function TeacherGradingHubPage() {
             alignItems: 'center',
             justifyContent: 'center',
             color: '#ec4899',
-            border: '1px solid rgba(236, 72, 153, 0.3)'
+            border: '2px solid #1a1a2e',
+            boxShadow: '3px 3px 0px #1a1a2e'
           }}>
             <Sparkles size={24} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            <h1 style={{ fontSize: '1.875rem', fontWeight: 900, color: '#1a1a2e' }}>
               AI Marking & Auto-Grader Hub
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600 }}>
               Automated paper evaluation, marking scheme alignment, and instant student feedback powered by Gemini AI.
             </p>
           </div>
         </div>
       </div>
 
+      {/* Gemini API Key missing notice */}
+      {!isGeminiConfigured && (
+        <div style={{
+          marginBottom: '2rem',
+          padding: '1.25rem 1.5rem',
+          background: '#fffbe8',
+          border: '3px solid #1a1a2e',
+          borderRadius: '16px',
+          boxShadow: '5px 5px 0px #1a1a2e',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ffab00', border: '2px solid #1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1a1a2e', flexShrink: 0 }}>
+            <AlertTriangle size={20} />
+          </div>
+          <div>
+            <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.2rem' }}>
+              AI grading is not fully configured
+            </h4>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>
+              Please contact your administrator to set up the <code style={{ background: '#e2e8f0', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>GEMINI_API_KEY</code> environment variable.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Database fetch error notice */}
+      {fetchError && (
+        <div style={{
+          marginBottom: '2rem',
+          padding: '1.25rem 1.5rem',
+          background: '#fff0f3',
+          border: '3px solid #1a1a2e',
+          borderRadius: '16px',
+          boxShadow: '5px 5px 0px #1a1a2e',
+          color: '#1a1a2e'
+        }}>
+          <h4 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.25rem' }}>Unable to load assigned courses</h4>
+          <p style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>
+            A temporary database query issue occurred. Showing offline mode.
+          </p>
+        </div>
+      )}
+
       {/* Course Subject Selection Boxes */}
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.25rem', color: 'var(--text-primary)' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.25rem', color: '#1a1a2e' }}>
         Select a Course to Grade Papers
       </h2>
 
@@ -86,18 +144,18 @@ export default async function TeacherGradingHubPage() {
                 boxShadow: '2px 2px 0px #1a1a2e',
                 marginBottom: '0.75rem'
               }}>
-                {ta.subject.batch.name}
+                {ta.subject?.batch?.name || 'Batch'}
               </div>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.5rem' }}>
-                {ta.subject.name}
+                {ta.subject?.name || 'Subject'}
               </h3>
               <p style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>
-                {ta.subject.paperGradings.length} paper(s) graded by AI so far.
+                {ta.subject?.paperGradings?.length || 0} paper(s) graded by AI so far.
               </p>
             </div>
 
             <Link
-              href={`/dashboard/teacher/subjects/${ta.subject.id}/grading`}
+              href={`/dashboard/teacher/subjects/${ta.subject?.id}/grading`}
               className="comic-btn"
               style={{
                 background: '#aa00ff',
@@ -120,11 +178,22 @@ export default async function TeacherGradingHubPage() {
           </div>
         ))}
 
-        {teacherAssignments.length === 0 && (
+        {teacherAssignments.length === 0 && !fetchError && (
           <div style={{ gridColumn: '1 / -1' }}>
             <EmptyState
               title="No Course Subjects Assigned"
               description="You do not have any assigned subjects yet. Contact your administrator to assign courses."
+              actionLabel="Back to Dashboard"
+              actionHref="/dashboard/teacher"
+            />
+          </div>
+        )}
+
+        {fetchError && (
+          <div style={{ gridColumn: '1 / -1' }}>
+            <EmptyState
+              title="No Grading Sessions Available"
+              description="Could not connect to grading records. Please try refreshing the page."
               actionLabel="Back to Dashboard"
               actionHref="/dashboard/teacher"
             />
