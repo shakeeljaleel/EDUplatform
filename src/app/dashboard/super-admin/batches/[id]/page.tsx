@@ -18,6 +18,19 @@ const ASSISTANT_PERMISSIONS = [
   'View student contact details'
 ]
 
+function formatBranchLabel(name: string): string {
+  if (!name) return ''
+  let str = name.trim()
+  str = str.replace(/\bBRANCH\s+BRANCH\b/gi, 'Branch')
+  str = str.replace(/\bbranch\s+branch\b/gi, 'Branch')
+  if (/ branch$/i.test(str)) {
+    const base = str.replace(/ branch$/i, '').trim()
+    const formattedBase = base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    return `${formattedBase} Branch`
+  }
+  return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+}
+
 export default function SuperAdminBatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: batchId } = use(params)
   const searchParams = useSearchParams()
@@ -439,7 +452,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                   borderRadius: '50px',
                   fontSize: '0.85rem'
                 }}>
-                  📍 {bb.branch.name}
+                  📍 {formatBranchLabel(bb.branch.name)}
                 </span>
               ))}
             </div>
@@ -518,7 +531,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                 borderTop: `8px solid ${bs.branchColour || '#2979ff'}`
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{bs.branchName}</h3>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{formatBranchLabel(bs.branchName)}</h3>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f1f5f9', border: '1.5px solid #1a1a2e', padding: '0.2rem 0.6rem', borderRadius: '50px' }}>
                     {bs.branchType}
                   </span>
@@ -583,7 +596,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                     <div>
-                      <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{b.name}</h3>
+                      <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{formatBranchLabel(b.name)}</h3>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#e2e8f0', color: '#1a1a2e', border: '1.5px solid #1a1a2e', padding: '0.2rem 0.6rem', borderRadius: '50px', display: 'inline-block', marginTop: '0.35rem' }}>
                         {b.type}
                       </span>
@@ -702,7 +715,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                       <div key={branch.id} style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1.25rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
                           <h4 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                            📍 {branch.name} branch
+                            📍 {formatBranchLabel(branch.name)}
                           </h4>
                           <button
                             onClick={() => {
@@ -859,10 +872,10 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
             </div>
 
             <Link
-              href={`/dashboard/super-admin/students/import?batchId=${batchId}`}
+              href={`/dashboard/super-admin/student-import?batchId=${batchId}`}
               style={{
                 padding: '0.65rem 1.25rem',
-                fontWeight: 800,
+                fontWeight: 900,
                 background: '#00c853',
                 color: '#ffffff',
                 borderRadius: '50px',
@@ -874,7 +887,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                 gap: '0.4rem'
               }}
             >
-              <Plus size={18} /> + Add student (Import)
+              <Plus size={18} /> + Add student
             </Link>
           </div>
 
@@ -886,6 +899,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                 background: branchFilter === 'ALL' ? '#1a1a2e' : '#ffffff',
                 color: branchFilter === 'ALL' ? '#ffffff' : '#1a1a2e',
                 border: '2px solid #1a1a2e',
+                boxShadow: '2px 2px 0px #1a1a2e',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '50px',
                 fontWeight: 800,
@@ -895,37 +909,41 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
             >
               All Branches
             </button>
-            {batchData.batchBranches.map((bb: any) => (
-              <button
-                key={bb.branch.id}
-                onClick={() => setBranchFilter(bb.branch.id)}
-                style={{
-                  background: branchFilter === bb.branch.id ? bb.branch.colour || '#2979ff' : '#ffffff',
-                  color: branchFilter === bb.branch.id ? '#ffffff' : '#1a1a2e',
-                  border: '2px solid #1a1a2e',
-                  padding: '0.35rem 0.85rem',
-                  borderRadius: '50px',
-                  fontWeight: 800,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer'
-                }}
-              >
-                📍 {bb.branch.name}
-              </button>
-            ))}
+            {batchData.batchBranches.map((bb: any) => {
+              const isSelected = branchFilter === bb.branch.id
+              return (
+                <button
+                  key={bb.branch.id}
+                  onClick={() => setBranchFilter(bb.branch.id)}
+                  style={{
+                    background: isSelected ? '#1a1a2e' : '#ffffff',
+                    color: isSelected ? '#ffffff' : '#1a1a2e',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '2px 2px 0px #1a1a2e',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '50px',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📍 {formatBranchLabel(bb.branch.name)}
+                </button>
+              )
+            })}
           </div>
 
           {/* Students Table */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e' }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', background: '#ffffff' }}>
             <div className="table-container">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '3px solid #1a1a2e', textAlign: 'left' }}>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Student</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Branch</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Enrolled subject</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Status</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Payment</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Student</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Branch</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Enrolled subject</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Status</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Payment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -938,7 +956,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
 
                       <td style={{ padding: '1rem 1.25rem' }}>
                         <span style={{
-                          background: e.branch.colour || '#00c853',
+                          background: e.branch?.colour || '#00c853',
                           color: '#ffffff',
                           border: '1.5px solid #1a1a2e',
                           padding: '0.25rem 0.65rem',
@@ -946,7 +964,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                           fontSize: '0.75rem',
                           fontWeight: 900
                         }}>
-                          📍 {e.branch.name}
+                          📍 {formatBranchLabel(e.branch?.name)}
                         </span>
                       </td>
 

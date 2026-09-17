@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: '**' }
     ]
+  },
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/super-admin/students/import',
+        destination: '/dashboard/super-admin/student-import',
+        permanent: true,
+      },
+    ]
   }
 };
 

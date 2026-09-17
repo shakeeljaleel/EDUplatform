@@ -37,6 +37,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         }
       },
       studentEnrollments: {
+        where: {
+          OR: [
+            { batchId: id },
+            { subject: { batchId: id } }
+          ]
+        },
         include: {
           student: {
             select: {
