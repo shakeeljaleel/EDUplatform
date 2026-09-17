@@ -41,11 +41,6 @@ function formatBranchLabel(name: string): string {
     result.push(word)
   }
 
-  // Ensure 'Branch' suffix is present exactly once
-  if (!result.includes('Branch')) {
-    result.push('Branch')
-  }
-
   return result.join(' ')
 }
 
@@ -353,6 +348,12 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
   // --- SETTINGS HANDLERS ---
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (editAcademicLevel !== batchData.academicLevel) {
+      const confirmed = confirm('Changing the academic level will affect how the AI chatbot responds to students in this batch. Continue?')
+      if (!confirmed) return
+    }
+
     setSavingSettings(true)
     try {
       const res = await fetch(`/api/batches/${batchId}`, {
@@ -366,6 +367,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
       })
       if (res.ok) {
         showToast('Batch updated', 'success')
+        setBatchData((prev: any) => prev ? { ...prev, name: editName, academicLevel: editAcademicLevel, description: editDescription } : prev)
         fetchBatchDetail()
       }
     } finally {
@@ -416,7 +418,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
     return <div className="pulse" style={{ padding: '3rem', fontWeight: 800, color: '#64748b' }}>Loading batch detail console...</div>
   }
 
-  const levelColor = getAcademicLevelColor(batchData.academicLevel)
+  const levelColor = getAcademicLevelColor(editAcademicLevel || batchData.academicLevel)
 
   // Filtered Students
   const filteredStudents = (batchData.studentEnrollments || []).filter((e: any) => {
@@ -994,7 +996,8 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                           padding: '0.25rem 0.65rem',
                           borderRadius: '50px',
                           fontSize: '0.75rem',
-                          fontWeight: 900
+                          fontWeight: 900,
+                          textTransform: 'capitalize'
                         }}>
                           📚 {e.subject.name}
                         </span>
@@ -1061,10 +1064,12 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                   onChange={e => setEditAcademicLevel(e.target.value)}
                   style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 >
-                  <option value="A Level">A Level (#aa00ff)</option>
-                  <option value="AS Level">AS Level (#2979ff)</option>
                   <option value="O Level">O Level (#00c853)</option>
+                  <option value="AS Level">AS Level (#2979ff)</option>
+                  <option value="A Level">A Level (#aa00ff)</option>
                   <option value="Grade 11">Grade 11 (#ff6d00)</option>
+                  <option value="Grade 12">Grade 12 (#f50057)</option>
+                  <option value="Grade 13">Grade 13 (#00bcd4)</option>
                 </select>
               </div>
 

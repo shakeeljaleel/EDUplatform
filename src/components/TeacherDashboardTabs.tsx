@@ -36,10 +36,6 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
   const [submittingAssistant, setSubmittingAssistant] = useState(false)
 
-  useEffect(() => {
-    fetchAssistants()
-  }, [])
-
   const fetchAssistants = async () => {
     try {
       const res = await fetch('/api/users?role=ASSISTANT')
@@ -48,6 +44,10 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
       console.error(e)
     }
   }
+
+  useEffect(() => {
+    fetchAssistants()
+  }, [])
 
   const handleSaveAssistant = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -270,7 +270,7 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0.25rem 0', color: '#ffffff' }}>
+                    <h3 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0.25rem 0', color: '#ffffff', textTransform: 'capitalize' }}>
                       {cls.subject.name}
                     </h3>
                     <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'rgba(255,255,255,0.95)', marginBottom: '1.25rem' }}>
@@ -441,7 +441,7 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                     {p.student.name} ({p.student.email})
                   </div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b', marginTop: '0.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <span>📚 Subject: <strong>{p.subject.name}</strong></span>
+                    <span>📚 Subject: <strong style={{ textTransform: 'capitalize' }}>{p.subject.name}</strong></span>
                     <span>🎓 Batch: <strong>{p.batch.name}</strong></span>
                     <span>📍 Branch: <strong>{p.branch.name}</strong></span>
                   </div>

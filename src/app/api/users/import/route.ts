@@ -14,9 +14,20 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const batchId = formData.get('batchId') as string
+    const branchId = formData.get('branchId') as string
+    const rawSubjectIds = formData.get('subjectIds') as string
 
-    if (!file || !batchId) {
-      return NextResponse.json({ error: 'File and batchId are required' }, { status: 400 })
+    if (!file || !batchId || !branchId) {
+      return NextResponse.json({ error: 'File, target batch, and target branch are required' }, { status: 400 })
+    }
+
+    let selectedSubjectIds: string[] = []
+    if (rawSubjectIds) {
+      try {
+        selectedSubjectIds = JSON.parse(rawSubjectIds)
+      } catch {
+        selectedSubjectIds = []
+      }
     }
 
     const records = await parseStudentImportFile(file)
@@ -27,30 +38,24 @@ export async function POST(request: Request) {
 
     let successCount = 0
 
-    // Fetch target batch details with subjects and assigned teachers
+    // Fetch target batch details with subjects
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
       include: {
-        subjects: {
-          include: {
-            branchTeachers: { select: { teacherId: true } }
-          }
-        }
+        subjects: true
       }
     })
 
-    const subjects = batch?.subjects || []
-    const importedStudents: Array<{ id: string; name: string; email: string; status: string }> = []
-
-    // Collect all unique teacher IDs assigned to this batch's subjects
-    const teacherUserIds = new Set<string>()
-    for (const subject of subjects) {
-      for (const t of subject.branchTeachers) {
-        if (t.teacherId) teacherUserIds.add(t.teacherId)
-      }
+    if (!batch) {
+      return NextResponse.json({ error: 'Selected batch not found' }, { status: 404 })
     }
 
-    const defaultBranch = await prisma.branch.findFirst()
+    const allSubjects = batch.subjects || []
+    const targetSubjects = selectedSubjectIds.length > 0
+      ? allSubjects.filter(s => selectedSubjectIds.includes(s.id))
+      : allSubjects
+
+    const importedStudents: Array<{ id: string; name: string; email: string; status: string }> = []
 
     for (const record of records) {
       if (!record.email || !record.name) continue
@@ -77,34 +82,40 @@ export async function POST(request: Request) {
         }
       })
 
-      if (defaultBranch) {
-        for (const subject of subjects) {
-          await prisma.studentEnrollment.upsert({
-            where: { id: `enroll-${user.id}-${subject.id}` },
-            update: { status: 'admin_approved', adminApprovedAt: new Date() },
-            create: {
-              id: `enroll-${user.id}-${subject.id}`,
-              studentId: user.id,
-              batchId: batchId,
-              branchId: defaultBranch.id,
-              subjectId: subject.id,
-              status: 'admin_approved',
-              adminApprovedAt: new Date()
+      for (const subject of targetSubjects) {
+        await prisma.studentEnrollment.upsert({
+          where: { id: `enroll-${user.id}-${subject.id}` },
+          update: { status: 'admin_approved', branchId: branchId, adminApprovedAt: new Date() },
+          create: {
+            id: `enroll-${user.id}-${subject.id}`,
+            studentId: user.id,
+            batchId: batchId,
+            branchId: branchId,
+            subjectId: subject.id,
+            status: 'admin_approved',
+            adminApprovedAt: new Date()
+          }
+        })
+
+        // Notify teachers matching exact subject_id AND branch_id combination
+        const assignedTeachers = await prisma.subjectBranchTeacher.findMany({
+          where: {
+            subjectId: subject.id,
+            branchId: branchId
+          },
+          select: { teacherId: true }
+        })
+
+        for (const t of assignedTeachers) {
+          await prisma.notification.create({
+            data: {
+              userId: t.teacherId,
+              type: 'TEACHER_ENROLMENT_CONFIRMATION',
+              title: 'Student Enrolment Confirmation',
+              message: `New student ${user.name} has been added to ${subject.name} — ${batch.name} by the admin. Please confirm their enrolment.`
             }
           })
         }
-      }
-
-      // Notify teachers about new admin-imported student
-      for (const teacherId of Array.from(teacherUserIds)) {
-        await prisma.notification.create({
-          data: {
-            userId: teacherId,
-            type: 'TEACHER_ENROLMENT_CONFIRMATION',
-            title: 'Student Enrolment Confirmation',
-            message: `New student ${user.name} has been added to ${batch?.name || 'the batch'} by the admin. Please confirm their enrolment.`
-          }
-        })
       }
 
       importedStudents.push({
@@ -121,7 +132,7 @@ export async function POST(request: Request) {
       success: true,
       count: successCount,
       totalParsed: records.length,
-      batchName: batch?.name || 'Selected Batch',
+      batchName: batch.name,
       students: importedStudents
     })
   } catch (error: any) {

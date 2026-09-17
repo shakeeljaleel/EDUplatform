@@ -20,10 +20,11 @@ export async function PATCH(request: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { notificationId } = await request.json()
+    const body = await request.json().catch(() => ({}))
+    const notificationId = body.notificationId
     
     if (notificationId) {
-      await prisma.notification.update({
+      await prisma.notification.updateMany({
         where: { id: notificationId, userId: session.user.id },
         data: { read: true }
       })
@@ -34,6 +35,20 @@ export async function PATCH(request: Request) {
       })
     }
 
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+export async function DELETE() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    await prisma.notification.deleteMany({
+      where: { userId: session.user.id }
+    })
     return NextResponse.json({ success: true })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

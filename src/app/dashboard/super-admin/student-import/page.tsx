@@ -19,12 +19,20 @@ interface ImportResult {
   students: ImportedStudent[]
 }
 
+function formatBranchLabel(name?: string): string {
+  if (!name) return ''
+  return name.trim().replace(/\b(branch)(\s+\1)+\b/gi, 'Branch')
+}
+
 function StudentImportContent() {
   const searchParams = useSearchParams()
   const urlBatchId = searchParams.get('batchId')
+  const urlBranchId = searchParams.get('branchId')
 
   const [batches, setBatches] = useState<any[]>([])
   const [selectedBatch, setSelectedBatch] = useState('')
+  const [selectedBranch, setSelectedBranch] = useState('')
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -49,16 +57,55 @@ function StudentImportContent() {
         const data = await res.json()
         const bList = data.batches || []
         setBatches(bList)
+        
+        let initialBatchId = ''
         if (urlBatchId && bList.some((b: any) => b.id === urlBatchId)) {
-          setSelectedBatch(urlBatchId)
+          initialBatchId = urlBatchId
         } else if (bList.length > 0) {
-          setSelectedBatch(bList[0].id)
+          initialBatchId = bList[0].id
+        }
+
+        setSelectedBatch(initialBatchId)
+
+        if (initialBatchId) {
+          const selectedBatchObj = bList.find((b: any) => b.id === initialBatchId)
+          const branches = selectedBatchObj?.branches || []
+          
+          let initialBranchId = ''
+          if (urlBranchId && branches.some((br: any) => br.id === urlBranchId)) {
+            initialBranchId = urlBranchId
+          } else if (branches.length > 0) {
+            initialBranchId = branches[0].id
+          }
+
+          setSelectedBranch(initialBranchId)
+          const subjects = selectedBatchObj?.subjects || []
+          setSelectedSubjectIds(subjects.map((s: any) => s.id))
         }
       }
     } catch (e) {
       console.error('Failed to fetch batches:', e)
     }
   }
+
+  const handleBatchChange = (batchId: string) => {
+    setSelectedBatch(batchId)
+    const selectedBatchObj = batches.find(b => b.id === batchId)
+    const branches = selectedBatchObj?.branches || []
+    const defaultBranchId = branches.length > 0 ? branches[0].id : ''
+    setSelectedBranch(defaultBranchId)
+
+    const subjects = selectedBatchObj?.subjects || []
+    setSelectedSubjectIds(subjects.map((s: any) => s.id))
+  }
+
+  const handleBranchChange = (branchId: string) => {
+    setSelectedBranch(branchId)
+  }
+
+  const currentBatchObj = batches.find(b => b.id === selectedBatch)
+  const availableBranches = currentBatchObj?.branches || []
+  const availableSubjects = currentBatchObj?.subjects || []
 
   const refreshStudentStatus = async () => {
     if (!importResult?.batchId) return
@@ -89,6 +136,11 @@ function StudentImportContent() {
       return
     }
 
+    if (availableBranches.length > 0 && !selectedBranch) {
+      showToast('Please select a target branch before proceeding with import', 'error')
+      return
+    }
+
     setLoading(true)
     setMessage('')
     setImportResult(null)
@@ -96,6 +148,8 @@ function StudentImportContent() {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('batchId', selectedBatch)
+    formData.append('branchId', selectedBranch)
+    formData.append('subjectIds', JSON.stringify(selectedSubjectIds))
 
     try {
       const res = await fetch('/api/users/import', {
@@ -131,7 +185,12 @@ function StudentImportContent() {
   const handleManualEntry = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedBatch) {
-      showToast('Please select a batch', 'error')
+      showToast('Please select a target batch', 'error')
+      return
+    }
+
+    if (availableBranches.length > 0 && !selectedBranch) {
+      showToast('Please select a target branch before adding student', 'error')
       return
     }
 
@@ -143,7 +202,12 @@ function StudentImportContent() {
       const res = await fetch('/api/users/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...manualData, batchId: selectedBatch }),
+        body: JSON.stringify({
+          ...manualData,
+          batchId: selectedBatch,
+          branchId: selectedBranch,
+          subjectIds: selectedSubjectIds
+        }),
       })
 
       const data = await res.json()
@@ -244,21 +308,89 @@ function StudentImportContent() {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* TARGET BATCH */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Target batch</label>
+            <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+              Target Batch <span style={{ color: '#dc2626' }}>*</span>
+            </label>
             <select 
               className="input-field"
               value={selectedBatch}
-              onChange={e => setSelectedBatch(e.target.value)}
-              style={{ width: '100%', minHeight: '42px', fontSize: '0.9rem' }}
+              onChange={e => handleBatchChange(e.target.value)}
+              style={{ width: '100%', minHeight: '42px', fontSize: '0.9rem', border: '2px solid #1a1a2e' }}
               required
             >
-              <option value="" disabled>Select a batch...</option>
+              <option value="" disabled>Select a target batch...</option>
               {batches.map(batch => (
-                <option key={batch.id} value={batch.id}>{batch.name} - {batch.academicLevel} {batch.branch ? `(${batch.branch.name})` : ''}</option>
+                <option key={batch.id} value={batch.id}>{batch.name} ({batch.academicLevel})</option>
               ))}
             </select>
           </div>
+
+          {/* TARGET BRANCH */}
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+              Target Branch <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <select 
+              className="input-field"
+              value={selectedBranch}
+              onChange={e => handleBranchChange(e.target.value)}
+              style={{ width: '100%', minHeight: '42px', fontSize: '0.9rem', border: '2px solid #1a1a2e' }}
+              required
+            >
+              <option value="" disabled>Select a target branch...</option>
+              {availableBranches.map((br: any) => (
+                <option key={br.id} value={br.id}>📍 {formatBranchLabel(br.name)} ({br.type})</option>
+              ))}
+            </select>
+            {availableBranches.length === 0 && selectedBatch && (
+              <p style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, marginTop: '0.25rem' }}>
+                Warning: No branches are assigned to this batch yet.
+              </p>
+            )}
+          </div>
+
+          {/* TARGET SUBJECTS (MULTI-SELECT) */}
+          {availableSubjects.length > 0 && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+                Target Subjects (Multi-select)
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '2px solid #1a1a2e' }}>
+                {availableSubjects.map((sub: any) => {
+                  const isChecked = selectedSubjectIds.includes(sub.id)
+                  return (
+                    <label key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', color: '#0f172a' }}>
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedSubjectIds(selectedSubjectIds.filter(id => id !== sub.id))
+                          } else {
+                            setSelectedSubjectIds([...selectedSubjectIds, sub.id])
+                          }
+                        }}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span style={{
+                        textTransform: 'capitalize',
+                        background: sub.colour || '#2979ff',
+                        color: '#ffffff',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '50px',
+                        fontSize: '0.75rem',
+                        fontWeight: 900
+                      }}>
+                        📚 {sub.name}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {mode === 'pdf' && (
             <form onSubmit={handleImportFile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -336,7 +468,7 @@ function StudentImportContent() {
                 )}
               </div>
 
-              <button type="submit" className="btn-primary" disabled={loading || !file || !selectedBatch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
+              <button type="submit" className="btn-primary" disabled={loading || !file || !selectedBatch || !selectedBranch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
                 {loading ? 'Reading PDF...' : 'Import PDF'}
               </button>
             </form>
@@ -418,42 +550,42 @@ function StudentImportContent() {
                 )}
               </div>
 
-              <button type="submit" className="btn-primary" disabled={loading || !file || !selectedBatch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
-                {loading ? 'Importing CSV...' : 'Import CSV'}
+              <button type="submit" className="btn-primary" disabled={loading || !file || !selectedBatch || !selectedBranch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
+                {loading ? 'Processing CSV...' : 'Import CSV'}
               </button>
             </form>
           )}
 
           {mode === 'manual' && (
             <form onSubmit={handleManualEntry} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Full name</label>
-                  <input type="text" className="input-field" required value={manualData.name} onChange={e => setManualData({...manualData, name: e.target.value})} placeholder="e.g. John Doe" style={{ width: '100%', minHeight: '42px' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Email address</label>
-                  <input type="email" className="input-field" required value={manualData.email} onChange={e => setManualData({...manualData, email: e.target.value})} placeholder="e.g. john@student.com" style={{ width: '100%', minHeight: '42px' }} />
-                </div>
-              </div>
-              
               <div>
-                <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Initial password</label>
-                <input type="password" className="input-field" required value={manualData.password} onChange={e => setManualData({...manualData, password: e.target.value})} placeholder="Set initial password" style={{ width: '100%', minHeight: '42px' }} />
+                <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Student full name</label>
+                <input type="text" className="input-field" value={manualData.name} onChange={e => setManualData({...manualData, name: e.target.value})} placeholder="e.g. John Doe" required style={{ width: '100%', minHeight: '42px' }} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Email address</label>
+                <input type="email" className="input-field" value={manualData.email} onChange={e => setManualData({...manualData, email: e.target.value})} placeholder="e.g. john@example.com" required style={{ width: '100%', minHeight: '42px' }} />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Initial password</label>
+                <input type="password" className="input-field" value={manualData.password} onChange={e => setManualData({...manualData, password: e.target.value})} placeholder="e.g. Student2026!" required style={{ width: '100%', minHeight: '42px' }} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Phone (Optional)</label>
-                  <input type="text" className="input-field" value={manualData.phone} onChange={e => setManualData({...manualData, phone: e.target.value})} placeholder="e.g. +44 123 456" style={{ width: '100%', minHeight: '42px' }} />
+                  <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Phone number (Optional)</label>
+                  <input type="text" className="input-field" value={manualData.phone} onChange={e => setManualData({...manualData, phone: e.target.value})} placeholder="e.g. +94771234567" style={{ width: '100%', minHeight: '42px' }} />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Address (Optional)</label>
                   <input type="text" className="input-field" value={manualData.address} onChange={e => setManualData({...manualData, address: e.target.value})} placeholder="e.g. 123 Biology Lane" style={{ width: '100%', minHeight: '42px' }} />
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary" disabled={loading || !selectedBatch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
+              <button type="submit" className="btn-primary" disabled={loading || !selectedBatch || !selectedBranch} style={{ minHeight: '42px', fontWeight: 800, background: '#00c853' }}>
                 {loading ? 'Adding student...' : 'Add student'}
               </button>
             </form>

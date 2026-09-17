@@ -11,10 +11,10 @@ export async function POST(request: Request) {
 
   try {
     const data = await request.json()
-    const { name, email, password, address, phone, batchId } = data
+    const { name, email, password, address, phone, batchId, branchId, subjectIds } = data
 
-    if (!name || !email || !password || !batchId) {
-      return NextResponse.json({ error: 'Name, email, password, and batch are required.' }, { status: 400 })
+    if (!name || !email || !password || !batchId || !branchId) {
+      return NextResponse.json({ error: 'Name, email, password, target batch, and target branch are required.' }, { status: 400 })
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
@@ -36,62 +36,63 @@ export async function POST(request: Request) {
       }
     })
 
-    // Fetch batch details and assigned teachers
+    // Fetch batch details and subjects
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
       include: {
-        subjects: {
-          include: {
-            branchTeachers: { select: { teacherId: true } }
-          }
-        }
+        subjects: true
       }
     })
 
-    const branch = await prisma.branch.findFirst()
-    if (!branch) return NextResponse.json({ error: 'No branch found' }, { status: 400 })
+    if (!batch) {
+      return NextResponse.json({ error: 'Selected batch not found' }, { status: 404 })
+    }
 
-    const subjects = batch?.subjects || []
-    for (const subject of subjects) {
+    const allSubjects = batch.subjects || []
+    const selectedSubjects = Array.isArray(subjectIds) && subjectIds.length > 0
+      ? allSubjects.filter(s => subjectIds.includes(s.id))
+      : allSubjects
+
+    for (const subject of selectedSubjects) {
       await prisma.studentEnrollment.upsert({
         where: { id: `enroll-${user.id}-${subject.id}` },
-        update: { status: 'admin_approved', adminApprovedAt: new Date() },
+        update: { status: 'admin_approved', branchId: branchId, adminApprovedAt: new Date() },
         create: {
           id: `enroll-${user.id}-${subject.id}`,
           studentId: user.id,
           batchId: batchId,
-          branchId: branch.id,
+          branchId: branchId,
           subjectId: subject.id,
           status: 'admin_approved',
           adminApprovedAt: new Date()
         }
       })
-    }
 
-    // Collect teacher IDs
-    const teacherUserIds = new Set<string>()
-    for (const subject of subjects) {
-      for (const t of subject.branchTeachers) {
-        if (t.teacherId) teacherUserIds.add(t.teacherId)
-      }
-    }
-
-    // Notify teachers
-    for (const teacherId of Array.from(teacherUserIds)) {
-      await prisma.notification.create({
-        data: {
-          userId: teacherId,
-          type: 'TEACHER_ENROLMENT_CONFIRMATION',
-          title: 'Student Enrolment Confirmation',
-          message: `New student ${user.name} has been added to ${batch?.name || 'the batch'} by the admin. Please confirm their enrolment.`
-        }
+      // Notify teachers matching exact subjectId AND branchId combination
+      const assignedTeachers = await prisma.subjectBranchTeacher.findMany({
+        where: {
+          subjectId: subject.id,
+          branchId: branchId
+        },
+        select: { teacherId: true }
       })
+
+      for (const t of assignedTeachers) {
+        await prisma.notification.create({
+          data: {
+            userId: t.teacherId,
+            type: 'TEACHER_ENROLMENT_CONFIRMATION',
+            title: 'Student Enrolment Confirmation',
+            message: `New student ${user.name} has been added to ${subject.name} — ${batch.name} by the admin. Please confirm their enrolment.`
+          }
+        })
+      }
     }
 
     return NextResponse.json({
       success: true,
       user,
-      batchName: batch?.name || 'Batch',
+      batchName: batch.name,
       students: [{
         id: user.id,
         name: user.name,
