@@ -60,7 +60,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <NotificationBell />
+          <NotificationBell userRole={user.role} />
           <div style={{
             width: '36px', height: '36px', borderRadius: '50%', background: '#10b981',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: 'white', fontSize: '0.875rem'
@@ -115,7 +115,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <NotificationBell />
+              <NotificationBell userRole={user.role} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ 
                   width: '44px', height: '44px', borderRadius: '50%', background: '#10b981', 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { showToast } from '@/components/ToastContainer'
 import { BookOpen, Users, Plus, CheckSquare, Edit, Trash2, X, Check, Shield } from '@/components/Icons'
+import StatusBadge from '@/components/StatusBadge'
 
 const ASSISTANT_PERMISSIONS = [
   'Mark attendance',
@@ -471,8 +472,11 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                 gap: '1rem'
               }}>
                 <div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.65rem' }}>
-                    {p.student.name} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>({p.student.email})</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.65rem' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
+                      {p.student.name} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>({p.student.email})</span>
+                    </span>
+                    <StatusBadge status={p.status} useFullLabel={true} size="sm" />
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{

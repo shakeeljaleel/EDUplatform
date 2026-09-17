@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Users, GraduationCap, Building2, Layers, TrendingUp, ShieldAlert, ChevronRight } from '@/components/Icons'
+import PendingEnrolmentsSection from '@/components/PendingEnrolmentsSection'
 
 export default async function SuperAdminDashboard() {
   const sevenDaysAgo = new Date()
@@ -145,6 +146,9 @@ export default async function SuperAdminDashboard() {
           <div style={{ marginTop: '0.65rem', fontSize: '0.75rem', color: 'white', fontWeight: 700 }}>+ new sign-ups this week</div>
         </div>
       </div>
+
+      {/* Pending Enrolment Requests Section */}
+      <PendingEnrolmentsSection />
 
       {/* SOLID FLAT COLOUR ACTION BUTTONS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>

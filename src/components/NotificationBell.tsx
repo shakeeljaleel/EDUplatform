@@ -11,16 +11,31 @@ function getLeftBorderColor(type: string = '', title: string = ''): string {
   return '#00c853'
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  userRole?: string
+}
+
+export default function NotificationBell({ userRole }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<any[]>([])
+  const [pendingEnrollments, setPendingEnrollments] = useState<any[]>([])
   const [show, setShow] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
+  // Inline rejection state per notification ID: { [notifId]: { open: boolean, reason: string, loading: boolean } }
+  const [rejectState, setRejectState] = useState<Record<string, { open: boolean; reason: string; loading: boolean }>>({})
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
+
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN'
+
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 60000)
+    if (isAdmin) fetchPendingEnrollments()
+    const interval = setInterval(() => {
+      fetchNotifications()
+      if (isAdmin) fetchPendingEnrollments()
+    }, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [userRole])
 
   const fetchNotifications = async () => {
     try {
@@ -32,6 +47,101 @@ export default function NotificationBell() {
       }
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const fetchPendingEnrollments = async () => {
+    try {
+      const res = await fetch('/api/student-enrollments?status=pending')
+      if (res.ok) {
+        const data = await res.json()
+        setPendingEnrollments(data.enrollments || [])
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const findEnrollmentIdForNotification = (n: any): string | null => {
+    // 1. Try parsing from n.link query param
+    if (n.link && n.link.includes('enrollmentId=')) {
+      try {
+        const urlObj = new URL(n.link, 'http://localhost')
+        const idParam = urlObj.searchParams.get('enrollmentId')
+        if (idParam) return idParam
+      } catch {}
+    }
+
+    // 2. Try matching pendingEnrollments list by student/subject/batch match in message
+    if (pendingEnrollments.length > 0 && n.message) {
+      const msgLower = n.message.toLowerCase()
+      const match = pendingEnrollments.find(e => {
+        const studentMatch = e.student?.name && msgLower.includes(e.student.name.toLowerCase())
+        const subjectMatch = e.subject?.name && msgLower.includes(e.subject.name.toLowerCase())
+        return studentMatch || subjectMatch
+      })
+      if (match) return match.id
+    }
+
+    // 3. Fallback to first pending enrollment if available
+    if (pendingEnrollments.length > 0) return pendingEnrollments[0].id
+
+    return null
+  }
+
+  const handleApprove = async (n: any) => {
+    const enrollmentId = findEnrollmentIdForNotification(n)
+    if (!enrollmentId) return
+
+    setActionLoading(prev => ({ ...prev, [n.id]: true }))
+    try {
+      const res = await fetch('/api/student-enrollments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: enrollmentId, action: 'ADMIN_APPROVE' })
+      })
+
+      if (res.ok) {
+        // Mark notification read
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationId: n.id })
+        })
+        fetchNotifications()
+        fetchPendingEnrollments()
+      }
+    } finally {
+      setActionLoading(prev => ({ ...prev, [n.id]: false }))
+    }
+  }
+
+  const handleConfirmReject = async (n: any) => {
+    const enrollmentId = findEnrollmentIdForNotification(n)
+    if (!enrollmentId) return
+
+    const reason = rejectState[n.id]?.reason || ''
+    setRejectState(prev => ({ ...prev, [n.id]: { ...prev[n.id], loading: true } }))
+
+    try {
+      const res = await fetch('/api/student-enrollments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: enrollmentId, action: 'REJECT', rejectionReason: reason })
+      })
+
+      if (res.ok) {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationId: n.id })
+        })
+        setRejectState(prev => ({ ...prev, [n.id]: { open: false, reason: '', loading: false } }))
+        fetchNotifications()
+        fetchPendingEnrollments()
+      }
+    } finally {
+      setRejectState(prev => ({ ...prev, [n.id]: { ...prev[n.id], loading: false } }))
     }
   }
 
@@ -140,6 +250,9 @@ export default function NotificationBell() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {notifications.map(n => {
                 const borderColor = getLeftBorderColor(n.type, n.title)
+                const isEnrollmentReq = (n.type === 'STUDENT_ENROLLMENT_REQUESTED' || (n.title && n.title.toLowerCase().includes('enrolment request')) || (n.title && n.title.toLowerCase().includes('enrollment request'))) && !n.read
+                const rej = rejectState[n.id] || { open: false, reason: '', loading: false }
+                const isApproving = actionLoading[n.id]
 
                 return (
                   <div key={n.id} style={{ 
@@ -155,6 +268,110 @@ export default function NotificationBell() {
                     )}
                     <div style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '0.2rem', color: '#1a1a2e' }}>{n.title}</div>
                     <div style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.4, fontWeight: 600 }}>{n.message}</div>
+                    
+                    {/* Inline Action Buttons for Admins on Enrolment Request Notifications */}
+                    {isAdmin && isEnrollmentReq && (
+                      <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px dashed #cbd5e1' }}>
+                        {!rej.open ? (
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(n)}
+                              disabled={isApproving}
+                              style={{
+                                background: '#00c853',
+                                color: '#ffffff',
+                                border: '2px solid #1a1a2e',
+                                borderRadius: '50px',
+                                boxShadow: '3px 3px 0px #1a1a2e',
+                                padding: '0.3rem 0.85rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 900,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {isApproving ? 'Approving...' : 'Approve'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setRejectState(prev => ({ ...prev, [n.id]: { open: true, reason: '', loading: false } }))}
+                              style={{
+                                background: '#f50057',
+                                color: '#ffffff',
+                                border: '2px solid #1a1a2e',
+                                borderRadius: '50px',
+                                boxShadow: '3px 3px 0px #1a1a2e',
+                                padding: '0.3rem 0.85rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 900,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <input
+                              type="text"
+                              placeholder="Reason for rejection (optional)"
+                              value={rej.reason}
+                              onChange={e => {
+                                const val = e.target.value
+                                setRejectState(prev => ({ ...prev, [n.id]: { ...prev[n.id], reason: val } }))
+                              }}
+                              style={{
+                                padding: '0.35rem 0.65rem',
+                                fontSize: '0.78rem',
+                                border: '2px solid #1a1a2e',
+                                borderRadius: '8px',
+                                width: '100%',
+                                background: '#ffffff',
+                                fontWeight: 600
+                              }}
+                            />
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleConfirmReject(n)}
+                                disabled={rej.loading}
+                                style={{
+                                  background: '#f50057',
+                                  color: '#ffffff',
+                                  border: '2px solid #1a1a2e',
+                                  borderRadius: '50px',
+                                  boxShadow: '2px 2px 0px #1a1a2e',
+                                  padding: '0.25rem 0.75rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 900,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {rej.loading ? 'Rejecting...' : 'Confirm rejection'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRejectState(prev => ({ ...prev, [n.id]: { open: false, reason: '', loading: false } }))}
+                                style={{
+                                  background: '#ffffff',
+                                  color: '#1a1a2e',
+                                  border: '2px solid #1a1a2e',
+                                  borderRadius: '50px',
+                                  padding: '0.25rem 0.65rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem', fontWeight: 800 }}>
                       {new Date(n.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </div>

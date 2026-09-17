@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -29,6 +29,26 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
   const pathname = usePathname()
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [enrollmentStatusInfo, setEnrollmentStatusInfo] = useState<{ pending: number; adminApproved: number }>({ pending: 0, adminApproved: 0 })
+
+  useEffect(() => {
+    if (role === 'STUDENT') {
+      fetchStudentEnrollments()
+    }
+  }, [role])
+
+  const fetchStudentEnrollments = async () => {
+    try {
+      const res = await fetch('/api/student-enrollments')
+      if (res.ok) {
+        const data = await res.json()
+        const enrollments = data.enrollments || []
+        const pending = enrollments.filter((e: any) => e.status === 'pending').length
+        const adminApproved = enrollments.filter((e: any) => e.status === 'admin_approved').length
+        setEnrollmentStatusInfo({ pending, adminApproved })
+      }
+    } catch {}
+  }
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -145,6 +165,42 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
               }}>
                 {role.replace('_', ' ')}
               </div>
+
+              {role === 'STUDENT' && !isCollapsed && (
+                <>
+                  {enrollmentStatusInfo.pending > 0 && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      background: '#ffab00',
+                      color: '#ffffff',
+                      border: '1.5px solid #1a1a2e',
+                      boxShadow: '2px 2px 0px #1a1a2e',
+                      borderRadius: '50px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 900
+                    }}>
+                      ⏳ {enrollmentStatusInfo.pending} enrolment{enrollmentStatusInfo.pending > 1 ? 's' : ''} pending approval
+                    </div>
+                  )}
+
+                  {enrollmentStatusInfo.pending === 0 && enrollmentStatusInfo.adminApproved > 0 && (
+                    <div style={{
+                      marginTop: '0.5rem',
+                      background: '#2979ff',
+                      color: '#ffffff',
+                      border: '1.5px solid #1a1a2e',
+                      boxShadow: '2px 2px 0px #1a1a2e',
+                      borderRadius: '50px',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 900
+                    }}>
+                      🔷 {enrollmentStatusInfo.adminApproved} enrolment{enrollmentStatusInfo.adminApproved > 1 ? 's' : ''} awaiting teacher confirmation
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

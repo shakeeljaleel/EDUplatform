@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import Link from 'next/link'
 import EmptyState from '@/components/EmptyState'
 import StudentBatchHeaderBanner from '@/components/StudentBatchHeaderBanner'
+import StatusBadge from '@/components/StatusBadge'
 import { BookOpen, CheckSquare, Star, Award, Clock, TrendingUp, Sparkles, ChevronRight, MessageSquare } from '@/components/Icons'
 import { getSubjectColor } from '@/lib/subjectColors'
 
@@ -267,7 +268,7 @@ export default async function StudentDashboard() {
       </nav>
 
       {/* Batch Enrollment Header Banner */}
-      <StudentBatchHeaderBanner currentBatch={activeEnrollment?.batch || null} />
+      <StudentBatchHeaderBanner currentBatch={activeEnrollment?.batch || null} enrollments={subjectEnrollments} />
 
       {/* Pending Tasks & Quick Resume Panel */}
       <div className="card" style={{
@@ -709,13 +710,22 @@ export default async function StudentDashboard() {
         </div>
       )}
 
-      {/* MY ENROLLED SUBJECTS - Fix 6 & Fix 7 */}
+      {/* MY ENROLLED SUBJECTS - Fix 6 & Fix 7 & Fix 2D */}
       <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem', fontWeight: 900 }}>My Enrolled Subjects</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem', marginBottom: '4rem' }}>
         {subjectEnrollments.map((e, idx) => {
           const subjectColor = e.subject.colour || getSubjectColor(e.subject.name, idx)
           const teachersAtBranch = e.subject.branchTeachers.filter((bt: any) => bt.branchId === e.branchId)
           const teacherNames = teachersAtBranch.map((bt: any) => bt.teacher.name).join(', ')
+
+          const isPending = e.status === 'pending'
+          const isAdminApproved = e.status === 'admin_approved'
+          const isRejected = e.status === 'rejected'
+          const isActive = e.status === 'active'
+
+          const cardBg = isRejected ? '#fef2f2' : subjectColor
+          const cardTextColor = isRejected ? '#0f172a' : '#ffffff'
+          const opacityVal = isPending ? 0.65 : isAdminApproved ? 0.85 : 1
 
           return (
             <div
@@ -724,38 +734,38 @@ export default async function StudentDashboard() {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
+                justifyContent: 'space-between',
                 gap: '1.25rem',
-                background: subjectColor,
-                color: '#ffffff',
+                background: cardBg,
+                color: cardTextColor,
                 border: '3px solid #1a1a2e',
                 boxShadow: '5px 5px 0px #1a1a2e',
                 borderRadius: '16px',
-                padding: '1.75rem'
+                padding: '1.75rem',
+                opacity: opacityVal
               }}
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 900, opacity: 0.95, background: 'rgba(0,0,0,0.25)', padding: '2px 10px', borderRadius: '6px' }}>
+                  <span style={{
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    fontWeight: 900,
+                    opacity: 0.95,
+                    background: isRejected ? '#fee2e2' : 'rgba(0,0,0,0.25)',
+                    color: isRejected ? '#dc2626' : '#ffffff',
+                    padding: '2px 10px',
+                    borderRadius: '6px'
+                  }}>
                     {e.batch?.name || 'Batch'}
                   </span>
 
-                  <span style={{
-                    background: e.status === 'active' ? '#00c853' : e.status === 'admin_approved' ? '#2979ff' : '#ff6d00',
-                    color: '#ffffff',
-                    padding: '0.2rem 0.60rem',
-                    borderRadius: '50px',
-                    fontSize: '0.725rem',
-                    fontWeight: 900,
-                    border: '2px solid #1a1a2e',
-                    boxShadow: '2px 2px 0px #1a1a2e'
-                  }}>
-                    {e.status}
-                  </span>
+                  <StatusBadge status={e.status} useFullLabel={true} size="sm" />
                 </div>
 
-                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', margin: '0.25rem 0' }}>{e.subject.name}</h3>
+                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: cardTextColor, margin: '0.25rem 0' }}>{e.subject.name}</h3>
 
-                {/* Branch Pill - Fix 7 */}
+                {/* Branch Pill */}
                 <div style={{ marginTop: '0.4rem', marginBottom: '0.5rem' }}>
                   <span style={{
                     background: '#00c853',
@@ -772,86 +782,161 @@ export default async function StudentDashboard() {
                   </span>
                 </div>
 
-                <div style={{ marginTop: '0.35rem', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(0,0,0,0.25)', padding: '0.4rem 0.75rem', borderRadius: '8px', display: 'inline-block' }}>
+                <div style={{
+                  marginTop: '0.35rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  background: isRejected ? '#fee2e2' : 'rgba(0,0,0,0.25)',
+                  color: isRejected ? '#991b1b' : '#ffffff',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '8px',
+                  display: 'inline-block'
+                }}>
                   {teacherNames ? `👨‍🏫 Teacher(s): ${teacherNames}` : '⚠️ No teacher assigned at this branch'}
                 </div>
               </div>
 
-              {/* Quick Action Buttons - Fix 6: Solid colors with comic border & hard shadow */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <Link
-                  prefetch={true}
-                  href={`/dashboard/student/subjects/${e.subject.id}/grading`}
-                  style={{
-                    padding: '0.65rem 0.5rem',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    background: '#2979ff',
-                    color: '#ffffff',
-                    border: '2px solid #1a1a2e',
-                    boxShadow: '3px 3px 0px #1a1a2e',
-                    fontWeight: 900,
-                    borderRadius: '50px',
-                    textDecoration: 'none'
-                  }}
-                >
-                  🤖 AI Marking
-                </Link>
-                <Link
-                  prefetch={true}
-                  href={`/dashboard/student/subjects/${e.subject.id}/forum`}
-                  style={{
-                    padding: '0.65rem 0.5rem',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    background: '#aa00ff',
-                    color: '#ffffff',
-                    border: '2px solid #1a1a2e',
-                    boxShadow: '3px 3px 0px #1a1a2e',
-                    fontWeight: 900,
-                    borderRadius: '50px',
-                    textDecoration: 'none'
-                  }}
-                >
-                  💬 Q&A Forum
-                </Link>
-                <Link
-                  prefetch={true}
-                  href={`/dashboard/student/subjects/${e.subject.id}/calendar`}
-                  style={{
-                    padding: '0.65rem 0.5rem',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    background: '#ff6d00',
-                    color: '#ffffff',
-                    border: '2px solid #1a1a2e',
-                    boxShadow: '3px 3px 0px #1a1a2e',
-                    fontWeight: 900,
-                    borderRadius: '50px',
-                    textDecoration: 'none'
-                  }}
-                >
-                  📅 Schedule
-                </Link>
-                <Link
-                  prefetch={true}
-                  href={`/dashboard/student/subjects/${e.subject.id}/recordings`}
-                  style={{
-                    padding: '0.65rem 0.5rem',
-                    fontSize: '0.8rem',
-                    textAlign: 'center',
-                    background: '#f50057',
-                    color: '#ffffff',
-                    border: '2px solid #1a1a2e',
-                    boxShadow: '3px 3px 0px #1a1a2e',
-                    fontWeight: 900,
-                    borderRadius: '50px',
-                    textDecoration: 'none'
-                  }}
-                >
-                  📹 Recordings
-                </Link>
-              </div>
+              {/* Status Specific Footer / Actions */}
+              {isPending && (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '2px solid #1a1a2e',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  color: '#ffffff',
+                  textAlign: 'center'
+                }}>
+                  ⏳ Enrolment requested — awaiting admin approval
+                </div>
+              )}
+
+              {isAdminApproved && (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: '2px solid #1a1a2e',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  color: '#ffffff',
+                  textAlign: 'center'
+                }}>
+                  🔷 Approved by admin — awaiting teacher confirmation
+                </div>
+              )}
+
+              {isRejected && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '2px solid #f50057',
+                    borderRadius: '10px',
+                    padding: '0.65rem 0.85rem',
+                    fontSize: '0.825rem',
+                    fontWeight: 700,
+                    color: '#991b1b'
+                  }}>
+                    <strong>Reason for rejection:</strong> {e.rejectionReason || 'Criteria not met'}
+                  </div>
+
+                  <a
+                    href="#top"
+                    style={{
+                      padding: '0.65rem',
+                      fontSize: '0.85rem',
+                      textAlign: 'center',
+                      background: '#2979ff',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      fontWeight: 900,
+                      borderRadius: '50px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    🎓 Request again
+                  </a>
+                </div>
+              )}
+
+              {isActive && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/student/subjects/${e.subject.id}/grading`}
+                    style={{
+                      padding: '0.65rem 0.5rem',
+                      fontSize: '0.8rem',
+                      textAlign: 'center',
+                      background: '#2979ff',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      fontWeight: 900,
+                      borderRadius: '50px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    🤖 AI Marking
+                  </Link>
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/student/subjects/${e.subject.id}/forum`}
+                    style={{
+                      padding: '0.65rem 0.5rem',
+                      fontSize: '0.8rem',
+                      textAlign: 'center',
+                      background: '#aa00ff',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      fontWeight: 900,
+                      borderRadius: '50px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    💬 Q&A Forum
+                  </Link>
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/student/subjects/${e.subject.id}/calendar`}
+                    style={{
+                      padding: '0.65rem 0.5rem',
+                      fontSize: '0.8rem',
+                      textAlign: 'center',
+                      background: '#ff6d00',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      fontWeight: 900,
+                      borderRadius: '50px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    📅 Schedule
+                  </Link>
+                  <Link
+                    prefetch={true}
+                    href={`/dashboard/student/subjects/${e.subject.id}/recordings`}
+                    style={{
+                      padding: '0.65rem 0.5rem',
+                      fontSize: '0.8rem',
+                      textAlign: 'center',
+                      background: '#f50057',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      fontWeight: 900,
+                      borderRadius: '50px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    📹 Recordings
+                  </Link>
+                </div>
+              )}
             </div>
           )
         })}

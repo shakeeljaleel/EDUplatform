@@ -173,7 +173,7 @@ export async function POST(req: Request) {
             type: 'STUDENT_ENROLLMENT_REQUESTED',
             title: 'New Enrolment Request',
             message: `${studentUser?.name || 'Student'} has requested to enrol in ${subject.name} — ${bb.batch.name} at ${bb.branch.name}`,
-            link: '/dashboard/super-admin/batches'
+            link: `/dashboard/super-admin/batches?enrollmentId=${enrollment.id}`
           }
         })
       }
@@ -198,7 +198,7 @@ export async function PATCH(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id, action, rejectionReason } = await req.json()
+  const { id, action, rejectionReason, newBranchId } = await req.json()
 
   if (!id || !action) {
     return NextResponse.json({ error: 'Enrollment ID and action are required' }, { status: 400 })
@@ -219,6 +219,72 @@ export async function PATCH(req: Request) {
   }
 
   const now = new Date()
+
+  if (action === 'CHANGE_BRANCH') {
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Only admins can change enrolment branch' }, { status: 403 })
+    }
+
+    if (!newBranchId) {
+      return NextResponse.json({ error: 'newBranchId is required' }, { status: 400 })
+    }
+
+    const newBranch = await prisma.branch.findUnique({ where: { id: newBranchId } })
+    if (!newBranch) {
+      return NextResponse.json({ error: 'Selected new branch not found' }, { status: 404 })
+    }
+
+    const updated = await prisma.studentEnrollment.update({
+      where: { id },
+      data: { branchId: newBranchId }
+    })
+
+    // Notify student
+    await prisma.notification.create({
+      data: {
+        userId: enrollment.studentId,
+        type: 'ENROLLMENT_BRANCH_CHANGED',
+        title: 'Branch Transfer Updated',
+        message: `Your enrolment branch for ${enrollment.subject.name} — ${enrollment.batch.name} has been transferred to ${newBranch.name}.`,
+        link: '/dashboard/student'
+      }
+    })
+
+    // Notify assigned teachers at the new branch
+    const newBranchTeachers = await prisma.subjectBranchTeacher.findMany({
+      where: { subjectId: enrollment.subjectId, branchId: newBranchId },
+      select: { teacherId: true }
+    })
+
+    for (const t of newBranchTeachers) {
+      await prisma.notification.create({
+        data: {
+          userId: t.teacherId,
+          type: 'TEACHER_CONFIRMATION_REQUEST',
+          title: 'Student Transferred To Branch',
+          message: `${enrollment.student.name} has been transferred to ${newBranch.name} for ${enrollment.subject.name}. Please review their enrolment.`,
+          link: '/dashboard/teacher'
+        }
+      })
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: session.user.id,
+        actorRole: session.user.role,
+        action: 'CHANGE_ENROLLMENT_BRANCH',
+        targetType: 'STUDENT_ENROLLMENT',
+        targetId: id,
+        details: JSON.stringify({
+          studentName: enrollment.student.name,
+          oldBranch: enrollment.branch.name,
+          newBranch: newBranch.name
+        })
+      }
+    })
+
+    return NextResponse.json({ enrollment: updated })
+  }
 
   if (action === 'ADMIN_APPROVE') {
     if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {

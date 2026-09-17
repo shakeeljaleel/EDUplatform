@@ -5,6 +5,7 @@ import EmptyState from '@/components/EmptyState'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { showToast } from '@/components/ToastContainer'
 import { Search, Lock, Users, AlertTriangle, X, Check, Eye } from '@/components/Icons'
+import StatusBadge from '@/components/StatusBadge'
 
 const ROLES = ['TEACHER', 'STUDENT', 'PARENT', 'ASSISTANT']
 const ROLE_LABELS: Record<string, string> = {
@@ -51,6 +52,9 @@ export default function UsersPage() {
   // Suspend confirmation modal state
   const [suspendUserTarget, setSuspendUserTarget] = useState<any | null>(null)
   const [suspendLoading, setSuspendLoading] = useState(false)
+
+  // Enrolment requests modal state
+  const [enrolmentRequestsUserTarget, setEnrolmentRequestsUserTarget] = useState<any | null>(null)
 
   useEffect(() => { 
     fetchUsers() 
@@ -296,7 +300,7 @@ export default function UsersPage() {
                 <div style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600 }}>{user.email}</div>
               </div>
 
-              {/* Single Status Badge */}
+              {/* Single Status Badge & Pending Enrolment Badge */}
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <span 
                   style={{ 
@@ -310,6 +314,10 @@ export default function UsersPage() {
 
                 {activeRole === 'STUDENT' && (
                   <>
+                    {(user.studentEnrollments?.some((e: any) => e.status === 'pending') || user.enrollments?.some((e: any) => e.status === 'pending')) && (
+                      <StatusBadge status="pending" size="sm" />
+                    )}
+
                     {user.enrollments && user.enrollments.length > 0 && user.enrollments[0]?.batch?.branch ? (
                       <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
                         📍 {user.enrollments[0].batch.branch.name}
@@ -384,6 +392,21 @@ export default function UsersPage() {
                     >
                       <Lock size={14} /> Password reset
                     </button>
+
+                    {activeRole === 'STUDENT' && (
+                      <button
+                        onClick={() => { setEnrolmentRequestsUserTarget(user); setOpenMenuUserId(null); }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 700, color: '#2563eb', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        📋 View enrolment requests
+                      </button>
+                    )}
 
                     {activeRole === 'STUDENT' && (
                       <button
@@ -580,6 +603,113 @@ export default function UsersPage() {
                 {resetLoading ? 'Updating password...' : 'Confirm password reset'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* STUDENT ENROLMENT REQUESTS MODAL (Fix 1C) */}
+      {enrolmentRequestsUserTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{
+            width: '100%', maxWidth: '640px', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+            padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '6px 6px 0px #1a1a2e'
+          }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: '#1a1a2e', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0, color: 'white' }}>
+                  Enrolment Requests — {enrolmentRequestsUserTarget.name}
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 700 }}>{enrolmentRequestsUserTarget.email}</div>
+              </div>
+              <button
+                onClick={() => setEnrolmentRequestsUserTarget(null)}
+                style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {(!enrolmentRequestsUserTarget.studentEnrollments || enrolmentRequestsUserTarget.studentEnrollments.length === 0) ? (
+                <p style={{ textAlign: 'center', color: '#64748b', fontWeight: 700, padding: '2rem' }}>
+                  No enrolment records found for this student.
+                </p>
+              ) : (
+                enrolmentRequestsUserTarget.studentEnrollments.map((e: any) => (
+                  <div
+                    key={e.id || Math.random()}
+                    style={{
+                      padding: '1rem 1.25rem',
+                      borderRadius: '12px',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '3px 3px 0px #1a1a2e',
+                      background: '#ffffff',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
+                        📚 {e.subject?.name || 'Subject'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginTop: '0.2rem' }}>
+                        🎓 Batch: {e.batch?.name || 'Batch'} • 📍 Branch: {e.branch?.name || 'Branch'}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <StatusBadge status={e.status} size="sm" />
+                      {e.status === 'pending' && (
+                        <button
+                          onClick={async () => {
+                            const res = await fetch('/api/student-enrollments', {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ id: e.id, action: 'ADMIN_APPROVE' })
+                            })
+                            if (res.ok) {
+                              showToast('Enrolment approved', 'success')
+                              setEnrolmentRequestsUserTarget(null)
+                              fetchUsers()
+                            }
+                          }}
+                          style={{
+                            background: '#00c853',
+                            color: '#ffffff',
+                            border: '2px solid #1a1a2e',
+                            borderRadius: '50px',
+                            boxShadow: '2px 2px 0px #1a1a2e',
+                            padding: '0.25rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 900,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ padding: '1rem 1.5rem', background: '#f8fafc', borderTop: '2px solid #1a1a2e', textAlign: 'right' }}>
+              <button
+                className="btn-secondary"
+                onClick={() => setEnrolmentRequestsUserTarget(null)}
+                style={{ padding: '0.4rem 1.25rem', fontWeight: 800, borderRadius: '50px' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

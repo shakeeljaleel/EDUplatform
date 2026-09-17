@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { showToast } from '@/components/ToastContainer'
 import { Users, BookOpen, Building2, Plus, ArrowLeft, Layers, Settings, Trash2, Edit, X, Archive, Check, Shield } from '@/components/Icons'
 import { getAcademicLevelColor } from '@/lib/subjectColors'
+import StatusBadge from '@/components/StatusBadge'
 
 const ASSISTANT_PERMISSIONS = [
   'Mark attendance',
@@ -103,6 +104,9 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
   const [branchFilter, setBranchFilter] = useState<string>('ALL')
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
   const [bulkAssignSubjectId, setBulkAssignSubjectId] = useState('')
+  const [changeBranchTarget, setChangeBranchTarget] = useState<any | null>(null)
+  const [selectedNewBranchId, setSelectedNewBranchId] = useState<string>('')
+  const [updatingBranch, setUpdatingBranch] = useState(false)
 
   // Settings Tab state
   const [editName, setEditName] = useState('')
@@ -342,6 +346,37 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
       }
     } catch {
       showToast('Error removing assistant', 'error')
+    }
+  }
+
+  const handleChangeBranchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!changeBranchTarget || !selectedNewBranchId) return
+    setUpdatingBranch(true)
+    try {
+      const res = await fetch('/api/student-enrollments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: changeBranchTarget.id,
+          action: 'CHANGE_BRANCH',
+          newBranchId: selectedNewBranchId
+        })
+      })
+
+      if (res.ok) {
+        showToast(`Student ${changeBranchTarget.student.name} moved to new branch`, 'success')
+        setChangeBranchTarget(null)
+        setSelectedNewBranchId('')
+        fetchBatchDetail()
+      } else {
+        const data = await res.json()
+        showToast(data.error || 'Failed to change branch', 'error')
+      }
+    } catch {
+      showToast('Network error while changing branch', 'error')
+    } finally {
+      setUpdatingBranch(false)
     }
   }
 
@@ -964,6 +999,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                     <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Enrolled subject</th>
                     <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Status</th>
                     <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Payment</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1004,28 +1040,41 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                       </td>
 
                       <td style={{ padding: '1rem 1.25rem' }}>
-                        <span style={{
-                          background: e.status === 'active' ? '#e8f5e9' : e.status === 'admin_approved' ? '#e3f2fd' : '#fff3e0',
-                          color: e.status === 'active' ? '#2e7d32' : e.status === 'admin_approved' ? '#1565c0' : '#e65100',
-                          border: '1.5px solid #1a1a2e',
-                          padding: '0.25rem 0.65rem',
-                          borderRadius: '50px',
-                          fontSize: '0.75rem',
-                          fontWeight: 900
-                        }}>
-                          {e.status}
-                        </span>
+                        <StatusBadge status={e.status} size="sm" />
                       </td>
 
                       <td style={{ padding: '1rem 1.25rem', fontWeight: 800, fontSize: '0.85rem' }}>
                         💳 {e.student.profile?.paymentStatus || 'Pending'}
+                      </td>
+
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChangeBranchTarget(e)
+                            setSelectedNewBranchId(e.branchId || '')
+                          }}
+                          style={{
+                            background: '#ffffff',
+                            color: '#1a1a2e',
+                            border: '2px solid #1a1a2e',
+                            boxShadow: '2px 2px 0px #1a1a2e',
+                            borderRadius: '50px',
+                            padding: '0.35rem 0.85rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 900,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Change branch
+                        </button>
                       </td>
                     </tr>
                   ))}
 
                   {filteredStudents.length === 0 && (
                     <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
                         No enrolled students found for this filter.
                       </td>
                     </tr>
@@ -1376,6 +1425,83 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" className="btn-secondary" onClick={() => setAssistantModal({ show: false, subjectBranchTeacherId: '', teacherName: '', subjectName: '', branchName: '' })} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
                 <button type="submit" disabled={submittingAssistant || !selectedAssistantId} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Save assistant</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE BRANCH MODAL (Fix 3) */}
+      {changeBranchTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{
+            width: '100%', maxWidth: '480px', padding: '2rem', border: '3px solid #1a1a2e',
+            borderRadius: '16px', boxShadow: '6px 6px 0px #1a1a2e', background: '#ffffff', position: 'relative'
+          }}>
+            <button
+              onClick={() => setChangeBranchTarget(null)}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', fontWeight: 900 }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 900, marginBottom: '0.35rem', color: '#0f172a' }}>
+              Change Student Branch
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '1.5rem', fontWeight: 600 }}>
+              Move <strong style={{ color: '#0f172a' }}>{changeBranchTarget.student?.name}</strong> from <strong>{formatBranchLabel(changeBranchTarget.branch?.name)}</strong> to:
+            </p>
+
+            <form onSubmit={handleChangeBranchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>
+                  Target branch
+                </label>
+                <select
+                  className="input-field"
+                  value={selectedNewBranchId}
+                  onChange={e => setSelectedNewBranchId(e.target.value)}
+                  required
+                  style={{ width: '100%', minHeight: '44px', border: '2px solid #1a1a2e', borderRadius: '12px', fontWeight: 700 }}
+                >
+                  <option value="">Select target branch...</option>
+                  {allBranches.map(b => (
+                    <option key={b.id} value={b.id}>
+                      📍 {formatBranchLabel(b.name)} ({b.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setChangeBranchTarget(null)}
+                  style={{ borderRadius: '50px', border: '2px solid #1a1a2e', fontWeight: 800 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingBranch || !selectedNewBranchId}
+                  style={{
+                    background: '#00c853',
+                    color: '#ffffff',
+                    border: '3px solid #1a1a2e',
+                    boxShadow: '4px 4px 0px #1a1a2e',
+                    borderRadius: '50px',
+                    padding: '0.65rem 1.35rem',
+                    fontWeight: 900,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {updatingBranch ? 'Transferring...' : 'Confirm branch transfer'}
+                </button>
               </div>
             </form>
           </div>

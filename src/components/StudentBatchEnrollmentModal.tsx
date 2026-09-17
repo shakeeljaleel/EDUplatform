@@ -22,6 +22,7 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([])
   const [loadingSubjects, setLoadingSubjects] = useState(false)
+  const [existingEnrollments, setExistingEnrollments] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
       setSelectedSubjectIds([])
       setAvailableSubjects([])
       fetchBatches()
+      fetchExistingEnrollments()
     }
   }, [isOpen])
 
@@ -40,6 +42,16 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
       fetchAvailableSubjects(selectedBatch.id, selectedBranch.id)
     }
   }, [step, selectedBatch, selectedBranch])
+
+  const fetchExistingEnrollments = async () => {
+    try {
+      const res = await fetch('/api/student-enrollments')
+      if (res.ok) {
+        const data = await res.json()
+        setExistingEnrollments(data.enrollments || [])
+      }
+    } catch {}
+  }
 
   const fetchAvailableSubjects = async (batchId: string, branchId: string) => {
     setLoadingSubjects(true)
@@ -306,28 +318,38 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
                   <>
                     {availableSubjects.map((sub: any) => {
                       const isChecked = selectedSubjectIds.includes(sub.id)
+                      const existing = existingEnrollments.find(e => e.subjectId === sub.id && e.branchId === selectedBranch.id)
+
+                      const isPending = existing?.status === 'pending'
+                      const isAdminApproved = existing?.status === 'admin_approved'
+                      const isActive = existing?.status === 'active'
+                      const isRejected = existing?.status === 'rejected'
+
+                      const isDisabled = isPending || isAdminApproved || isActive
 
                       return (
-                        <label
+                        <div
                           key={sub.id}
                           style={{
                             padding: '1rem 1.25rem',
                             borderRadius: '12px',
                             border: '3px solid #1a1a2e',
                             boxShadow: '3px 3px 0px #1a1a2e',
-                            background: isChecked ? '#e8f5e9' : '#ffffff',
+                            background: isDisabled ? '#f8fafc' : isChecked ? '#e8f5e9' : '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            cursor: 'pointer'
+                            opacity: isDisabled ? 0.85 : 1,
+                            gap: '1rem'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                             <input
                               type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSubject(sub.id)}
-                              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                              checked={isChecked || isDisabled}
+                              disabled={isDisabled}
+                              onChange={() => !isDisabled && toggleSubject(sub.id)}
+                              style={{ width: '20px', height: '20px', cursor: isDisabled ? 'not-allowed' : 'pointer' }}
                             />
                             <div>
                               <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
@@ -339,18 +361,96 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
                             </div>
                           </div>
 
-                          <span style={{
-                            background: sub.colour || '#2979ff',
-                            color: '#ffffff',
-                            border: '1.5px solid #1a1a2e',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '50px',
-                            fontSize: '0.75rem',
-                            fontWeight: 900
-                          }}>
-                            {sub.name}
-                          </span>
-                        </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {isPending && (
+                              <span style={{
+                                background: '#ffab00',
+                                color: '#ffffff',
+                                border: '1.5px solid #1a1a2e',
+                                padding: '0.25rem 0.65rem',
+                                borderRadius: '50px',
+                                fontSize: '0.75rem',
+                                fontWeight: 900
+                              }}>
+                                Already requested — awaiting approval
+                              </span>
+                            )}
+
+                            {isAdminApproved && (
+                              <span style={{
+                                background: '#2979ff',
+                                color: '#ffffff',
+                                border: '1.5px solid #1a1a2e',
+                                padding: '0.25rem 0.65rem',
+                                borderRadius: '50px',
+                                fontSize: '0.75rem',
+                                fontWeight: 900
+                              }}>
+                                Approved by admin — awaiting teacher
+                              </span>
+                            )}
+
+                            {isActive && (
+                              <span style={{
+                                background: '#00c853',
+                                color: '#ffffff',
+                                border: '1.5px solid #1a1a2e',
+                                padding: '0.25rem 0.65rem',
+                                borderRadius: '50px',
+                                fontSize: '0.75rem',
+                                fontWeight: 900
+                              }}>
+                                ✓ Already enrolled
+                              </span>
+                            )}
+
+                            {isRejected && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{
+                                  background: '#f50057',
+                                  color: '#ffffff',
+                                  border: '1.5px solid #1a1a2e',
+                                  padding: '0.25rem 0.65rem',
+                                  borderRadius: '50px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 900
+                                }}>
+                                  Previously rejected — {existing.rejectionReason || 'Criteria not met'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSubject(sub.id)}
+                                  style={{
+                                    background: isChecked ? '#00c853' : '#ffffff',
+                                    color: isChecked ? '#ffffff' : '#1a1a2e',
+                                    border: '1.5px solid #1a1a2e',
+                                    padding: '0.2rem 0.55rem',
+                                    borderRadius: '50px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 900,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {isChecked ? '✓ Selected' : 'Request again'}
+                                </button>
+                              </div>
+                            )}
+
+                            {!existing && (
+                              <span style={{
+                                background: sub.colour || '#2979ff',
+                                color: '#ffffff',
+                                border: '1.5px solid #1a1a2e',
+                                padding: '0.25rem 0.65rem',
+                                borderRadius: '50px',
+                                fontSize: '0.75rem',
+                                fontWeight: 900
+                              }}>
+                                {sub.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       )
                     })}
 
