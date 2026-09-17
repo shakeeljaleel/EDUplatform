@@ -297,7 +297,7 @@ export async function PATCH(req: Request) {
         userId: enrollment.studentId,
         type: 'ENROLLMENT_ACTIVE',
         title: 'Enrolment Active!',
-        message: `Your enrolment in ${enrollment.subject.name} — ${enrollment.batch.name} at ${enrollment.branch.name} has been approved`,
+        message: `Your enrolment in ${enrollment.subject.name} — ${enrollment.batch.name} at ${enrollment.branch.name} has been confirmed by your teacher. You can now access your classes.`,
         link: '/dashboard/student'
       }
     })

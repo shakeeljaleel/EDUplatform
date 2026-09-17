@@ -92,7 +92,7 @@ export default function NotificationBell() {
             fontSize: '0.65rem', fontWeight: 900, 
             width: '20px', height: '20px', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '2px solid #1a1a2e',
+            border: '2px solid #ffffff',
             boxShadow: '0 0 6px rgba(245, 0, 87, 0.8)'
           }}>
             {unreadCount}
