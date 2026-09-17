@@ -2,89 +2,314 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { Plus, X, Building2, Layers, Users, ChevronRight } from '@/components/Icons'
+import { showToast } from '@/components/ToastContainer'
+
+const PALETTE = ['#00c853', '#2979ff', '#aa00ff', '#ff6d00', '#f50057']
 
 export default function BranchesPage() {
+  const router = useRouter()
   const [branches, setBranches] = useState<any[]>([])
-  const [showCreate, setShowCreate] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [name, setName] = useState('')
   const [location, setLocation] = useState('')
+  const [type, setType] = useState('Physical')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => { fetchBranches() }, [])
+  useEffect(() => {
+    fetchBranches()
+  }, [])
 
   const fetchBranches = async () => {
     const res = await fetch('/api/branches')
-    if (res.ok) setBranches((await res.json()).branches)
+    if (res.ok) {
+      const data = await res.json()
+      setBranches(data.branches || [])
+    }
   }
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreateBranch = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!name.trim()) return
     setLoading(true)
     try {
       const res = await fetch('/api/branches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, location }),
+        body: JSON.stringify({ name: name.trim(), location: location.trim(), type }),
       })
       if (res.ok) {
-        setShowCreate(false); setName(''); setLocation('')
+        showToast(`Branch "${name}" created successfully`, 'success')
+        setShowCreateModal(false)
+        setName('')
+        setLocation('')
+        setType('Physical')
         fetchBranches()
+      } else {
+        const data = await res.json()
+        showToast(data.error || 'Failed to create branch', 'error')
       }
-    } finally { setLoading(false) }
+    } catch {
+      showToast('Error creating branch', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div>
-      <Breadcrumbs items={[{ label: 'Overview', href: '/dashboard/super-admin' }, { label: 'Branches' }]} />
+    <div className="fade-in" style={{ paddingBottom: '4rem' }}>
+      {/* Breadcrumbs Navigation */}
+      <Breadcrumbs items={[{ label: 'Branches' }]} />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      {/* Clean Page Title Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>Branches</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Manage physical campuses and regional branches.
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+            Branches
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, marginTop: '0.2rem', margin: 0 }}>
+            Manage physical campuses and regional learning branches.
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? 'Cancel' : '+ New branch'}
+
+        <button 
+          onClick={() => setShowCreateModal(true)}
+          style={{
+            padding: '0.65rem 1.25rem',
+            fontSize: '0.875rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            background: '#00c853',
+            color: '#ffffff',
+            borderRadius: '50px',
+            border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Plus size={18} color="#ffffff" />
+          <span>+ New branch</span>
         </button>
       </div>
 
-      {showCreate && (
-        <div className="card" style={{ marginBottom: '2rem', maxWidth: '500px' }}>
-          <h3 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', fontWeight: 700 }}>Create branch</h3>
-          <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Branch name</label>
-              <input type="text" className="input-field" required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Lahore Main Branch" />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Location (Optional)</label>
-              <input type="text" className="input-field" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Gulberg, Lahore" />
-            </div>
-            <button type="submit" className="btn-primary" disabled={loading} style={{ alignSelf: 'flex-start' }}>Create branch</button>
-          </form>
-        </div>
-      )}
+      {/* Comic Book Card Treatment Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.75rem' }}>
+        {branches.map((branch, index) => {
+          const cardBg = PALETTE[index % PALETTE.length]
+          const batchesCount = branch._count?.batches || 0
+          const studentCount = branch.studentCount || 0
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        {branches.map((branch) => (
-          <div key={branch.id} className="card">
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{branch.name}</h3>
-            {branch.location && (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>📍 {branch.location}</p>
-            )}
-            <div className="badge badge-level" style={{ marginBottom: '1.5rem' }}>{branch._count.batches} Batches</div>
-            <Link href={`/dashboard/super-admin/branches/${branch.id}`} className="btn-secondary" style={{ display: 'block', textAlign: 'center' }}>
-              Manage branch
-            </Link>
+          return (
+            <div
+              key={branch.id}
+              onClick={() => router.push(`/dashboard/super-admin/branches/${branch.id}`)}
+              style={{
+                background: cardBg,
+                color: '#ffffff',
+                borderRadius: '16px',
+                padding: '1.75rem',
+                border: '3px solid #1a1a2e',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '1.5rem',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '7px 7px 0px #1a1a2e'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0px)'
+                e.currentTarget.style.boxShadow = '5px 5px 0px #1a1a2e'
+              }}
+            >
+              <div>
+                {/* Branch Type Pill & Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <span style={{
+                    backgroundColor: '#ffffff',
+                    color: cardBg,
+                    fontWeight: 900,
+                    fontSize: '0.75rem',
+                    padding: '0.3rem 0.75rem',
+                    borderRadius: '50px',
+                    border: '2px solid #1a1a2e',
+                    boxShadow: '2px 2px 0px #1a1a2e',
+                    textTransform: 'uppercase'
+                  }}>
+                    {branch.type || 'Physical'}
+                  </span>
+                  <Building2 size={24} color="#ffffff" />
+                </div>
+
+                <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
+                  {branch.name}
+                </h3>
+
+                {branch.location && (
+                  <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontSize: '0.9rem', fontWeight: 700, marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', margin: '0.5rem 0 0 0' }}>
+                    📍 {branch.location}
+                  </p>
+                )}
+              </div>
+
+              {/* Stats Footer */}
+              <div>
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                  border: '1.5px solid rgba(255, 255, 255, 0.2)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 800 }}>
+                    <Layers size={18} color="#ffffff" />
+                    <span>{batchesCount} {batchesCount === 1 ? 'Batch' : 'Batches'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 800 }}>
+                    <Users size={18} color="#ffffff" />
+                    <span>{studentCount} Students</span>
+                  </div>
+                </div>
+
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '0.5rem',
+                    width: '100%',
+                    padding: '0.65rem 1rem',
+                    background: '#ffffff',
+                    color: '#1a1a2e',
+                    borderRadius: '50px',
+                    border: '2.5px solid #1a1a2e',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontWeight: 900,
+                    fontSize: '0.875rem',
+                    textAlign: 'center'
+                  }}
+                >
+                  <span>View assigned batches</span>
+                  <ChevronRight size={16} color="#1a1a2e" />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {branches.length === 0 && (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem 2rem', background: '#f8fafc', borderRadius: '16px', border: '3px dashed #cbd5e1' }}>
+            <Building2 size={48} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>No branches created yet</h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.35rem' }}>Click <strong>"+ New branch"</strong> above to register your first campus.</p>
           </div>
-        ))}
-        {branches.length === 0 && !showCreate && (
-          <p style={{ color: 'var(--text-secondary)' }}>No branches created yet.</p>
         )}
       </div>
+
+      {/* CREATE NEW BRANCH MODAL */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '2rem', position: 'relative', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e' }}>
+            <button 
+              onClick={() => setShowCreateModal(false)}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
+            >
+              <X size={20} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+              <Building2 size={24} color="#00c853" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Create branch</h3>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem', fontWeight: 600 }}>
+              Add a new physical campus or online learning branch.
+            </p>
+
+            <form onSubmit={handleCreateBranch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Branch name</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g. Main Campus, City Branch"
+                  required 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  style={{ width: '100%', minHeight: '42px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Address / Location</label>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  placeholder="e.g. 123 Academic Way, Gulberg"
+                  value={location} 
+                  onChange={e => setLocation(e.target.value)} 
+                  style={{ width: '100%', minHeight: '42px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Branch type</label>
+                <select 
+                  className="input-field" 
+                  value={type} 
+                  onChange={e => setType(e.target.value)}
+                  style={{ width: '100%', minHeight: '42px' }}
+                >
+                  <option value="Physical">Physical Campus</option>
+                  <option value="Online">Online Branch</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => setShowCreateModal(false)}
+                  style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    fontWeight: 800,
+                    background: '#00c853',
+                    color: '#ffffff',
+                    borderRadius: '50px',
+                    border: '3px solid #1a1a2e',
+                    boxShadow: '4px 4px 0px #1a1a2e',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {loading ? 'Creating...' : 'Create branch'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

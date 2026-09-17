@@ -110,19 +110,11 @@ export default function BranchDetailPage({ params }: { params: Promise<{ id: str
       {/* Left: Batch List */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1rem' }}>Batches</h3>
-          <button className="btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={() => setShowCreateBatch(!showCreateBatch)}>+ New</button>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>Assigned Batches</h3>
+          <Link href="/dashboard/super-admin/batches" className="btn-secondary" style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem', fontWeight: 700 }}>
+            Manage in Batches
+          </Link>
         </div>
-
-        {showCreateBatch && (
-          <form onSubmit={handleCreateBatch} style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--bg-tertiary)' }}>
-            <input type="text" className="input-field" style={{ padding: '0.5rem' }} required value={batchName} onChange={e => setBatchName(e.target.value)} placeholder="Batch name" />
-            <select className="input-field" style={{ padding: '0.5rem' }} value={academicLevel} onChange={e => setAcademicLevel(e.target.value)}>
-              <option>O Level</option><option>AS</option><option>A Level</option>
-            </select>
-            <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.5rem' }}>Create</button>
-          </form>
-        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {batches.map(batch => (

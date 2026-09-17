@@ -174,8 +174,8 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
           {role === 'SUPER_ADMIN' && (<>
             <NavLink href="/dashboard/super-admin" label="Overview" icon={<LayoutDashboard size={20} />} exact />
             <NavLink href="/dashboard/super-admin/users" label="User Management" icon={<Users size={20} />} />
+            <NavLink href="/dashboard/super-admin/batches" label="Batches" icon={<Layers size={20} />} />
             <NavLink href="/dashboard/super-admin/branches" label="Branches" icon={<Building2 size={20} />} />
-            <NavLink href="/dashboard/super-admin/batches" label="Batches & Intakes" icon={<Layers size={20} />} />
             <NavLink href="/dashboard/super-admin/students" label="Student Import" icon={<GraduationCap size={20} />} />
             <NavLink href="/dashboard/super-admin/security" label="Security Alerts" icon={<ShieldAlert size={20} />} />
           </>)}

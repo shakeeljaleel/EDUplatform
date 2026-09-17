@@ -22,6 +22,23 @@ export async function GET(request: Request) {
       createdAt: true,
       profile: {
         select: { paymentStatus: true }
+      },
+      enrollments: {
+        select: {
+          batch: {
+            select: {
+              id: true,
+              name: true,
+              branchId: true,
+              branch: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
+          }
+        }
       }
     },
     orderBy: { createdAt: 'desc' }

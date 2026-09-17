@@ -266,7 +266,7 @@ export default function LessonPlannerPage({ params }: { params: Promise<{ id: st
                     ))}
                     <button 
                       className="btn-primary" 
-                      style={{ marginTop: '1rem', background: 'linear-gradient(135deg, var(--dna-purple), var(--accent-primary))' }}
+                      style={{ marginTop: '1rem', background: 'var(--accent-primary)' }}
                       onClick={() => handleConvertToBuzzer(selectedPlan.id)}
                       disabled={loading}
                     >

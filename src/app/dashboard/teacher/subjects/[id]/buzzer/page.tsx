@@ -171,7 +171,7 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
                       at {new Date(firstBuzz.buzzedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
-                      <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #059669, #047857)', padding: '0.75rem 2rem' }} onClick={() => hostAction('JUDGE', currentRound.id, true)}>
+                      <button className="btn-primary" style={{ background: '#059669', padding: '0.75rem 2rem' }} onClick={() => hostAction('JUDGE', currentRound.id, true)}>
                         ✅ Correct (+{currentRound.points} pts)
                       </button>
                       <button className="btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)', padding: '0.75rem 2rem' }} onClick={() => hostAction('JUDGE', currentRound.id, false)}>

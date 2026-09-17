@@ -9,14 +9,35 @@ export async function GET() {
   const batches = await prisma.batch.findMany({
     include: {
       branch: true,
+      subjects: {
+        select: {
+          id: true,
+          teachers: {
+            select: { userId: true }
+          }
+        }
+      },
       _count: {
         select: { enrollments: true, subjects: true }
       }
     },
     orderBy: { createdAt: 'desc' }
   })
+
+  const formatted = batches.map(batch => {
+    const teacherIds = new Set<string>()
+    batch.subjects.forEach(s => {
+      s.teachers.forEach(t => teacherIds.add(t.userId))
+    })
+
+    const { subjects, ...rest } = batch
+    return {
+      ...rest,
+      teacherCount: teacherIds.size
+    }
+  })
   
-  return NextResponse.json({ batches })
+  return NextResponse.json({ batches: formatted })
 }
 
 export async function POST(request: Request) {
@@ -25,17 +46,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { name, academicLevel, branchId } = await request.json()
+  const { name, academicLevel, branchId, description } = await request.json()
 
-  if (!name || !academicLevel) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  if (!name?.trim() || !academicLevel?.trim()) {
+    return NextResponse.json({ error: 'Name and academic level are required' }, { status: 400 })
   }
 
   const batch = await prisma.batch.create({
     data: {
-      name,
-      academicLevel,
-      ...(branchId ? { branchId } : {})
+      name: name.trim(),
+      academicLevel: academicLevel.trim(),
+      description: description?.trim() || null,
+      branchId: branchId ? branchId : null
     },
     include: {
       branch: true

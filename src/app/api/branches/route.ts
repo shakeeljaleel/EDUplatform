@@ -8,11 +8,28 @@ export async function GET() {
 
   const branches = await prisma.branch.findMany({
     include: {
+      batches: {
+        select: {
+          id: true,
+          name: true,
+          academicLevel: true,
+          _count: { select: { enrollments: true, subjects: true } }
+        }
+      },
       _count: { select: { batches: true } }
     },
     orderBy: { createdAt: 'asc' }
   })
-  return NextResponse.json({ branches })
+
+  const formatted = branches.map(b => {
+    const studentCount = b.batches.reduce((sum, batch) => sum + (batch._count?.enrollments || 0), 0)
+    return {
+      ...b,
+      studentCount
+    }
+  })
+
+  return NextResponse.json({ branches: formatted })
 }
 
 export async function POST(request: Request) {
@@ -22,11 +39,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { name, location } = await request.json()
+    const { name, location, type } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Branch name is required' }, { status: 400 })
 
     const branch = await prisma.branch.create({
-      data: { name: name.trim(), location: location?.trim() || null }
+      data: {
+        name: name.trim(),
+        location: location?.trim() || null,
+        type: type === 'Online' ? 'Online' : 'Physical'
+      }
     })
     return NextResponse.json({ success: true, branch })
   } catch (error: any) {

@@ -29,10 +29,12 @@ const SINGLE_STATUS_BADGE: Record<string, { label: string; bg: string; color: st
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([])
+  const [branches, setBranches] = useState<any[]>([])
   const [activeRole, setActiveRole] = useState('TEACHER')
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [branchFilter, setBranchFilter] = useState('ALL')
 
   // Open 3-dot menu state: userId or null
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null)
@@ -53,6 +55,15 @@ export default function UsersPage() {
   useEffect(() => { 
     fetchUsers() 
   }, [activeRole])
+
+  useEffect(() => {
+    fetchBranches()
+  }, [])
+
+  const fetchBranches = async () => {
+    const res = await fetch('/api/branches')
+    if (res.ok) setBranches((await res.json()).branches || [])
+  }
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -138,7 +149,18 @@ export default function UsersPage() {
     const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
                           u.email.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'ALL' || u.approvalStatus === statusFilter
-    return matchesSearch && matchesStatus
+
+    let matchesBranch = true
+    if (activeRole === 'STUDENT' && branchFilter !== 'ALL') {
+      const studentBranchIds = u.enrollments?.map((e: any) => e.batch?.branchId || 'GLOBAL') || []
+      if (branchFilter === 'GLOBAL') {
+        matchesBranch = studentBranchIds.includes('GLOBAL') || studentBranchIds.length === 0
+      } else {
+        matchesBranch = studentBranchIds.includes(branchFilter)
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesBranch
   })
 
   const pendingCount = users.filter(u => u.approvalStatus === 'PENDING').length
@@ -207,13 +229,28 @@ export default function UsersPage() {
           className="input-field"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          style={{ width: '200px', minHeight: '42px', fontSize: '0.9rem' }}
+          style={{ width: '180px', minHeight: '42px', fontSize: '0.9rem' }}
         >
           <option value="ALL">All statuses</option>
           <option value="APPROVED">Approved only</option>
           <option value="PENDING">Pending approval</option>
           <option value="REJECTED">Suspended only</option>
         </select>
+
+        {activeRole === 'STUDENT' && (
+          <select
+            className="input-field"
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            style={{ width: '200px', minHeight: '42px', fontSize: '0.9rem', fontWeight: 700 }}
+          >
+            <option value="ALL">All branches</option>
+            <option value="GLOBAL">Global (No branch)</option>
+            {branches.map(b => (
+              <option key={b.id} value={b.id}>📍 {b.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* User Directory List */}
@@ -272,16 +309,28 @@ export default function UsersPage() {
                 </span>
 
                 {activeRole === 'STUDENT' && (
-                  <span 
-                    style={{ 
-                      padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
-                      fontWeight: 800, backgroundColor: paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbeb', 
-                      color: paymentStatus === 'Paid' ? '#059669' : '#b45309',
-                      border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}` 
-                    }}
-                  >
-                    💳 {paymentStatus}
-                  </span>
+                  <>
+                    {user.enrollments && user.enrollments.length > 0 && user.enrollments[0]?.batch?.branch ? (
+                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                        📍 {user.enrollments[0].batch.branch.name}
+                      </span>
+                    ) : (
+                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }}>
+                        Global
+                      </span>
+                    )}
+
+                    <span 
+                      style={{ 
+                        padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
+                        fontWeight: 800, backgroundColor: paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbeb', 
+                        color: paymentStatus === 'Paid' ? '#059669' : '#b45309',
+                        border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}` 
+                      }}
+                    >
+                      💳 {paymentStatus}
+                    </span>
+                  </>
                 )}
               </div>
 

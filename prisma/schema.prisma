@@ -82,6 +82,7 @@ model Branch {
   id        String   @id @default(uuid())
   name      String
   location  String?
+  type      String   @default("Physical")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   batches   Batch[]
@@ -91,6 +92,7 @@ model Batch {
   id            String            @id @default(uuid())
   name          String
   academicLevel String
+  description   String?
   branchId      String?
   startDate     DateTime?
   endDate       DateTime?
