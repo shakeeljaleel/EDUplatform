@@ -23,20 +23,17 @@ export async function GET(request: Request) {
       profile: {
         select: { paymentStatus: true }
       },
-      enrollments: {
+      studentEnrollments: {
         select: {
+          status: true,
           batch: {
-            select: {
-              id: true,
-              name: true,
-              branchId: true,
-              branch: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
-            }
+            select: { id: true, name: true }
+          },
+          branch: {
+            select: { id: true, name: true }
+          },
+          subject: {
+            select: { id: true, name: true }
           }
         }
       }

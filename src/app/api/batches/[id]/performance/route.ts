@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Get all students enrolled in this batch
     const students = await prisma.user.findMany({
       where: {
-        enrollments: {
+        studentEnrollments: {
           some: { batchId }
         },
         role: 'STUDENT'

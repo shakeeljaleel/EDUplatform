@@ -8,15 +8,16 @@ export default async function TeacherBuzzerHubPage() {
   const session = await getSession()
   if (!session || session.user.role !== 'TEACHER') return null
 
-  const teacherAssignments = await prisma.subjectTeacher.findMany({
-    where: { userId: session.user.id },
+  const teacherAssignments = await prisma.subjectBranchTeacher.findMany({
+    where: { teacherId: session.user.id },
     include: {
       subject: {
         include: {
           batch: true,
           _count: { select: { buzzerSessions: true } }
         }
-      }
+      },
+      branch: true
     }
   })
 

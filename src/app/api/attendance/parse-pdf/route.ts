@@ -45,11 +45,11 @@ export async function POST(request: Request) {
       // Get all students for this session's subject to match names
       const sessionData = await prisma.classSession.findUnique({
         where: { id: sessionId },
-        include: { subject: { include: { enrollments: { include: { user: true } } } } }
+        include: { subject: { include: { studentEnrollments: { include: { student: true } } } } }
       })
 
       if (sessionData) {
-        const enrolledStudents = sessionData.subject.enrollments.map(e => e.user)
+        const enrolledStudents = sessionData.subject.studentEnrollments.map(e => e.student)
         
         for (const record of attendanceData) {
           // Find closest matching student name

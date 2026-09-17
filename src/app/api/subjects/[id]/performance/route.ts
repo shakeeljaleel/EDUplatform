@@ -14,10 +14,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const subject = await prisma.subject.findUnique({
       where: { id: subjectId },
       include: {
-        enrollments: {
-          where: { status: { in: ['APPROVED', 'ACTIVE'] } },
+        studentEnrollments: {
+          where: { status: 'active' },
           include: {
-            user: {
+            student: {
               include: {
                 profile: true,
                 quizAttempts: {
@@ -36,8 +36,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 })
 
-    const performanceData = subject.enrollments.map((en: any) => {
-      const student = en.user
+    const performanceData = subject.studentEnrollments.map((en: any) => {
+      const student = en.student
       
       // Quiz performance for THIS subject
       const quizScores = student.quizAttempts.map((q: any) => {

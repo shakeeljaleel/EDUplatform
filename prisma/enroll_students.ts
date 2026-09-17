@@ -29,35 +29,23 @@ async function main() {
       }
     })
 
-    // Enroll in Batch
-    await prisma.batchEnrollment.upsert({
-      where: {
-        userId_batchId: {
-          userId: student.id,
-          batchId: batchId
-        }
-      },
-      update: {},
-      create: {
-        userId: student.id,
-        batchId: batchId,
-        role: 'STUDENT'
-      }
-    })
+    // Get a branch for enrollment
+    const branch = await prisma.branch.findFirst()
+    if (!branch) throw new Error('No branch found')
 
-    // Enroll in Subject
-    await prisma.subjectEnrollment.upsert({
+    // Create student enrollment
+    await prisma.studentEnrollment.upsert({
       where: {
-        subjectId_userId: {
-          userId: student.id,
-          subjectId: subjectId
-        }
+        id: `enroll-${student.id}-${subjectId}`
       },
-      update: { status: 'ACTIVE' },
+      update: { status: 'active' },
       create: {
-        userId: student.id,
+        id: `enroll-${student.id}-${subjectId}`,
+        studentId: student.id,
+        batchId: batchId,
+        branchId: branch.id,
         subjectId: subjectId,
-        status: 'ACTIVE'
+        status: 'active'
       }
     })
 

@@ -1,338 +1,484 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import EmptyState from '@/components/EmptyState'
 import { showToast } from '@/components/ToastContainer'
-import { BookOpen, Users, Search, Filter, CheckSquare, Sparkles } from '@/components/Icons'
-import { getSubjectColor } from '@/lib/subjectColors'
+import { BookOpen, Users, Plus, CheckSquare, Edit, Trash2, X, Check, Shield } from '@/components/Icons'
 
-export default function TeacherDashboardTabs({ subjectAssignments, batchEnrollments, allStudents }: any) {
-  const [activeTab, setActiveTab] = useState<'SUBJECTS' | 'STUDENTS'>('SUBJECTS')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL')
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
+const ASSISTANT_PERMISSIONS = [
+  'Mark attendance',
+  'Grade assignments',
+  'Post resources',
+  'Manage forum',
+  'View student performance',
+  'Send announcements',
+  'Create quizzes',
+  'View student contact details'
+]
 
-  // Filter students by search query and batch filter
-  const filteredStudents = useMemo(() => {
-    return allStudents.filter((student: any) => {
-      const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            student.email.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesBatch = selectedBatchFilter === 'ALL' ||
-        student.enrollments.some((en: any) => en.batchId === selectedBatchFilter)
+export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmations: initialPending }: any) {
+  const [activeTab, setActiveTab] = useState<'CLASSES' | 'CONFIRMATIONS'>('CLASSES')
+  const [classList, setClassList] = useState<any[]>(teacherClasses || [])
+  const [pendingList, setPendingList] = useState<any[]>(initialPending || [])
 
-      return matchesSearch && matchesBatch
-    })
-  }, [allStudents, searchQuery, selectedBatchFilter])
+  // Assistant Modal
+  const [assistantModal, setAssistantModal] = useState<{
+    show: boolean
+    subjectBranchTeacherId: string
+    subjectName: string
+    branchName: string
+    existingAssistantId?: string
+    existingPermissions?: string[]
+  }>({ show: false, subjectBranchTeacherId: '', subjectName: '', branchName: '' })
 
-  const toggleSelectAll = () => {
-    if (selectedStudentIds.length === filteredStudents.length) {
-      setSelectedStudentIds([])
-    } else {
-      setSelectedStudentIds(filteredStudents.map((s: any) => s.id))
+  const [assistantsList, setAssistantsList] = useState<any[]>([])
+  const [selectedAssistantId, setSelectedAssistantId] = useState('')
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
+  const [submittingAssistant, setSubmittingAssistant] = useState(false)
+
+  useEffect(() => {
+    fetchAssistants()
+  }, [])
+
+  const fetchAssistants = async () => {
+    try {
+      const res = await fetch('/api/users?role=ASSISTANT')
+      if (res.ok) setAssistantsList((await res.json()).users || [])
+    } catch (e) {
+      console.error(e)
     }
   }
 
-  const toggleSelectStudent = (id: string) => {
-    setSelectedStudentIds(prev => 
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    )
+  const handleSaveAssistant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!assistantModal.subjectBranchTeacherId || !selectedAssistantId) return
+    setSubmittingAssistant(true)
+    try {
+      const res = await fetch('/api/subject-branch-teachers/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectBranchTeacherId: assistantModal.subjectBranchTeacherId,
+          assistantId: selectedAssistantId,
+          permissions: selectedPermissions
+        })
+      })
+      if (res.ok) {
+        showToast('Assistant permissions updated successfully', 'success')
+        setAssistantModal({ show: false, subjectBranchTeacherId: '', subjectName: '', branchName: '' })
+        window.location.reload()
+      } else {
+        const data = await res.json()
+        showToast(data.error || 'Failed to update assistant', 'error')
+      }
+    } finally {
+      setSubmittingAssistant(false)
+    }
   }
 
-  const handleBulkAction = (actionName: string) => {
-    if (selectedStudentIds.length === 0) return
-    showToast(`${actionName} applied successfully for ${selectedStudentIds.length} student(s).`, 'success')
-    setSelectedStudentIds([])
+  const handleRemoveAssistant = async (assistantAssignmentId: string) => {
+    if (!confirm('Are you sure you want to remove this assistant?')) return
+    try {
+      const res = await fetch(`/api/subject-branch-teachers/assistant?id=${assistantAssignmentId}`, { method: 'DELETE' })
+      if (res.ok) {
+        showToast('Assistant removed', 'success')
+        window.location.reload()
+      }
+    } catch {
+      showToast('Error removing assistant', 'error')
+    }
+  }
+
+  const handleConfirmEnrollment = async (enrollmentId: string, studentName: string) => {
+    try {
+      const res = await fetch('/api/student-enrollments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: enrollmentId, action: 'TEACHER_CONFIRM' })
+      })
+      if (res.ok) {
+        showToast(`Enrolment confirmed for ${studentName}`, 'success')
+        setPendingList(prev => prev.filter(p => p.id !== enrollmentId))
+      }
+    } catch {
+      showToast('Error confirming enrolment', 'error')
+    }
   }
 
   return (
     <div>
-      {/* AT-A-GLANCE SUMMARY CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div className="stat-card" style={{
-          background: '#00bcd4',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
-            Assigned Subjects
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{subjectAssignments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Active teaching modules</p>
-        </div>
-
-        <div className="stat-card" style={{
-          background: '#2979ff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
-            Assigned Batches
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{batchEnrollments.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Active student intakes</p>
-        </div>
-
-        <div className="stat-card" style={{
-          background: '#aa00ff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
-            Total Roster Students
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{allStudents.length}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Enrolled across all classes</p>
-        </div>
-      </div>
-
       {/* TABS NAVIGATION */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-        {[
-          { id: 'SUBJECTS', label: 'My Subjects', icon: <BookOpen size={20} /> },
-          { id: 'STUDENTS', label: 'Student Directory & Filtering', icon: <Users size={20} /> }
-        ].map((tab: any) => (
-          <button 
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`tab-pill ${activeTab === tab.id ? 'active' : ''}`}
-            style={{
-              background: activeTab === tab.id ? '#1a1a2e' : '#ffffff',
-              color: activeTab === tab.id ? '#ffffff' : '#1a1a2e',
-              border: '3px solid #1a1a2e',
-              boxShadow: '3px 3px 0px #1a1a2e',
-              borderRadius: '50px',
-              padding: '0.65rem 1.5rem',
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              minHeight: '44px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <span>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setActiveTab('CLASSES')}
+          style={{
+            background: activeTab === 'CLASSES' ? '#1a1a2e' : '#ffffff',
+            color: activeTab === 'CLASSES' ? '#ffffff' : '#1a1a2e',
+            border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            borderRadius: '50px',
+            padding: '0.65rem 1.5rem',
+            cursor: 'pointer',
+            fontSize: '0.95rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem'
+          }}
+        >
+          <BookOpen size={20} />
+          <span>My Classes ({classList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('CONFIRMATIONS')}
+          style={{
+            background: activeTab === 'CONFIRMATIONS' ? '#1a1a2e' : '#ffffff',
+            color: activeTab === 'CONFIRMATIONS' ? '#ffffff' : '#1a1a2e',
+            border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            borderRadius: '50px',
+            padding: '0.65rem 1.5rem',
+            cursor: 'pointer',
+            fontSize: '0.95rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem'
+          }}
+        >
+          <Users size={20} />
+          <span>Pending Enrolment Confirmations ({pendingList.length})</span>
+        </button>
       </div>
 
-      {activeTab === 'SUBJECTS' ? (
+      {/* TAB 1: MY CLASSES */}
+      {activeTab === 'CLASSES' && (
         <div className="fade-in">
-          {/* My Subjects Section */}
-          {subjectAssignments.length > 0 ? (
-            <div style={{ marginBottom: '3rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
-                {subjectAssignments.map((sa: any, idx: number) => {
-                  const subjectColor = getSubjectColor(sa.subject.name, idx)
-                  const studentCount = sa.subject._count?.enrollments || 0
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+            {classList.map((cls: any) => {
+              const assistantObj = cls.assistants?.[0]
+              let assistantPermissions: string[] = []
+              if (assistantObj) {
+                try { assistantPermissions = JSON.parse(assistantObj.permissions) } catch { assistantPermissions = [] }
+              }
 
-                  return (
-                    <div
-                      key={sa.id}
-                      className="card"
-                      style={{
-                        padding: '1.75rem',
-                        background: subjectColor,
+              return (
+                <div
+                  key={cls.id}
+                  className="card"
+                  style={{
+                    padding: '1.75rem',
+                    background: cls.subject.colour || '#2979ff',
+                    color: '#ffffff',
+                    border: '3px solid #1a1a2e',
+                    boxShadow: '5px 5px 0px #1a1a2e',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '1.25rem'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{
+                        backgroundColor: '#ffffff',
+                        color: cls.subject.colour || '#2979ff',
+                        fontWeight: 900,
+                        fontSize: '0.75rem',
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '50px',
+                        border: '1.5px solid #1a1a2e'
+                      }}>
+                        {cls.subject.batch.name}
+                      </span>
+
+                      <span style={{
+                        backgroundColor: cls.branch.colour || '#00c853',
                         color: '#ffffff',
-                        border: '3px solid #1a1a2e',
-                        boxShadow: '5px 5px 0px #1a1a2e',
-                        borderRadius: '16px'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.35rem', letterSpacing: '0.05em', opacity: 0.9 }}>
-                        {sa.subject.batch.name}
-                      </div>
-                      <h3 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem', color: '#ffffff' }}>{sa.subject.name}</h3>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '1.25rem', color: 'rgba(255,255,255,0.9)' }}>
-                        👥 {studentCount} Student(s) Enrolled
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <Link prefetch={true} href={`/dashboard/teacher/batches/${sa.subject.batchId}`} className="btn-primary" style={{ 
-                          gridColumn: 'span 2', textAlign: 'center', padding: '0.75rem', fontSize: '0.9rem', fontWeight: 800,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', minHeight: '42px',
-                          background: '#1a1a2e', color: '#ffffff', border: '2px solid #ffffff', borderRadius: '10px'
-                        }}>
-                          <CheckSquare size={18} /> Quizzes & Assessments
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          🤖 AI Grading
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/buzzer`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          ⚡ Speed Buzzer
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          💬 Q&A Forum
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/performance`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          📊 Mark Analytics
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/lesson-planner`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          📑 AI Planner
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/syllabus`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          🧬 Syllabus
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          📅 Schedule
-                        </Link>
-
-                        <Link prefetch={true} href={`/dashboard/teacher/subjects/${sa.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
-                          📹 Recordings
-                        </Link>
-                      </div>
+                        fontWeight: 900,
+                        fontSize: '0.75rem',
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '50px',
+                        border: '1.5px solid #1a1a2e'
+                      }}>
+                        📍 {cls.branch.name}
+                      </span>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <EmptyState 
-              icon={<BookOpen size={36} color="#10b981" />}
-              title="No Subjects Assigned Yet" 
-              description="You have not been assigned to any subjects yet. Contact your Super Admin to get subject assignments."
-            />
-          )}
-        </div>
-      ) : (
-        <div className="card premium-card" style={{ padding: '2rem', overflow: 'hidden' }}>
-          
-          {/* SEARCH & FILTER CONTROLS */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flex: 1, minWidth: '280px' }}>
-              <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-                <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="text"
-                  className="input-field"
-                  placeholder="Search students by name or email..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: '100%', paddingLeft: '2.5rem', minHeight: '44px' }}
-                />
-              </div>
 
-              <select 
-                className="input-field"
-                value={selectedBatchFilter}
-                onChange={e => setSelectedBatchFilter(e.target.value)}
-                style={{ width: '200px', minHeight: '44px' }}
-              >
-                <option value="ALL">All Batches</option>
-                {batchEnrollments.map((be: any) => (
-                  <option key={be.batchId} value={be.batchId}>{be.batch.name}</option>
-                ))}
-              </select>
-            </div>
+                    <h3 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0.25rem 0', color: '#ffffff' }}>
+                      {cls.subject.name}
+                    </h3>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'rgba(255,255,255,0.95)', marginBottom: '1.25rem' }}>
+                      👥 {cls.studentCount} student(s) enrolled at {cls.branch.name}
+                    </div>
 
-            {/* BULK ACTIONS BUTTONS */}
-            {selectedStudentIds.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => handleBulkAction('Export Selected Roster')}
-                  className="btn-secondary"
-                  style={{ minHeight: '44px', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                >
-                  📥 Export ({selectedStudentIds.length})
-                </button>
-                <button 
-                  onClick={() => handleBulkAction('Mark Submissions Reviewed')}
-                  className="btn-primary"
-                  style={{ minHeight: '44px', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                >
-                  ✓ Mark Reviewed ({selectedStudentIds.length})
-                </button>
+                    {/* MY ASSISTANT PANEL */}
+                    <div style={{
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid rgba(255,255,255,0.3)',
+                      marginBottom: '1rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '0.05em' }}>
+                          My Assistant
+                        </span>
+
+                        {assistantObj ? (
+                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                            <button
+                              onClick={() => {
+                                setSelectedAssistantId(assistantObj.assistant.id)
+                                setSelectedPermissions(assistantPermissions)
+                                setAssistantModal({
+                                  show: true,
+                                  subjectBranchTeacherId: cls.id,
+                                  subjectName: cls.subject.name,
+                                  branchName: cls.branch.name,
+                                  existingAssistantId: assistantObj.id
+                                })
+                              }}
+                              style={{ background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleRemoveAssistant(assistantObj.id)}
+                              style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #1a1a2e', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedAssistantId('')
+                              setSelectedPermissions([])
+                              setAssistantModal({
+                                show: true,
+                                subjectBranchTeacherId: cls.id,
+                                subjectName: cls.subject.name,
+                                branchName: cls.branch.name
+                              })
+                            }}
+                            style={{
+                              background: '#00c853',
+                              color: '#ffffff',
+                              border: '1.5px solid #1a1a2e',
+                              borderRadius: '50px',
+                              padding: '0.2rem 0.65rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 900,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + Add assistant
+                          </button>
+                        )}
+                      </div>
+
+                      {assistantObj ? (
+                        <div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', marginBottom: '0.5rem' }}>
+                            🤝 {assistantObj.assistant.name}
+                          </div>
+                          {assistantPermissions.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {assistantPermissions.map((perm: string) => (
+                                <span key={perm} style={{
+                                  background: 'rgba(255,255,255,0.2)',
+                                  color: '#ffffff',
+                                  padding: '0.15rem 0.5rem',
+                                  borderRadius: '50px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  border: '1px solid rgba(255,255,255,0.4)'
+                                }}>
+                                  ✓ {perm}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.8rem', opacity: 0.8, fontStyle: 'italic', fontWeight: 700 }}>
+                          No assistant assigned for this subject branch.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Quick Action Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/grading`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      🤖 AI Marking
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/forum`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      💬 Q&A Forum
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/recordings`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      📹 Recordings
+                    </Link>
+                    <Link href={`/dashboard/teacher/subjects/${cls.subject.id}/calendar`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#ffffff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                      📅 Schedule
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+
+            {classList.length === 0 && (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem 2rem', background: '#f8fafc', borderRadius: '16px', border: '3px dashed #cbd5e1' }}>
+                <BookOpen size={48} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>No classes assigned yet</h3>
+                <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.35rem' }}>Contact your Super Admin to get subject and branch assignments.</p>
               </div>
             )}
           </div>
+        </div>
+      )}
 
-          {/* RESPONSIVE TABLE CONTAINER */}
-          {filteredStudents.length > 0 ? (
-            <div className="table-container-responsive">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                    <th style={{ padding: '1rem', width: '40px' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
-                        onChange={toggleSelectAll}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                    </th>
-                    <th style={{ padding: '1rem', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', color: '#475569' }}>Student Name</th>
-                    <th style={{ padding: '1rem', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', color: '#475569' }}>Email</th>
-                    <th style={{ padding: '1rem', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', color: '#475569' }}>Batch Enrolled</th>
-                    <th style={{ padding: '1rem', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', color: '#475569' }}>Payment Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStudents.map((student: any) => (
-                    <tr key={student.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '1rem' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedStudentIds.includes(student.id)}
-                          onChange={() => toggleSelectStudent(student.id)}
-                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                        />
-                      </td>
-                      <td style={{ padding: '1rem', fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#10b981', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
-                            {student.name.charAt(0)}
-                          </div>
-                          <span>{student.name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '1rem', fontWeight: 600, color: '#475569' }}>{student.email}</td>
-                      <td style={{ padding: '1rem' }}>
-                        {student.enrollments.map((en: any) => (
-                          <span key={en.batchId} className="badge" style={{ marginRight: '0.5rem', background: '#f0fdf4', border: '1px solid #10b981', color: '#059669', fontWeight: 800, fontSize: '0.75rem', borderRadius: '6px', padding: '2px 8px' }}>
-                            {en.batch.name}
-                          </span>
-                        ))}
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span className={`badge ${student.profile?.paymentStatus === 'Paid' ? 'badge-paid' : 'badge-pending'}`}>
-                          {student.profile?.paymentStatus || 'Pending'}
-                        </span>
-                      </td>
-                    </tr>
+      {/* TAB 2: PENDING ENROLMENT CONFIRMATIONS (STAGE 2) */}
+      {activeTab === 'CONFIRMATIONS' && (
+        <div className="fade-in">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.25rem' }}>
+            Stage 2 Teacher Enrolment Confirmations
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {pendingList.map((p: any) => (
+              <div key={p.id} className="card" style={{
+                padding: '1.25rem 1.75rem',
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+                    {p.student.name} ({p.student.email})
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748b', marginTop: '0.25rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span>📚 Subject: <strong>{p.subject.name}</strong></span>
+                    <span>🎓 Batch: <strong>{p.batch.name}</strong></span>
+                    <span>📍 Branch: <strong>{p.branch.name}</strong></span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => handleConfirmEnrollment(p.id, p.student.name)}
+                    style={{
+                      padding: '0.55rem 1.25rem',
+                      fontWeight: 900,
+                      fontSize: '0.85rem',
+                      background: '#00c853',
+                      color: '#ffffff',
+                      border: '2px solid #1a1a2e',
+                      boxShadow: '2px 2px 0px #1a1a2e',
+                      borderRadius: '50px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Confirm enrolment
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {pendingList.length === 0 && (
+              <div className="card" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontWeight: 700, border: '3px dashed #cbd5e1' }}>
+                No pending enrolment confirmations for your classes.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN ASSISTANT MODAL */}
+      {assistantModal.show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '2rem', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e', position: 'relative' }}>
+            <button onClick={() => setAssistantModal({ show: false, subjectBranchTeacherId: '', subjectName: '', branchName: '' })} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 0.35rem 0' }}>Assign assistant</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, marginBottom: '1.25rem' }}>
+              Subject: <strong>{assistantModal.subjectName}</strong> ({assistantModal.branchName})
+            </p>
+
+            <form onSubmit={handleSaveAssistant} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Select assistant</label>
+                <select
+                  className="input-field"
+                  value={selectedAssistantId}
+                  onChange={e => setSelectedAssistantId(e.target.value)}
+                  required
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                >
+                  <option value="">Select assistant from list...</option>
+                  {assistantsList.map(ast => (
+                    <option key={ast.id} value={ast.id}>🤝 {ast.name} ({ast.email})</option>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState 
-              icon={<Users size={36} color="#94a3b8" />}
-              title="No Students Found" 
-              description="No student records match your current search query or batch filter."
-            />
-          )}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>
+                  Permission checkboxes (tick any combination):
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  {ASSISTANT_PERMISSIONS.map(perm => {
+                    const isChecked = selectedPermissions.includes(perm)
+
+                    return (
+                      <label key={perm} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        background: '#f8fafc',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1.5px solid #1a1a2e',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setSelectedPermissions(selectedPermissions.filter(p => p !== perm))
+                            } else {
+                              setSelectedPermissions([...selectedPermissions, perm])
+                            }
+                          }}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span>{perm}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setAssistantModal({ show: false, subjectBranchTeacherId: '', subjectName: '', branchName: '' })} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
+                <button type="submit" disabled={submittingAssistant || !selectedAssistantId} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Save assistant</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

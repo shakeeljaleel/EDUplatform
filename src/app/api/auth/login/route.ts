@@ -48,7 +48,9 @@ async function ensureDefaultUsersAndData() {
       create: {
         id: branchId,
         name: 'Main Campus',
-        location: '123 Academic Way',
+        address: '123 Academic Way',
+        type: 'PHYSICAL',
+        colour: '#00c853'
       },
     })
 
@@ -59,8 +61,17 @@ async function ensureDefaultUsersAndData() {
         id: batchId,
         name: 'Grade 11 Biology Batch',
         academicLevel: 'Grade 11',
-        branchId: branch.id,
       },
+    })
+
+    await prisma.batchBranch.upsert({
+      where: { id: `bb-${batch.id}-${branch.id}` },
+      update: {},
+      create: {
+        id: `bb-${batch.id}-${branch.id}`,
+        batchId: batch.id,
+        branchId: branch.id,
+      }
     })
 
     // 2. Create Users (Teacher, Students, Parent)
@@ -145,49 +156,33 @@ async function ensureDefaultUsersAndData() {
       },
     })
 
-    await prisma.subjectTeacher.upsert({
+    await prisma.subjectBranchTeacher.upsert({
       where: {
-        subjectId_userId: {
-          subjectId: subject.id,
-          userId: teacher.id,
-        },
+        id: `sbt-${subject.id}-${branch.id}-${teacher.id}`
       },
       update: {},
       create: {
+        id: `sbt-${subject.id}-${branch.id}-${teacher.id}`,
         subjectId: subject.id,
-        userId: teacher.id,
+        branchId: branch.id,
+        teacherId: teacher.id,
       },
     })
 
     // 4. Enroll Students into Batch & Subject
     for (const st of students) {
-      await prisma.batchEnrollment.upsert({
+      await prisma.studentEnrollment.upsert({
         where: {
-          userId_batchId: {
-            userId: st.id,
-            batchId: batch.id,
-          },
+          id: `enroll-${st.id}-${subject.id}`
         },
-        update: {},
+        update: { status: 'active' },
         create: {
-          userId: st.id,
+          id: `enroll-${st.id}-${subject.id}`,
+          studentId: st.id,
           batchId: batch.id,
-          role: 'STUDENT',
-        },
-      })
-
-      await prisma.subjectEnrollment.upsert({
-        where: {
-          subjectId_userId: {
-            userId: st.id,
-            subjectId: subject.id,
-          },
-        },
-        update: { status: 'ACTIVE' },
-        create: {
-          userId: st.id,
+          branchId: branch.id,
           subjectId: subject.id,
-          status: 'ACTIVE',
+          status: 'active',
         },
       })
     }

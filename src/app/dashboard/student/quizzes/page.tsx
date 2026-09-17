@@ -17,8 +17,8 @@ export default async function AllQuizzesPage() {
   const userId = session.user.id
 
   // Get all batches student is enrolled in
-  const enrollments = await prisma.batchEnrollment.findMany({
-    where: { userId },
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { studentId: userId, status: 'active' },
     select: { batchId: true }
   })
 

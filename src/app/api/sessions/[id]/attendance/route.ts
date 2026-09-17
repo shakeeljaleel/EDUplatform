@@ -14,9 +14,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       include: {
         subject: {
           include: {
-            enrollments: {
-              where: { status: { in: ['APPROVED', 'ACTIVE'] } },
-              include: { user: { select: { id: true, name: true, email: true } } }
+            studentEnrollments: {
+              where: { status: 'active' },
+              include: { student: { select: { id: true, name: true, email: true } } }
             }
           }
         },
@@ -26,9 +26,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (!classSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
-    const students = classSession.subject.enrollments.map(e => ({
-      ...e.user,
-      attendanceStatus: classSession.attendance.find(a => a.userId === e.userId)?.status || 'ABSENT_PENDING'
+    const students = classSession.subject.studentEnrollments.map(e => ({
+      ...e.student,
+      attendanceStatus: classSession.attendance.find(a => a.userId === e.studentId)?.status || 'ABSENT_PENDING'
     }))
 
     return NextResponse.json({ students })

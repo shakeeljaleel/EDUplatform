@@ -22,7 +22,6 @@ model User {
   activeSession      ActiveSession?
   announcements      Announcement[]
   attendanceRecords  AttendanceRecord[]
-  enrollments        BatchEnrollment[]
   buzzerBuzzes       BuzzerBuzz[]        @relation("BuzzerBuzzes")
   buzzerMemberships  BuzzerMember[]      @relation("BuzzerMembers")
   buzzerWins         BuzzerRound[]       @relation("BuzzerWinner")
@@ -43,8 +42,6 @@ model User {
   securityAlerts     SecurityAlert[]
   profile            StudentProfile?
   studyMaterials     StudyMaterial[]
-  subjectEnrollments SubjectEnrollment[]
-  subjectTeachings   SubjectTeacher[]
   studentChangeRequests StudentChangeRequest[] @relation("RequestedStudent")
   teacherRequests       StudentChangeRequest[] @relation("RequestingTeacher")
   recordingAccessRevoked Boolean            @default(false)
@@ -54,6 +51,12 @@ model User {
   recordingStreamLogs    RecordingStreamLog[]
   recordingFocusLogs     RecordingFocusLog[]
   recordingTermsAcceptances RecordingTermsAcceptance[]
+
+  subjectBranchTeachings SubjectBranchTeacher[]          @relation("TeacherBranchSubjects")
+  assistantAssignments   SubjectBranchTeacherAssistant[] @relation("AssistantAssignments")
+  assignedAssistants     SubjectBranchTeacherAssistant[] @relation("AssignedTeacherAssistants")
+  studentEnrollments     StudentEnrollment[]             @relation("StudentEnrollments")
+  confirmedEnrollments   StudentEnrollment[]             @relation("ConfirmedTeacherEnrollments")
 }
 
 model StudentProfile {
@@ -81,49 +84,56 @@ model ParentProfile {
 model Branch {
   id        String   @id @default(uuid())
   name      String
-  location  String?
-  type      String   @default("Physical")
+  address   String?
+  type      String   @default("Physical") // Physical or Online
+  colour    String   @default("#00c853")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  batches   Batch[]
+
+  batchBranches          BatchBranch[]
+  subjectBranchTeachers  SubjectBranchTeacher[]
+  studentEnrollments     StudentEnrollment[]
 }
 
 model Batch {
-  id            String            @id @default(uuid())
+  id            String   @id @default(uuid())
   name          String
   academicLevel String
   description   String?
-  branchId      String?
-  startDate     DateTime?
-  endDate       DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime          @updatedAt
-  branch        Branch?           @relation(fields: [branchId], references: [id])
-  enrollments   BatchEnrollment[]
-  forumPosts    ForumPost[]
-  subjects      Subject[]
+  status        String   @default("active") // active or archived
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  batchBranches      BatchBranch[]
+  subjects           Subject[]
+  studentEnrollments StudentEnrollment[]
+  forumPosts         ForumPost[]
 }
 
-model BatchEnrollment {
+model BatchBranch {
   id        String   @id @default(uuid())
-  userId    String
   batchId   String
-  role      String
+  branchId  String
+  status    String   @default("active") // active or archived
   createdAt DateTime @default(now())
-  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, batchId])
+  batch  Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, branchId])
 }
 
 model Subject {
-  id                 String              @id @default(uuid())
-  name               String
-  description        String?
-  academicLevel      String?
-  createdBy          String?
-  batchId            String
-  createdAt          DateTime            @default(now())
+  id          String   @id @default(uuid())
+  batchId     String
+  name        String
+  colour      String   @default("#2979ff")
+  description String?
+  createdAt   DateTime @default(now())
+
+  batch              Batch                  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  branchTeachers     SubjectBranchTeacher[]
+  studentEnrollments StudentEnrollment[]
   announcements      Announcement[]
   buzzerSessions     BuzzerSession[]
   classSessions      ClassSession[]
@@ -133,9 +143,6 @@ model Subject {
   quizzes            Quiz[]
   recordings         Recording[]
   materials          StudyMaterial[]
-  batch              Batch               @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  enrollments        SubjectEnrollment[]
-  teachers           SubjectTeacher[]
   syllabusObjectives SyllabusObjective[]
   recurringSchedules RecurringSchedule[]
   examSessions       ExamSession[]
@@ -203,36 +210,64 @@ model Notification {
   title          String
   message        String
   read           Boolean       @default(false)
+  link           String?
   classSessionId String?
   createdAt      DateTime      @default(now())
   classSession   ClassSession? @relation(fields: [classSessionId], references: [id])
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model SubjectTeacher {
+model SubjectBranchTeacher {
   id         String   @id @default(uuid())
   subjectId  String
-  userId     String
+  branchId   String
+  teacherId  String
   assignedBy String?
   assignedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
-  @@unique([subjectId, userId])
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  teacher    User     @relation("TeacherBranchSubjects", fields: [teacherId], references: [id], onDelete: Cascade)
+  assistants SubjectBranchTeacherAssistant[]
+
+  @@unique([subjectId, branchId, teacherId])
 }
 
-model SubjectEnrollment {
-  id        String   @id @default(uuid())
-  subjectId String
-  userId    String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+model SubjectBranchTeacherAssistant {
+  id                     String   @id @default(uuid())
+  subjectBranchTeacherId String
+  assistantId            String
+  permissions            String   @default("[]") // JSON string of permission strings
+  assignedByTeacherId    String?
+  assignedAt             DateTime @default(now())
 
-  @@unique([subjectId, userId])
+  subjectBranchTeacher SubjectBranchTeacher @relation(fields: [subjectBranchTeacherId], references: [id], onDelete: Cascade)
+  assistant            User                 @relation("AssistantAssignments", fields: [assistantId], references: [id], onDelete: Cascade)
+  assignedByTeacher    User?                @relation("AssignedTeacherAssistants", fields: [assignedByTeacherId], references: [id])
+
+  @@unique([subjectBranchTeacherId, assistantId])
+}
+
+model StudentEnrollment {
+  id                   String    @id @default(uuid())
+  studentId            String
+  subjectId            String
+  branchId             String
+  batchId              String
+  status               String    @default("pending") // pending, admin_approved, active, rejected
+  requestedAt          DateTime  @default(now())
+  adminApprovedAt      DateTime?
+  teacherConfirmedAt   DateTime?
+  rejectionReason      String?
+  confirmedByTeacherId String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  student            User     @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  subject            Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  branch             Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  batch              Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  confirmedByTeacher User?    @relation("ConfirmedTeacherEnrollments", fields: [confirmedByTeacherId], references: [id])
 }
 
 model Quiz {
@@ -569,13 +604,14 @@ model ExamSession {
 }
 
 model AuditLog {
-  id           String   @id @default(uuid())
-  adminId      String
-  adminName    String
-  action       String
-  targetUserId String?
-  details      String?
-  createdAt    DateTime @default(now())
+  id         String   @id @default(uuid())
+  actorId    String
+  actorRole  String
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?  // JSON string
+  createdAt  DateTime @default(now())
 }
 
 model LoginOtp {

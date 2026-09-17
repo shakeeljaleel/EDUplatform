@@ -8,14 +8,15 @@ export default async function TeacherForumHubPage() {
   const session = await getSession()
   if (!session || session.user.role !== 'TEACHER') return null
 
-  const teacherAssignments = await prisma.subjectTeacher.findMany({
-    where: { userId: session.user.id },
+  const teacherAssignments = await prisma.subjectBranchTeacher.findMany({
+    where: { teacherId: session.user.id },
     include: {
       subject: {
         include: {
           batch: true
         }
-      }
+      },
+      branch: true
     }
   })
 

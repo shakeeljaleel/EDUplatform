@@ -2,16 +2,18 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-// GET - list enrollments for a subject (Teacher sees pending/approved/rejected)
+// GET - list enrollments for a subject
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
 
-  const enrollments = await prisma.subjectEnrollment.findMany({
+  const enrollments = await prisma.studentEnrollment.findMany({
     where: { subjectId: id },
     include: {
-      user: { select: { id: true, name: true, email: true } }
+      student: { select: { id: true, name: true, email: true } },
+      branch: true,
+      batch: true
     },
     orderBy: { createdAt: 'asc' }
   })
@@ -27,29 +29,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: subjectId } = await params
 
   try {
+    const body = await request.json()
+    const branchId = body.branchId
+    if (!branchId) return NextResponse.json({ error: 'Branch ID required' }, { status: 400 })
+
     const subject = await prisma.subject.findUnique({
       where: { id: subjectId },
       include: {
         batch: true,
-        teachers: { include: { user: true } }
+        branchTeachers: { include: { teacher: true } }
       }
     })
     if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 })
 
-    const enrollment = await prisma.subjectEnrollment.upsert({
-      where: { subjectId_userId: { subjectId, userId: session.user.id } },
-      update: { status: 'PENDING' },
-      create: { subjectId, userId: session.user.id, status: 'PENDING' }
+    const enrollment = await prisma.studentEnrollment.upsert({
+      where: { id: `enroll-${session.user.id}-${subjectId}` },
+      update: { status: 'pending', branchId },
+      create: {
+        id: `enroll-${session.user.id}-${subjectId}`,
+        studentId: session.user.id,
+        batchId: subject.batchId,
+        branchId,
+        subjectId,
+        status: 'pending'
+      }
     })
 
-    // Ensure student is also in batch enrollments
-    await prisma.batchEnrollment.upsert({
-      where: { userId_batchId: { userId: session.user.id, batchId: subject.batchId } },
-      update: {},
-      create: { userId: session.user.id, batchId: subject.batchId, role: 'STUDENT' }
-    })
-
-    // Notify super admins (student name, batch name, AND subject name)
+    // Notify super admins
     const superAdmins = await prisma.user.findMany({ where: { role: 'SUPER_ADMIN' } })
     for (const admin of superAdmins) {
       await prisma.notification.create({
@@ -58,18 +64,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           type: 'ENROLMENT_REQUEST',
           title: 'Subject Enrolment Request',
           message: `${session.user.name} has requested enrolment in ${subject.name} (${subject.batch.name}).`
-        }
-      })
-    }
-
-    // Notify ONLY the teacher(s) assigned to this specific subject
-    for (const st of subject.teachers) {
-      await prisma.notification.create({
-        data: {
-          userId: st.userId,
-          type: 'ENROLMENT_REQUEST',
-          title: 'Subject Enrolment Request',
-          message: `New student ${session.user.name} requested enrolment in your subject ${subject.name} (${subject.batch.name}).`
         }
       })
     }
@@ -89,60 +83,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id: subjectId } = await params
 
   try {
-    const { enrollmentId, status } = await request.json() // status: "APPROVED" | "REJECTED" | "ACTIVE"
+    const { enrollmentId, status } = await request.json() // status: "admin_approved" | "active" | "rejected"
 
-    if (!['APPROVED', 'REJECTED', 'ACTIVE', 'ADMIN_APPROVED'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-    }
-
-    const subject = await prisma.subject.findUnique({
-      where: { id: subjectId },
-      include: {
-        batch: true,
-        teachers: true
-      }
-    })
-    if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 })
-
-    // Teachers must be assigned to this subject; Super Admin bypasses this check
-    if (session.user.role === 'TEACHER') {
-      const isTeacher = await prisma.subjectTeacher.findUnique({
-        where: { subjectId_userId: { subjectId, userId: session.user.id } }
-      })
-      if (!isTeacher) return NextResponse.json({ error: 'You are not assigned to this subject' }, { status: 403 })
-    }
-
-    const enrollment = await prisma.subjectEnrollment.update({
+    const enrollment = await prisma.studentEnrollment.update({
       where: { id: enrollmentId },
       data: { status },
-      include: { user: true }
+      include: { student: true, subject: true }
     })
 
-    // Notify student
     await prisma.notification.create({
       data: {
-        userId: enrollment.userId,
+        userId: enrollment.studentId,
         type: 'ENROLMENT_UPDATE',
-        title: `Subject Enrolment ${status}`,
-        message: `Your enrolment in ${subject.name} (${subject.batch.name}) is now ${status.toLowerCase()}.`
+        title: `Enrolment ${status.toUpperCase()}`,
+        message: `Your enrolment request for ${enrollment.subject.name} is now ${status}.`
       }
     })
-
-    // Notify ONLY the teacher(s) of this specific subject if approved
-    if (status === 'APPROVED' || status === 'ACTIVE') {
-      for (const st of subject.teachers) {
-        if (st.userId !== session.user.id) {
-          await prisma.notification.create({
-            data: {
-              userId: st.userId,
-              type: 'ENROLMENT_CONFIRMED',
-              title: 'Enrolment Confirmed',
-              message: `Student ${enrollment.user.name} enrolment confirmed in ${subject.name} (${subject.batch.name}).`
-            }
-          })
-        }
-      }
-    }
 
     return NextResponse.json({ success: true, enrollment })
   } catch (error: any) {

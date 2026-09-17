@@ -8,14 +8,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
 
-  const teachers = await prisma.subjectTeacher.findMany({
+  const teachers = await prisma.subjectBranchTeacher.findMany({
     where: { subjectId: id },
-    include: { user: { select: { id: true, name: true, email: true } } }
+    include: { teacher: { select: { id: true, name: true, email: true } }, branch: true }
   })
   return NextResponse.json({ teachers })
 }
 
-// POST - assign a teacher to a subject (Super Admin only)
+// POST - assign a teacher to a subject at a branch (Super Admin only)
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TEACHER')) {
@@ -24,8 +24,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: subjectId } = await params
 
   try {
-    const { userId, force } = await request.json()
-    if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
+    const { teacherId, branchId } = await request.json()
+    if (!teacherId || !branchId) return NextResponse.json({ error: 'teacherId and branchId required' }, { status: 400 })
 
     const subject = await prisma.subject.findUnique({
       where: { id: subjectId },
@@ -33,56 +33,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     })
     if (!subject) return NextResponse.json({ error: 'Subject not found' }, { status: 404 })
 
-    // Check if this teacher is already assigned to a subject in the SAME batch
-    const existingAssignment = await prisma.subjectTeacher.findFirst({
-      where: {
-        userId,
-        subject: { batchId: subject.batchId }
-      },
-      include: { subject: true }
-    })
-
-    if (existingAssignment && existingAssignment.subjectId !== subjectId) {
-      if (!force) {
-        return NextResponse.json({
-          warning: true,
-          existingSubjectId: existingAssignment.subjectId,
-          existingSubjectName: existingAssignment.subject.name,
-          message: `This teacher is already assigned to ${existingAssignment.subject.name} in this batch. Reassign?`
-        })
-      }
-
-      // If force, remove from existing subject assignment in this batch
-      await prisma.subjectTeacher.delete({
-        where: { id: existingAssignment.id }
-      })
-    }
-
-    // Each subject has one teacher - remove previous teacher if any
-    await prisma.subjectTeacher.deleteMany({
-      where: { subjectId }
-    })
-
-    const teacher = await prisma.subjectTeacher.create({
+    const teacher = await prisma.subjectBranchTeacher.create({
       data: {
         subjectId,
-        userId,
-        assignedBy: session.user.id,
-        assignedAt: new Date()
+        branchId,
+        teacherId
       },
-      include: { user: { select: { id: true, name: true, email: true } } }
+      include: { teacher: { select: { id: true, name: true, email: true } }, branch: true }
     })
 
-    const studentCount = await prisma.subjectEnrollment.count({
-      where: { subjectId }
+    const studentCount = await prisma.studentEnrollment.count({
+      where: { subjectId, branchId }
     })
 
     await prisma.notification.create({
       data: {
-        userId,
+        userId: teacherId,
         type: 'TEACHER_ASSIGNMENT',
         title: 'Subject Assignment Update',
-        message: `You have been assigned to teach ${subject.name} in ${subject.batch.name}. You have ${studentCount} students enrolled.`
+        message: `You have been assigned to teach ${subject.name} in ${subject.batch.name}. You have ${studentCount} students enrolled at this branch.`
       }
     })
 
@@ -100,15 +69,16 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
   const { id: subjectId } = await params
   const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('userId')
+  const teacherId = searchParams.get('teacherId')
+  const branchId = searchParams.get('branchId')
 
   try {
-    if (userId) {
-      await prisma.subjectTeacher.deleteMany({
-        where: { subjectId, userId }
+    if (teacherId && branchId) {
+      await prisma.subjectBranchTeacher.deleteMany({
+        where: { subjectId, teacherId, branchId }
       })
     } else {
-      await prisma.subjectTeacher.deleteMany({
+      await prisma.subjectBranchTeacher.deleteMany({
         where: { subjectId }
       })
     }

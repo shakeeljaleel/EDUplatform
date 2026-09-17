@@ -9,13 +9,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     // Get all students enrolled in the batch
-    const enrollments = await prisma.batchEnrollment.findMany({
+    const enrollments = await prisma.studentEnrollment.findMany({
       where: { 
         batchId: id,
-        role: 'STUDENT'
+        status: 'active'
       },
       include: {
-        user: {
+        student: {
           include: {
             profile: true
           }
@@ -26,11 +26,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Map and sort by stars (descending)
     const leaderboard = enrollments
       .map(e => ({
-        id: e.user.id,
-        name: e.user.name,
-        stars: e.user.profile?.stars || 0,
-        medals: e.user.profile?.medals || 0,
-        scholarshipFlag: e.user.profile?.scholarshipFlag || false
+        id: e.student.id,
+        name: e.student.name,
+        stars: e.student.profile?.stars || 0,
+        medals: e.student.profile?.medals || 0,
+        scholarshipFlag: e.student.profile?.scholarshipFlag || false
       }))
       .sort((a, b) => b.stars - a.stars)
 

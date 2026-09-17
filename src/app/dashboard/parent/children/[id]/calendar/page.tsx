@@ -14,8 +14,8 @@ export default async function ChildCalendarPage({ params }: { params: Promise<{ 
 
   if (!childProfile) return <div>Child profile not found.</div>
 
-  const enrollments = await prisma.subjectEnrollment.findMany({
-    where: { userId: childProfile.userId, status: 'APPROVED' },
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { studentId: childProfile.userId, status: 'active' },
     include: {
       subject: {
         include: {

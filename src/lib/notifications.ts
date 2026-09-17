@@ -7,10 +7,10 @@ export async function notifySubjectMembers(
   title: string,
   message: string
 ) {
-  const enrollments = await prisma.subjectEnrollment.findMany({
-    where: { subjectId, status: 'APPROVED' },
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { subjectId, status: 'active' },
     include: {
-      user: {
+      student: {
         include: { profile: { include: { parent: { include: { user: true } } } } }
       }
     }
@@ -19,9 +19,9 @@ export async function notifySubjectMembers(
   const notifications: any[] = []
   for (const e of enrollments) {
     // Notify student
-    notifications.push({ userId: e.userId, type, title, message, classSessionId })
+    notifications.push({ userId: e.studentId, type, title, message, classSessionId })
     // Notify linked parent
-    const parentUser = e.user.profile?.parent?.user
+    const parentUser = e.student.profile?.parent?.user
     if (parentUser) {
       notifications.push({ userId: parentUser.id, type, title, message, classSessionId })
     }
@@ -38,12 +38,12 @@ export async function notifyBatchMembers(
   title: string,
   message: string
 ) {
-  const enrollments = await prisma.batchEnrollment.findMany({
-    where: { batchId, role: 'STUDENT' }
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { batchId, status: 'active' }
   })
 
   const notifications = enrollments.map(e => ({
-    userId: e.userId,
+    userId: e.studentId,
     type,
     title,
     message

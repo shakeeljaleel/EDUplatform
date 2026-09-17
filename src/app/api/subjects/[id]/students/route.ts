@@ -8,12 +8,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
 
   try {
-    const enrollments = await prisma.subjectEnrollment.findMany({
-      where: { subjectId: id, status: { in: ['APPROVED', 'ACTIVE'] } },
-      include: { user: { select: { id: true, name: true, email: true } } }
+    const enrollments = await prisma.studentEnrollment.findMany({
+      where: { subjectId: id, status: 'active' },
+      include: { student: { select: { id: true, name: true, email: true } } }
     })
 
-    const students = enrollments.map(e => e.user)
+    const students = enrollments.map(e => e.student)
     return NextResponse.json({ students })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

@@ -9,8 +9,8 @@ export default async function TeacherGradingHubPage() {
   if (!session || session.user.role !== 'TEACHER') return null
 
   // Fetch teacher's subjects and recent AI gradings
-  const teacherAssignments = await prisma.subjectTeacher.findMany({
-    where: { userId: session.user.id },
+  const teacherAssignments = await prisma.subjectBranchTeacher.findMany({
+    where: { teacherId: session.user.id },
     include: {
       subject: {
         include: {
@@ -21,7 +21,8 @@ export default async function TeacherGradingHubPage() {
             take: 5
           }
         }
-      }
+      },
+      branch: true
     }
   })
 

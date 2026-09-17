@@ -27,16 +27,22 @@ export default async function StudentDashboard() {
       include: { classSession: true },
       orderBy: { classSession: { scheduledDate: 'desc' } }
     }),
-    prisma.subjectEnrollment.findMany({
-      where: { userId: studentUserId, status: { in: ['APPROVED', 'ACTIVE', 'ADMIN_APPROVED'] } },
+    prisma.studentEnrollment.findMany({
+      where: { studentId: studentUserId },
       include: {
+        batch: true,
+        branch: true,
         subject: {
           include: {
-            batch: { include: { branch: true } },
-            teachers: { include: { user: { select: { id: true, name: true, email: true } } } }
+            branchTeachers: {
+              include: {
+                teacher: { select: { id: true, name: true, email: true } }
+              }
+            }
           }
         }
-      }
+      },
+      orderBy: { requestedAt: 'desc' }
     }),
     prisma.notification.findMany({
       where: { userId: studentUserId },
@@ -86,23 +92,19 @@ export default async function StudentDashboard() {
     }
   })
 
-  // Calculate Ranking logic
-  const enrollment = await prisma.batchEnrollment.findFirst({
-    where: { userId: studentUserId },
-    include: { batch: { include: { branch: true } } }
-  })
+  const activeEnrollment = subjectEnrollments.find(e => e.status === 'active')
 
   let myRank = 0
   let myPercentile = 0
   let leaderboard: any[] = []
 
-  if (enrollment) {
-    const batchStudents = await prisma.batchEnrollment.findMany({
-      where: { batchId: enrollment.batchId, role: 'STUDENT' },
-      select: { userId: true }
+  if (activeEnrollment) {
+    const batchStudents = await prisma.studentEnrollment.findMany({
+      where: { batchId: activeEnrollment.batchId, status: 'active' },
+      select: { studentId: true }
     })
 
-    const studentIds = batchStudents.map(s => s.userId)
+    const studentIds = Array.from(new Set(batchStudents.map(s => s.studentId)))
     const usersData = await prisma.user.findMany({
       where: { id: { in: studentIds } },
       select: {
@@ -252,9 +254,9 @@ export default async function StudentDashboard() {
       </nav>
 
       {/* Batch Enrollment Header Banner */}
-      <StudentBatchHeaderBanner currentBatch={enrollment?.batch || null} />
+      <StudentBatchHeaderBanner currentBatch={activeEnrollment?.batch || null} />
 
-      {/* Pending Tasks & Quick Resume Section */}
+      {/* Pending Tasks & Quick Resume Panel */}
       <div className="premium-card-v2" style={{ marginBottom: '2.5rem', background: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '5px 5px 0px #1a1a2e', borderLeft: '8px solid var(--accent-primary)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
           <div>
@@ -397,7 +399,7 @@ export default async function StudentDashboard() {
         </div>
       </div>
 
-      {/* BATCH INSIGHTS SECTION */}
+      {/* BATCH INSIGHTS PANEL */}
       {examSessions.length > 0 && (
         <div style={{ marginBottom: '4rem' }}>
           <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -614,8 +616,10 @@ export default async function StudentDashboard() {
       <h2 style={{ marginBottom: '2.5rem', fontSize: '2.5rem', fontWeight: 900 }}>My Enrolled Subjects</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem', marginBottom: '4rem' }}>
         {subjectEnrollments.map((e, idx) => {
-          const subjectColor = getSubjectColor(e.subject.name, idx)
-          const assignedTeacherName = e.subject.teachers?.[0]?.user?.name || null
+          const subjectColor = e.subject.colour || getSubjectColor(e.subject.name, idx)
+          const teachersAtBranch = e.subject.branchTeachers.filter((bt: any) => bt.branchId === e.branchId)
+          const teacherNames = teachersAtBranch.map((bt: any) => bt.teacher.name).join(', ')
+
           const subjectData = subjectsWithObjectives.find(s => s.id === e.subject.id)
           const totalObjectives = subjectData?.syllabusObjectives.length || 0
           const taughtObjectives = subjectData?.syllabusObjectives.filter(obj => obj.classes.length > 0).length || 0
@@ -623,7 +627,7 @@ export default async function StudentDashboard() {
 
           return (
             <div
-              key={e.subject.id}
+              key={e.id}
               className="card"
               style={{
                 display: 'flex',
@@ -638,68 +642,56 @@ export default async function StudentDashboard() {
               }}
             >
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 800, opacity: 0.9 }}>
-                    {e.subject.batch.name}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 900, opacity: 0.95 }}>
+                      {e.batch?.name || 'Batch'}
+                    </span>
+                    <span style={{
+                      background: e.branch?.colour || '#00c853',
+                      color: '#ffffff',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '50px',
+                      fontSize: '0.725rem',
+                      fontWeight: 900,
+                      border: '1.5px solid #1a1a2e'
+                    }}>
+                      📍 {e.branch?.name || 'Branch'}
+                    </span>
+                  </div>
+
                   <span style={{
-                    background: '#1a1a2e',
+                    background: e.status === 'active' ? '#00c853' : e.status === 'admin_approved' ? '#2979ff' : '#ff6d00',
                     color: '#ffffff',
                     padding: '0.2rem 0.6rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase'
+                    borderRadius: '50px',
+                    fontSize: '0.725rem',
+                    fontWeight: 900,
+                    border: '1.5px solid #1a1a2e'
                   }}>
                     {e.status}
                   </span>
                 </div>
-                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>{e.subject.name}</h3>
+
+                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#ffffff', margin: '0.25rem 0' }}>{e.subject.name}</h3>
                 
-                <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 800, background: 'rgba(0,0,0,0.2)', padding: '0.4rem 0.75rem', borderRadius: '8px', display: 'inline-block' }}>
-                  {assignedTeacherName ? `👨‍🏫 Teacher: ${assignedTeacherName}` : '⚠️ No teacher assigned'}
-                </div>
-              </div>
-              
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ 
-                  position: 'relative', 
-                  width: '52px', 
-                  height: '52px', 
-                  borderRadius: '50%', 
-                  background: `conic-gradient(#ffffff ${syllabusPct}%, rgba(255,255,255,0.3) 0)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: subjectColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#ffffff' }}>
-                    {syllabusPct}%
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', gap: '1rem' }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ffffff' }}>Syllabus</div>
-                    <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/syllabus`} style={{ fontSize: '0.75rem', color: '#ffffff', fontWeight: 900, textDecoration: 'underline' }}>Breakdown</Link>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>{taughtObjectives} / {totalObjectives} Objectives</div>
+                <div style={{ marginTop: '0.35rem', fontSize: '0.85rem', fontWeight: 800, background: 'rgba(0,0,0,0.25)', padding: '0.4rem 0.75rem', borderRadius: '8px', display: 'inline-block' }}>
+                  {teacherNames ? `👨‍🏫 Teacher(s): ${teacherNames}` : '⚠️ No teacher assigned at this branch'}
                 </div>
               </div>
 
+              {/* Quick Action Buttons - Solid colors with comic border & hard shadow */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/adaptive-path`} className="btn-primary" style={{ padding: '0.75rem', fontSize: '0.85rem', textAlign: 'center', background: '#1a1a2e', color: '#ffffff', gridColumn: 'span 2', fontWeight: 900, borderRadius: '10px', border: '2px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-                  🪄 AI Adaptive Study Path
-                </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/grading`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
                   🤖 AI Marking
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/forum`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
                   💬 Q&A Forum
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/calendar`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
                   📅 Schedule
                 </Link>
-                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', fontWeight: 800, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                <Link prefetch={true} href={`/dashboard/student/subjects/${e.subject.id}/recordings`} style={{ padding: '0.65rem 0.5rem', fontSize: '0.8rem', textAlign: 'center', background: '#ffffff', color: '#1a1a2e', border: '3px solid #1a1a2e', boxShadow: '3px 3px 0px #1a1a2e', fontWeight: 900, borderRadius: '50px', textDecoration: 'none' }}>
                   📹 Recordings
                 </Link>
               </div>

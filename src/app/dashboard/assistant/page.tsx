@@ -1,180 +1,219 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { ShieldAlert, MessageSquare, CheckSquare, Users, Sparkles } from '@/components/Icons'
+import { Shield } from '@/components/Icons'
+
+const PERMISSION_COLORS: Record<string, string> = {
+  'Mark attendance': '#00c853',
+  'Grade assignments': '#2979ff',
+  'Post resources': '#ff6d00',
+  'Manage forum': '#aa00ff',
+  'View student performance': '#00bcd4',
+  'Send announcements': '#f50057',
+  'Create quizzes': '#ffab00',
+  'View student contact details': '#795548'
+}
 
 export default async function AssistantDashboard() {
   const session = await getSession()
   if (!session) return null
 
-  // Fetch moderation counts & recent forum posts
-  const [flaggedCount, pinnedCount, totalPosts] = await Promise.all([
-    prisma.forumPost.count({ where: { flagged: true } }),
-    prisma.forumPost.count({ where: { pinned: true } }),
-    prisma.forumPost.count()
-  ])
-
-  const forumPosts = await prisma.forumPost.findMany({
-    orderBy: [
-      { pinned: 'desc' },
-      { flagged: 'desc' },
-      { createdAt: 'desc' }
-    ],
-    take: 10,
+  // Fetch all subject-branch-teacher combinations assigned to this assistant
+  const assistantAssignments = await prisma.subjectBranchTeacherAssistant.findMany({
+    where: { assistantId: session.user.id },
     include: {
-      author: true,
-      batch: true
+      subjectBranchTeacher: {
+        include: {
+          subject: { include: { batch: true } },
+          branch: true,
+          teacher: { select: { id: true, name: true, email: true } }
+        }
+      }
     }
   })
 
   return (
-    <div className="content-wrapper fade-in" style={{ paddingBottom: '4rem' }}>
+    <div className="fade-in" style={{ paddingBottom: '4rem' }}>
       {/* Header Banner */}
       <div style={{
         background: '#e0f7fa',
-        padding: '1.5rem 2rem',
-        borderRadius: '16px',
+        padding: '1.75rem 2rem',
+        borderRadius: '20px',
         border: '3px solid #1a1a2e',
-        boxShadow: '5px 5px 0px #1a1a2e',
-        marginBottom: '2rem'
+        boxShadow: '6px 6px 0px #1a1a2e',
+        marginBottom: '2.5rem'
       }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
-          Assistant Command Center 🛡️
-        </h1>
-        <p style={{ color: '#334155', fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem', margin: 0 }}>
-          Welcome back, {session.user.name}. Manage discussion forums, review flagged content, and assist instruction.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Shield size={28} color="#00bcd4" />
+          <h1 style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
+            Teacher Assistant Portal
+          </h1>
+        </div>
+        <p style={{ color: '#334155', fontSize: '0.95rem', fontWeight: 700, marginTop: '0.35rem', margin: '0.35rem 0 0 0' }}>
+          Welcome, {session.user.name}. You are assigned to assist specific teachers across their subject branches.
         </p>
       </div>
 
-      {/* STAT CARDS WITH SOLID FLAT COLOURS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        
-        {/* Card 1 - Flagged Posts (Vivid Red) */}
-        <div className="stat-card" style={{
-          background: '#f50057',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Flagged Posts</span>
-            <ShieldAlert size={20} color="#ffffff" />
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{flaggedCount}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Requires moderation review</p>
-        </div>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem' }}>
+        My Assigned Classes & Granted Permissions
+      </h2>
 
-        {/* Card 2 - Pinned Announcements (Electric Amber/Orange) */}
-        <div className="stat-card" style={{
-          background: '#ff6d00',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Pinned Threads</span>
-            <Sparkles size={20} color="#ffffff" />
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{pinnedCount}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Highlighted community posts</p>
-        </div>
+      {/* Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+        {assistantAssignments.map((assignment) => {
+          const sbt = assignment.subjectBranchTeacher
+          let permissions: string[] = []
+          try {
+            permissions = JSON.parse(assignment.permissions)
+          } catch { permissions = [] }
 
-        {/* Card 3 - Total Community Discussions (Electric Blue) */}
-        <div className="stat-card" style={{
-          background: '#2979ff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          color: '#ffffff',
-          border: '3px solid #1a1a2e',
-          boxShadow: '5px 5px 0px #1a1a2e',
-          transition: 'all 0.2s ease'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#ffffff', textTransform: 'uppercase', fontWeight: 800 }}>Total Discussions</span>
-            <MessageSquare size={20} color="#ffffff" />
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: '0.25rem', color: '#ffffff' }}>{totalPosts}</div>
-          <p style={{ fontSize: '0.8rem', color: '#ffffff', fontWeight: 700, marginTop: '0.5rem' }}>Across all batch channels</p>
-        </div>
-      </div>
+          const hasAttendance = permissions.includes('Mark attendance')
+          const hasGrading = permissions.includes('Grade assignments')
+          const hasResources = permissions.includes('Post resources')
+          const hasForum = permissions.includes('Manage forum')
+          const hasAnalytics = permissions.includes('View student performance')
+          const hasAnnouncements = permissions.includes('Send announcements')
+          const hasQuizzes = permissions.includes('Create quizzes')
 
-      {/* FORUM MODERATION CARDS SECTION */}
-      <div className="card" style={{ padding: '1.75rem', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#ffffff' }}>
-        <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <MessageSquare size={24} color="#00c853" />
-          Forum Moderation Queue
-        </h2>
+          return (
+            <div
+              key={assignment.id}
+              className="card"
+              style={{
+                padding: '1.75rem',
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                background: '#ffffff',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '1.25rem'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <span style={{
+                    background: sbt.subject.colour || '#2979ff',
+                    color: '#ffffff',
+                    fontWeight: 900,
+                    fontSize: '0.75rem',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '50px',
+                    border: '1.5px solid #1a1a2e'
+                  }}>
+                    {sbt.subject.batch.name}
+                  </span>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {forumPosts.map((post) => {
-            const isFlagged = post.flagged
-            const isPinned = post.pinned
-            const leftBorderColor = isFlagged ? '#ff1744' : isPinned ? '#ffd700' : '#cbd5e1'
-            const badgeBg = isFlagged ? '#fef2f2' : isPinned ? '#fffbeb' : '#f8fafc'
-            const badgeColor = isFlagged ? '#dc2626' : isPinned ? '#b45309' : '#64748b'
+                  <span style={{
+                    background: sbt.branch.colour || '#00c853',
+                    color: '#ffffff',
+                    fontWeight: 900,
+                    fontSize: '0.75rem',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '50px',
+                    border: '1.5px solid #1a1a2e'
+                  }}>
+                    📍 {sbt.branch.name}
+                  </span>
+                </div>
 
-            return (
-              <div 
-                key={post.id} 
-                style={{
-                  padding: '1.25rem 1.5rem',
-                  borderRadius: '12px',
-                  background: '#ffffff',
-                  borderTop: '1px solid #e2e8f0',
-                  borderRight: '1px solid #e2e8f0',
-                  borderBottom: '1px solid #e2e8f0',
-                  borderLeft: `6px solid ${leftBorderColor}`,
-                  boxShadow: `0 4px 14px ${leftBorderColor}22`,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                      {isFlagged && (
-                        <span style={{ padding: '0.2rem 0.65rem', borderRadius: '9999px', background: '#ff1744', color: 'white', fontWeight: 800, fontSize: '0.7rem' }}>
-                          🚩 FLAGGED FOR REVIEW
-                        </span>
-                      )}
-                      {isPinned && (
-                        <span style={{ padding: '0.2rem 0.65rem', borderRadius: '9999px', background: 'linear-gradient(135deg, #ffd700, #ffae00)', color: 'white', fontWeight: 800, fontSize: '0.7rem', boxShadow: '0 2px 8px rgba(255,215,0,0.5)' }}>
-                          📌 PINNED THREAD
-                        </span>
-                      )}
-                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>
-                        {post.batch?.name || 'General Channel'}
-                      </span>
-                    </div>
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0.25rem 0', color: '#0f172a' }}>
+                  {sbt.subject.name}
+                </h3>
 
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
-                      {post.title}
-                    </h3>
-                    <p style={{ color: '#475569', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>
-                      {post.content}
-                    </p>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#475569', marginBottom: '1.25rem' }}>
+                  👨‍🏫 Assisting <strong>{sbt.teacher.name}</strong>
+                </div>
+
+                {/* Permission Badges Pills */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 900, color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
+                    Granted Permissions ({permissions.length})
                   </div>
 
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, textAlign: 'right' }}>
-                    <div>By <strong>{post.author?.name || 'Anonymous'}</strong></div>
-                    <div style={{ marginTop: '0.25rem' }}>{new Date(post.createdAt).toLocaleDateString()}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                    {permissions.map((perm) => {
+                      const color = PERMISSION_COLORS[perm] || '#1a1a2e'
+                      return (
+                        <span
+                          key={perm}
+                          style={{
+                            background: color,
+                            color: '#ffffff',
+                            border: '2px solid #1a1a2e',
+                            borderRadius: '50px',
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.65rem',
+                            display: 'inline-block'
+                          }}
+                        >
+                          {perm}
+                        </span>
+                      )
+                    })}
+
+                    {permissions.length === 0 && (
+                      <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 700, fontStyle: 'italic' }}>
+                        No active permissions assigned.
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            )
-          })}
 
-          {forumPosts.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
-              No forum posts found. The discussion stream is quiet.
+              {/* Feature Action Buttons: VISIBLE ONLY IF PERMISSION GRANTED */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                {hasGrading && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/grading`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#e3f2fd', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    🤖 Grade Papers
+                  </Link>
+                )}
+
+                {hasForum && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/forum`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#f3e8ff', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    💬 Manage Forum
+                  </Link>
+                )}
+
+                {hasQuizzes && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/quizzes`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#fff8e1', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    📝 Quizzes
+                  </Link>
+                )}
+
+                {hasAnalytics && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/analytics`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#e0f7fa', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    📊 Student Performance
+                  </Link>
+                )}
+
+                {hasAttendance && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/attendance`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#e8f5e9', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    📋 Attendance
+                  </Link>
+                )}
+
+                {hasResources && (
+                  <Link href={`/dashboard/assistant/subjects/${sbt.subject.id}/resources`} style={{ padding: '0.6rem 0.5rem', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', color: '#1a1a2e', background: '#fff3e0', border: '2px solid #1a1a2e', textAlign: 'center', textDecoration: 'none' }}>
+                    📁 Resources
+                  </Link>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          )
+        })}
+
+        {assistantAssignments.length === 0 && (
+          <div className="card" style={{ gridColumn: '1/-1', padding: '4rem 2rem', textAlign: 'center', border: '3px dashed #cbd5e1' }}>
+            <Shield size={48} color="#94a3b8" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>No Assistant Assignments Yet</h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.35rem' }}>
+              You have not been assigned as assistant to any teacher yet.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

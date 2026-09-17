@@ -12,12 +12,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const subjects = await prisma.subject.findMany({
       where: { batchId: id },
       include: {
-        teachers: {
+        branchTeachers: {
           include: {
-            user: { select: { id: true, name: true, email: true } }
+            teacher: { select: { id: true, name: true, email: true } },
+            branch: true
           }
         },
-        _count: { select: { enrollments: true, quizzes: true } }
+        _count: { select: { studentEnrollments: true, quizzes: true } }
       },
       orderBy: { createdAt: 'asc' }
     })
@@ -36,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id: batchId } = await params
 
   try {
-    const { name, description, teacherId } = await request.json()
+    const { name, description, teacherId, branchId } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Subject name is required' }, { status: 400 })
 
     const batch = await prisma.batch.findUnique({ where: { id: batchId } })
@@ -46,21 +47,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        batchId,
-        createdBy: session.user.id
+        batchId
       }
     })
 
-    if (teacherId) {
-      await prisma.subjectTeacher.create({
+    if (teacherId && branchId) {
+      await prisma.subjectBranchTeacher.create({
         data: {
           subjectId: subject.id,
-          userId: teacherId,
-          assignedBy: session.user.id
+          branchId,
+          teacherId,
         }
       })
 
-      const studentCount = await prisma.subjectEnrollment.count({
+      const studentCount = await prisma.studentEnrollment.count({
         where: { subjectId: subject.id }
       })
 
@@ -77,8 +77,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const fullSubject = await prisma.subject.findUnique({
       where: { id: subject.id },
       include: {
-        teachers: { include: { user: { select: { id: true, name: true, email: true } } } },
-        _count: { select: { enrollments: true, quizzes: true } }
+        branchTeachers: { include: { teacher: { select: { id: true, name: true, email: true } }, branch: true } },
+        _count: { select: { studentEnrollments: true, quizzes: true } }
       }
     })
 

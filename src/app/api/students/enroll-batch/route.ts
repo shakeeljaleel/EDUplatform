@@ -11,18 +11,18 @@ export async function GET() {
   // Get all active batches with branch and subject info
   const batches = await prisma.batch.findMany({
     include: {
-      branch: true,
+      batchBranches: { include: { branch: true } },
       subjects: true,
       _count: {
-        select: { enrollments: true, subjects: true }
+        select: { studentEnrollments: true, subjects: true }
       }
     },
     orderBy: { name: 'asc' }
   })
 
   // Get student's current enrollments
-  const myEnrollments = await prisma.batchEnrollment.findMany({
-    where: { userId: session.user.id },
+  const myEnrollments = await prisma.studentEnrollment.findMany({
+    where: { studentId: session.user.id },
     select: { batchId: true }
   })
 
@@ -42,7 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { batchId } = await request.json()
+  const body = await request.json()
+  const { batchId, branchId, subjectIds } = body
   if (!batchId) {
     return NextResponse.json({ error: 'Batch ID is required' }, { status: 400 })
   }
@@ -56,39 +57,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
   }
 
-  // Create or update batch enrollment
-  const enrollment = await prisma.batchEnrollment.upsert({
-    where: {
-      userId_batchId: {
-        userId: session.user.id,
-        batchId
-      }
-    },
-    update: {},
-    create: {
-      userId: session.user.id,
-      batchId,
-      role: 'STUDENT'
-    }
-  })
-
-  // Self-enrolled students start at Stage 1: status PENDING (requires Admin approval then Teacher confirmation)
-  for (const subject of batch.subjects) {
-    await prisma.subjectEnrollment.upsert({
-      where: {
-        subjectId_userId: {
-          subjectId: subject.id,
-          userId: session.user.id
-        }
-      },
-      update: { status: 'PENDING' },
-      create: {
-        subjectId: subject.id,
-        userId: session.user.id,
-        status: 'PENDING'
-      }
-    })
+  const targetBranchId = branchId || (await prisma.branch.findFirst())?.id
+  if (!targetBranchId) {
+    return NextResponse.json({ error: 'No branch available' }, { status: 400 })
   }
 
-  return NextResponse.json({ success: true, enrollment, batch })
+  const targetSubjects = Array.isArray(subjectIds) && subjectIds.length > 0 
+    ? batch.subjects.filter(s => subjectIds.includes(s.id))
+    : batch.subjects
+
+  const enrollments = []
+  for (const subject of targetSubjects) {
+    const enrollment = await prisma.studentEnrollment.upsert({
+      where: { id: `enroll-${session.user.id}-${subject.id}` },
+      update: { status: 'pending', branchId: targetBranchId },
+      create: {
+        id: `enroll-${session.user.id}-${subject.id}`,
+        studentId: session.user.id,
+        batchId,
+        branchId: targetBranchId,
+        subjectId: subject.id,
+        status: 'pending'
+      }
+    })
+    enrollments.push(enrollment)
+  }
+
+  return NextResponse.json({ success: true, enrollments, batch })
 }

@@ -32,8 +32,8 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
       include: { classSession: true },
       orderBy: { classSession: { scheduledDate: 'desc' } }
     }),
-    prisma.subjectEnrollment.findMany({
-      where: { userId: studentUserId, status: 'APPROVED' },
+    prisma.studentEnrollment.findMany({
+      where: { studentId: studentUserId, status: 'active' },
       include: { subject: { include: { batch: true } } }
     }),
     prisma.notification.findMany({

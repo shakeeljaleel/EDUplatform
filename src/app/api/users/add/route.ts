@@ -42,43 +42,28 @@ export async function POST(request: Request) {
       include: {
         subjects: {
           include: {
-            teachers: { select: { userId: true } }
+            branchTeachers: { select: { teacherId: true } }
           }
         }
       }
     })
 
-    // Enroll in batch
-    await prisma.batchEnrollment.upsert({
-      where: {
-        userId_batchId: {
-          userId: user.id,
-          batchId: batchId
-        }
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        batchId: batchId,
-        role: 'STUDENT'
-      }
-    })
+    const branch = await prisma.branch.findFirst()
+    if (!branch) return NextResponse.json({ error: 'No branch found' }, { status: 400 })
 
-    // Admin-imported/added students skip Stage 1: status is ADMIN_APPROVED awaiting Stage 3 Teacher confirmation
     const subjects = batch?.subjects || []
     for (const subject of subjects) {
-      await prisma.subjectEnrollment.upsert({
-        where: {
-          subjectId_userId: {
-            subjectId: subject.id,
-            userId: user.id
-          }
-        },
-        update: { status: 'ADMIN_APPROVED' },
+      await prisma.studentEnrollment.upsert({
+        where: { id: `enroll-${user.id}-${subject.id}` },
+        update: { status: 'admin_approved', adminApprovedAt: new Date() },
         create: {
+          id: `enroll-${user.id}-${subject.id}`,
+          studentId: user.id,
+          batchId: batchId,
+          branchId: branch.id,
           subjectId: subject.id,
-          userId: user.id,
-          status: 'ADMIN_APPROVED'
+          status: 'admin_approved',
+          adminApprovedAt: new Date()
         }
       })
     }
@@ -86,8 +71,8 @@ export async function POST(request: Request) {
     // Collect teacher IDs
     const teacherUserIds = new Set<string>()
     for (const subject of subjects) {
-      for (const t of subject.teachers) {
-        if (t.userId) teacherUserIds.add(t.userId)
+      for (const t of subject.branchTeachers) {
+        if (t.teacherId) teacherUserIds.add(t.teacherId)
       }
     }
 

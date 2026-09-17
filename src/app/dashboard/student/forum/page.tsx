@@ -8,8 +8,8 @@ export default async function StudentForumHubPage() {
   const session = await getSession()
   if (!session || session.user.role !== 'STUDENT') return null
 
-  const enrollments = await prisma.subjectEnrollment.findMany({
-    where: { userId: session.user.id, status: 'APPROVED' },
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { studentId: session.user.id, status: 'active' },
     include: {
       subject: {
         include: {

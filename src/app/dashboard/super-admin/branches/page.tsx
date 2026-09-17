@@ -1,20 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { Plus, X, Building2, Layers, Users, ChevronRight } from '@/components/Icons'
 import { showToast } from '@/components/ToastContainer'
-
-const PALETTE = ['#00c853', '#2979ff', '#aa00ff', '#ff6d00', '#f50057']
 
 export default function BranchesPage() {
   const router = useRouter()
   const [branches, setBranches] = useState<any[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [name, setName] = useState('')
-  const [location, setLocation] = useState('')
+  const [address, setAddress] = useState('')
   const [type, setType] = useState('Physical')
   const [loading, setLoading] = useState(false)
 
@@ -38,13 +35,13 @@ export default function BranchesPage() {
       const res = await fetch('/api/branches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), location: location.trim(), type }),
+        body: JSON.stringify({ name: name.trim(), address: address.trim(), type }),
       })
       if (res.ok) {
         showToast(`Branch "${name}" created successfully`, 'success')
         setShowCreateModal(false)
         setName('')
-        setLocation('')
+        setAddress('')
         setType('Physical')
         fetchBranches()
       } else {
@@ -60,17 +57,15 @@ export default function BranchesPage() {
 
   return (
     <div className="fade-in" style={{ paddingBottom: '4rem' }}>
-      {/* Breadcrumbs Navigation */}
       <Breadcrumbs items={[{ label: 'Branches' }]} />
 
-      {/* Clean Page Title Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
             Branches
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, marginTop: '0.2rem', margin: 0 }}>
-            Manage physical campuses and regional learning branches.
+            Manage physical campuses and online learning branches.
           </p>
         </div>
 
@@ -97,11 +92,11 @@ export default function BranchesPage() {
         </button>
       </div>
 
-      {/* Comic Book Card Treatment Grid */}
+      {/* Branch Comic Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.75rem' }}>
-        {branches.map((branch, index) => {
-          const cardBg = PALETTE[index % PALETTE.length]
-          const batchesCount = branch._count?.batches || 0
+        {branches.map(branch => {
+          const cardBg = branch.colour || '#00c853'
+          const batchCount = branch.batchCount || 0
           const studentCount = branch.studentCount || 0
 
           return (
@@ -123,8 +118,8 @@ export default function BranchesPage() {
                 transition: 'transform 0.15s ease, box-shadow 0.15s ease'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow = '7px 7px 0px #1a1a2e'
+                e.currentTarget.style.transform = 'translateY(-3px)'
+                e.currentTarget.style.boxShadow = '8px 8px 0px #1a1a2e'
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = 'translateY(0px)'
@@ -132,7 +127,6 @@ export default function BranchesPage() {
               }}
             >
               <div>
-                {/* Branch Type Pill & Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <span style={{
                     backgroundColor: '#ffffff',
@@ -154,14 +148,13 @@ export default function BranchesPage() {
                   {branch.name}
                 </h3>
 
-                {branch.location && (
-                  <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontSize: '0.9rem', fontWeight: 700, marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', margin: '0.5rem 0 0 0' }}>
-                    📍 {branch.location}
+                {branch.address && (
+                  <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontSize: '0.9rem', fontWeight: 700, marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
+                    📍 {branch.address}
                   </p>
                 )}
               </div>
 
-              {/* Stats Footer */}
               <div>
                 <div style={{
                   background: 'rgba(0, 0, 0, 0.25)',
@@ -175,11 +168,11 @@ export default function BranchesPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 800 }}>
                     <Layers size={18} color="#ffffff" />
-                    <span>{batchesCount} {batchesCount === 1 ? 'Batch' : 'Batches'}</span>
+                    <span>{batchCount} {batchCount === 1 ? 'batch' : 'batches'}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 800 }}>
                     <Users size={18} color="#ffffff" />
-                    <span>{studentCount} Students</span>
+                    <span>{studentCount} students</span>
                   </div>
                 </div>
 
@@ -201,7 +194,7 @@ export default function BranchesPage() {
                     textAlign: 'center'
                   }}
                 >
-                  <span>View assigned batches</span>
+                  <span>View running batches</span>
                   <ChevronRight size={16} color="#1a1a2e" />
                 </div>
               </div>
@@ -247,23 +240,23 @@ export default function BranchesPage() {
                 <input 
                   type="text" 
                   className="input-field" 
-                  placeholder="e.g. Main Campus, City Branch"
+                  placeholder="e.g. Main Campus, Kohuwala, Wattala, Online"
                   required 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  style={{ width: '100%', minHeight: '42px' }}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Address / Location</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Address</label>
                 <input 
                   type="text" 
                   className="input-field" 
-                  placeholder="e.g. 123 Academic Way, Gulberg"
-                  value={location} 
-                  onChange={e => setLocation(e.target.value)} 
-                  style={{ width: '100%', minHeight: '42px' }}
+                  placeholder="e.g. 123 High Street, Kohuwala"
+                  value={address} 
+                  onChange={e => setAddress(e.target.value)} 
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 />
               </div>
 
@@ -273,10 +266,10 @@ export default function BranchesPage() {
                   className="input-field" 
                   value={type} 
                   onChange={e => setType(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 >
-                  <option value="Physical">Physical Campus</option>
-                  <option value="Online">Online Branch</option>
+                  <option value="Physical">Physical</option>
+                  <option value="Online">Online</option>
                 </select>
               </div>
 
@@ -285,7 +278,7 @@ export default function BranchesPage() {
                   type="button" 
                   className="btn-secondary" 
                   onClick={() => setShowCreateModal(false)}
-                  style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}
+                  style={{ padding: '0.65rem 1.25rem', fontWeight: 800, borderRadius: '50px', border: '3px solid #1a1a2e' }}
                 >
                   Cancel
                 </button>

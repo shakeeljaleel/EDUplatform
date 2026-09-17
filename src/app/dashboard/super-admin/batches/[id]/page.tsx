@@ -4,138 +4,210 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { showToast } from '@/components/ToastContainer'
-import { Users, BookOpen, Building2, Plus, ArrowLeft, Check, Layers, Settings, Trash2, Edit, MoreVertical, X, Sparkles } from '@/components/Icons'
-import { getSubjectColor, getAcademicLevelColor } from '@/lib/subjectColors'
-import DnaHelixLogo from '@/components/DnaHelixLogo'
+import { Users, BookOpen, Building2, Plus, ArrowLeft, Layers, Settings, Trash2, Edit, X, Archive, Check, Shield } from '@/components/Icons'
+import { getAcademicLevelColor } from '@/lib/subjectColors'
+
+const ASSISTANT_PERMISSIONS = [
+  'Mark attendance',
+  'Grade assignments',
+  'Post resources',
+  'Manage forum',
+  'View student performance',
+  'Send announcements',
+  'Create quizzes',
+  'View student contact details'
+]
 
 export default function SuperAdminBatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: batchId } = use(params)
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  const initialTab = (searchParams.get('tab')?.toUpperCase() || 'SUBJECTS') as 'SUBJECTS' | 'STUDENTS' | 'TEACHERS' | 'SETTINGS'
-  const [activeTab, setActiveTab] = useState<'SUBJECTS' | 'STUDENTS' | 'TEACHERS' | 'SETTINGS'>(initialTab)
+  const initialTab = (searchParams.get('tab')?.toUpperCase() || 'OVERVIEW') as 'OVERVIEW' | 'BRANCHES' | 'SUBJECTS' | 'STUDENTS' | 'SETTINGS'
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'BRANCHES' | 'SUBJECTS' | 'STUDENTS' | 'SETTINGS'>(initialTab)
 
-  const [batch, setBatch] = useState<any>(null)
-  const [branches, setBranches] = useState<any[]>([])
-  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([])
-  const [allStudents, setAllStudents] = useState<any[]>([])
+  const [batchData, setBatchData] = useState<any>(null)
+  const [allBranches, setAllBranches] = useState<any[]>([])
   const [allTeachers, setAllTeachers] = useState<any[]>([])
-  const [subjects, setSubjects] = useState<any[]>([])
+  const [allAssistants, setAllAssistants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Tab 1: Add/Edit Subject Modal state
+  // Branch Tab Modals
+  const [showAddBranchModal, setShowAddBranchModal] = useState(false)
+  const [selectedBranchId, setSelectedBranchId] = useState('')
+  const [newBranchName, setNewBranchName] = useState('')
+  const [newBranchAddress, setNewBranchAddress] = useState('')
+  const [newBranchType, setNewBranchType] = useState('Physical')
+  const [submittingBranch, setSubmittingBranch] = useState(false)
+
+  // Subject Tab Modals
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false)
   const [subjectName, setSubjectName] = useState('')
+  const [subjectColour, setSubjectColour] = useState('#2979ff')
   const [subjectDescription, setSubjectDescription] = useState('')
-  const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [editingSubject, setEditingSubject] = useState<any>(null)
   const [submittingSubject, setSubmittingSubject] = useState(false)
 
-  // Reassignment Warning Modal state
-  const [reassignModal, setReassignModal] = useState<{
+  // Add Teacher Modal (per branch)
+  const [teacherModal, setTeacherModal] = useState<{
     show: boolean
-    teacherId: string
-    teacherName: string
-    targetSubjectId: string
-    existingSubjectName: string
-  }>({ show: false, teacherId: '', teacherName: '', targetSubjectId: '', existingSubjectName: '' })
+    subjectId: string
+    branchId: string
+    branchName: string
+    subjectName: string
+  }>({ show: false, subjectId: '', branchId: '', branchName: '', subjectName: '' })
+  const [teacherIdToAssign, setTeacherIdToAssign] = useState('')
 
-  // Tab 2: Students Roster & Bulk actions state
-  const [studentSearch, setStudentSearch] = useState('')
+  // Assign Assistant Modal (per teacher per subject per branch)
+  const [assistantModal, setAssistantModal] = useState<{
+    show: boolean
+    subjectBranchTeacherId: string
+    teacherName: string
+    subjectName: string
+    branchName: string
+    existingAssistantId?: string
+    existingPermissions?: string[]
+  }>({ show: false, subjectBranchTeacherId: '', teacherName: '', subjectName: '', branchName: '' })
+
+  const [selectedAssistantId, setSelectedAssistantId] = useState('')
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([])
+  const [submittingAssistant, setSubmittingAssistant] = useState(false)
+
+  // Student Tab state
+  const [branchFilter, setBranchFilter] = useState<string>('ALL')
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([])
   const [bulkAssignSubjectId, setBulkAssignSubjectId] = useState('')
-  const [processingBulk, setProcessingBulk] = useState(false)
 
-  // Tab 3: Assign Teacher Modal state
-  const [showAssignTeacherModal, setShowAssignTeacherModal] = useState(false)
-  const [teacherModalTeacherId, setTeacherModalTeacherId] = useState('')
-  const [teacherModalSubjectId, setTeacherModalSubjectId] = useState('')
-
-  // Tab 4: Settings state
+  // Settings Tab state
   const [editName, setEditName] = useState('')
   const [editAcademicLevel, setEditAcademicLevel] = useState('')
-  const [editBranchId, setEditBranchId] = useState('')
-  const [batchStatus, setBatchStatus] = useState('ACTIVE')
+  const [editDescription, setEditDescription] = useState('')
   const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
-    fetchAllData()
+    fetchBatchDetail()
+    fetchMetadata()
   }, [batchId])
 
-  const fetchAllData = async () => {
+  const fetchBatchDetail = async () => {
     setLoading(true)
     try {
-      const [batchRes, branchesRes, enrolledRes, studentsRes, teachersRes, subjectsRes] = await Promise.all([
-        fetch(`/api/batches`),
-        fetch(`/api/branches`),
-        fetch(`/api/batches/${batchId}/students`),
-        fetch(`/api/users?role=STUDENT`),
-        fetch(`/api/users?role=TEACHER`),
-        fetch(`/api/batches/${batchId}/subjects`),
-      ])
-
-      if (batchRes.ok) {
-        const data = await batchRes.json()
-        const currentBatch = data.batches?.find((b: any) => b.id === batchId)
-        if (currentBatch) {
-          setBatch(currentBatch)
-          setEditName(currentBatch.name)
-          setEditAcademicLevel(currentBatch.academicLevel)
-          setEditBranchId(currentBatch.branchId || '')
-        }
+      const res = await fetch(`/api/batches/${batchId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBatchData(data.batch)
+        setEditName(data.batch.name)
+        setEditAcademicLevel(data.batch.academicLevel)
+        setEditDescription(data.batch.description || '')
       }
-
-      if (branchesRes.ok) setBranches((await branchesRes.json()).branches || [])
-      if (enrolledRes.ok) setEnrolledStudents((await enrolledRes.json()).students || [])
-      if (studentsRes.ok) setAllStudents((await studentsRes.json()).users || [])
-      if (teachersRes.ok) setAllTeachers((await teachersRes.json()).users || [])
-      if (subjectsRes.ok) setSubjects((await subjectsRes.json()).subjects || [])
-    } catch (err) {
-      console.error('Failed to load batch data', err)
-      showToast('Error loading batch details', 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  // --- TAB 1: SUBJECT HANDLERS ---
+  const fetchMetadata = async () => {
+    try {
+      const [branchesRes, teachersRes, assistantsRes] = await Promise.all([
+        fetch('/api/branches'),
+        fetch('/api/users?role=TEACHER'),
+        fetch('/api/users?role=ASSISTANT')
+      ])
+      if (branchesRes.ok) setAllBranches((await branchesRes.json()).branches || [])
+      if (teachersRes.ok) setAllTeachers((await teachersRes.json()).users || [])
+      if (assistantsRes.ok) setAllAssistants((await assistantsRes.json()).users || [])
+    } catch (e) {
+      console.error('Failed to fetch metadata', e)
+    }
+  }
+
+  // --- BRANCH TAB HANDLERS ---
+  const handleAddBranchToBatch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmittingBranch(true)
+    try {
+      const body = selectedBranchId
+        ? { branchId: selectedBranchId }
+        : { name: newBranchName, address: newBranchAddress, type: newBranchType }
+
+      const res = await fetch(`/api/batches/${batchId}/branches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      if (res.ok) {
+        showToast('Branch added to batch', 'success')
+        setShowAddBranchModal(false)
+        setSelectedBranchId('')
+        setNewBranchName('')
+        setNewBranchAddress('')
+        fetchBatchDetail()
+      } else {
+        const data = await res.json()
+        showToast(data.error || 'Failed to add branch', 'error')
+      }
+    } finally {
+      setSubmittingBranch(false)
+    }
+  }
+
+  const handleRemoveBranch = async (branchId: string, branchName: string) => {
+    // First preview affected counts
+    try {
+      const prevRes = await fetch(`/api/batches/${batchId}/branches?branchId=${branchId}&preview=true`, { method: 'DELETE' })
+      const prevData = await prevRes.json()
+
+      const warningMsg = `This will unenrol ${prevData.affectedStudentsCount || 0} students and remove ${prevData.affectedTeachersCount || 0} teacher assignments. Continue?`
+      if (!confirm(warningMsg)) return
+
+      const res = await fetch(`/api/batches/${batchId}/branches?branchId=${branchId}`, { method: 'DELETE' })
+      if (res.ok) {
+        showToast(`Branch "${branchName}" removed from batch`, 'success')
+        fetchBatchDetail()
+      }
+    } catch {
+      showToast('Error removing branch', 'error')
+    }
+  }
+
+  // --- SUBJECT TAB HANDLERS ---
   const handleSaveSubject = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!subjectName.trim()) return
     setSubmittingSubject(true)
-
     try {
       if (editingSubject) {
         const res = await fetch(`/api/subjects/${editingSubject.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: subjectName.trim(), description: subjectDescription.trim() })
+          body: JSON.stringify({ name: subjectName.trim(), colour: subjectColour, description: subjectDescription.trim() })
         })
         if (res.ok) {
           showToast(`Subject "${subjectName}" updated`, 'success')
-          if (selectedTeacherId) {
-            await assignTeacherToSubject(editingSubject.id, selectedTeacherId)
-          }
-          closeSubjectModal()
-          fetchAllData()
+          setShowAddSubjectModal(false)
+          setEditingSubject(null)
+          fetchBatchDetail()
         }
       } else {
-        const res = await fetch(`/api/batches/${batchId}/subjects`, {
+        const res = await fetch('/api/subjects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            batchId,
             name: subjectName.trim(),
-            description: subjectDescription.trim(),
-            teacherId: selectedTeacherId || undefined
+            colour: subjectColour,
+            description: subjectDescription.trim()
           })
         })
         if (res.ok) {
-          showToast(`Subject "${subjectName}" created`, 'success')
-          closeSubjectModal()
-          fetchAllData()
+          showToast(`Subject "${subjectName}" added`, 'success')
+          setShowAddSubjectModal(false)
+          setSubjectName('')
+          setSubjectDescription('')
+          fetchBatchDetail()
         } else {
-          showToast('Failed to create subject', 'error')
+          const data = await res.json()
+          showToast(data.error || 'Failed to add subject', 'error')
         }
       }
     } finally {
@@ -143,55 +215,39 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
     }
   }
 
-  const closeSubjectModal = () => {
-    setShowAddSubjectModal(false)
-    setEditingSubject(null)
-    setSubjectName('')
-    setSubjectDescription('')
-    setSelectedTeacherId('')
-  }
-
-  const handleDeleteSubject = async (subj: any) => {
-    if (!confirm(`Are you sure you want to delete "${subj.name}"? This will remove all associated quizzes and enrollments.`)) return
+  const handleDeleteSubject = async (subject: any) => {
+    if (!confirm(`Are you sure you want to remove subject "${subject.name}"?`)) return
     try {
-      const res = await fetch(`/api/subjects/${subj.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/subjects/${subject.id}`, { method: 'DELETE' })
       if (res.ok) {
-        showToast(`Subject "${subj.name}" removed`, 'success')
-        fetchAllData()
-      } else {
-        showToast('Failed to delete subject', 'error')
+        showToast(`Subject "${subject.name}" deleted`, 'success')
+        fetchBatchDetail()
       }
     } catch {
       showToast('Error deleting subject', 'error')
     }
   }
 
-  const assignTeacherToSubject = async (subjectId: string, teacherId: string, force: boolean = false) => {
-    const teacherObj = allTeachers.find(t => t.id === teacherId)
-    const teacherName = teacherObj?.name || 'Teacher'
-
+  // Teacher assignment to Subject-Branch
+  const handleAssignTeacher = async () => {
+    if (!teacherIdToAssign || !teacherModal.subjectId || !teacherModal.branchId) return
     try {
-      const res = await fetch(`/api/subjects/${subjectId}/teachers`, {
+      const res = await fetch('/api/subject-branch-teachers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: teacherId, force })
+        body: JSON.stringify({
+          subjectId: teacherModal.subjectId,
+          branchId: teacherModal.branchId,
+          teacherId: teacherIdToAssign
+        })
       })
-
-      const data = await res.json()
       if (res.ok) {
-        if (data.warning) {
-          setReassignModal({
-            show: true,
-            teacherId,
-            teacherName,
-            targetSubjectId: subjectId,
-            existingSubjectName: data.existingSubjectName
-          })
-          return
-        }
-        showToast(`${teacherName} assigned to subject`, 'success')
-        fetchAllData()
+        showToast('Teacher assigned', 'success')
+        setTeacherModal({ show: false, subjectId: '', branchId: '', branchName: '', subjectName: '' })
+        setTeacherIdToAssign('')
+        fetchBatchDetail()
       } else {
+        const data = await res.json()
         showToast(data.error || 'Failed to assign teacher', 'error')
       }
     } catch {
@@ -199,76 +255,71 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
     }
   }
 
-  // --- TAB 2: STUDENTS HANDLERS ---
-  const toggleSelectStudent = (userId: string) => {
-    setSelectedStudentIds(prev =>
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-    )
-  }
+  const handleRemoveTeacher = async (sbtId: string, teacherName: string) => {
+    // Check if only teacher
+    try {
+      const checkRes = await fetch(`/api/subject-branch-teachers?id=${sbtId}&checkOnly=true`, { method: 'DELETE' })
+      const checkData = await checkRes.json()
 
-  const toggleSelectAllStudents = () => {
-    if (selectedStudentIds.length === enrolledStudents.length) {
-      setSelectedStudentIds([])
-    } else {
-      setSelectedStudentIds(enrolledStudents.map(s => s.userId))
+      if (checkData.isOnlyTeacher) {
+        const warn = `This is the only teacher for this subject at this branch. Removing them will leave the subject unassigned. Continue?`
+        if (!confirm(warn)) return
+      } else {
+        if (!confirm(`Remove ${teacherName} from this subject branch?`)) return
+      }
+
+      const res = await fetch(`/api/subject-branch-teachers?id=${sbtId}`, { method: 'DELETE' })
+      if (res.ok) {
+        showToast('Teacher removed', 'success')
+        fetchBatchDetail()
+      }
+    } catch {
+      showToast('Error removing teacher', 'error')
     }
   }
 
-  const handleBulkAssignSubject = async () => {
-    if (selectedStudentIds.length === 0 || !bulkAssignSubjectId) return
-    setProcessingBulk(true)
+  // Assistant Assignment Handlers
+  const handleSaveAssistant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!assistantModal.subjectBranchTeacherId || !selectedAssistantId) return
+    setSubmittingAssistant(true)
     try {
-      const res = await fetch(`/api/batches/${batchId}/students`, {
+      const res = await fetch('/api/subject-branch-teachers/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'assign_subject',
-          studentIds: selectedStudentIds,
-          subjectId: bulkAssignSubjectId
+          subjectBranchTeacherId: assistantModal.subjectBranchTeacherId,
+          assistantId: selectedAssistantId,
+          permissions: selectedPermissions
         })
       })
       if (res.ok) {
-        showToast(`Assigned ${selectedStudentIds.length} student(s) to subject`, 'success')
-        setSelectedStudentIds([])
-        setBulkAssignSubjectId('')
-        fetchAllData()
+        showToast('Assistant assignment saved', 'success')
+        setAssistantModal({ show: false, subjectBranchTeacherId: '', teacherName: '', subjectName: '', branchName: '' })
+        fetchBatchDetail()
+      } else {
+        const data = await res.json()
+        showToast(data.error || 'Failed to save assistant', 'error')
       }
     } finally {
-      setProcessingBulk(false)
+      setSubmittingAssistant(false)
     }
   }
 
-  const handleBulkRemoveStudents = async () => {
-    if (selectedStudentIds.length === 0) return
-    if (!confirm(`Are you sure you want to remove ${selectedStudentIds.length} student(s) from this batch?`)) return
-    setProcessingBulk(true)
+  const handleRemoveAssistant = async (assistantAssignmentId: string) => {
+    if (!confirm('Remove assistant from this teacher assignment?')) return
     try {
-      const res = await fetch(`/api/batches/${batchId}/students`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentIds: selectedStudentIds })
-      })
+      const res = await fetch(`/api/subject-branch-teachers/assistant?id=${assistantAssignmentId}`, { method: 'DELETE' })
       if (res.ok) {
-        showToast(`Removed ${selectedStudentIds.length} student(s) from batch`, 'success')
-        setSelectedStudentIds([])
-        fetchAllData()
+        showToast('Assistant removed', 'success')
+        fetchBatchDetail()
       }
-    } finally {
-      setProcessingBulk(false)
+    } catch {
+      showToast('Error removing assistant', 'error')
     }
   }
 
-  // --- TAB 3: TEACHERS HANDLERS ---
-  const handleAssignTeacherSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!teacherModalTeacherId || !teacherModalSubjectId) return
-    await assignTeacherToSubject(teacherModalSubjectId, teacherModalTeacherId)
-    setShowAssignTeacherModal(false)
-    setTeacherModalTeacherId('')
-    setTeacherModalSubjectId('')
-  }
-
-  // --- TAB 4: SETTINGS HANDLERS ---
+  // --- SETTINGS HANDLERS ---
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
     setSavingSettings(true)
@@ -279,132 +330,145 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
         body: JSON.stringify({
           name: editName,
           academicLevel: editAcademicLevel,
-          branchId: editBranchId || null
+          description: editDescription
         })
       })
       if (res.ok) {
-        showToast('Batch settings updated successfully', 'success')
-        fetchAllData()
-      } else {
-        showToast('Failed to update batch settings', 'error')
+        showToast('Batch updated', 'success')
+        fetchBatchDetail()
       }
     } finally {
       setSavingSettings(false)
     }
   }
 
-  const handleDeleteBatch = async () => {
-    if (!confirm(`CAUTION: Are you sure you want to permanently delete batch "${batch?.name}"? This action cannot be undone.`)) return
+  const handleToggleArchive = async () => {
+    const newStatus = batchData.status === 'archived' ? 'active' : 'archived'
     try {
-      const res = await fetch(`/api/batches/${batchId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/batches/${batchId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (res.ok) {
+        showToast(`Batch is now ${newStatus}`, 'success')
+        fetchBatchDetail()
+      }
+    } catch {
+      showToast('Error updating batch status', 'error')
+    }
+  }
+
+  const handleDeleteBatch = async () => {
+    const confirmInput = prompt(`Type "${batchData.name}" to confirm permanent deletion:`)
+    if (confirmInput !== batchData.name) {
+      if (confirmInput !== null) showToast('Name mismatch', 'error')
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/batches/${batchId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmName: confirmInput })
+      })
       if (res.ok) {
         showToast('Batch deleted', 'success')
         router.push('/dashboard/super-admin/batches')
-      } else {
-        showToast('Failed to delete batch', 'error')
       }
     } catch {
       showToast('Error deleting batch', 'error')
     }
   }
 
-  // Filter students by search
-  const filteredStudents = enrolledStudents.filter(s =>
-    s.user.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-    s.user.email.toLowerCase().includes(studentSearch.toLowerCase())
-  )
-
-  // Teachers assigned list for Tab 3
-  const assignedTeachersMap = new Map<string, { user: any; subjects: string[] }>()
-  subjects.forEach(subj => {
-    (subj.teachers || []).forEach((st: any) => {
-      const curr = assignedTeachersMap.get(st.userId) || { user: st.user, subjects: [] }
-      curr.subjects.push(subj.name)
-      assignedTeachersMap.set(st.userId, curr)
-    })
-  })
-  const assignedTeachersList = Array.from(assignedTeachersMap.values())
-
-  if (loading) {
-    return <div className="pulse" style={{ padding: '3rem', fontWeight: 800, color: '#64748b' }}>Loading batch control center...</div>
+  if (loading || !batchData) {
+    return <div className="pulse" style={{ padding: '3rem', fontWeight: 800, color: '#64748b' }}>Loading batch detail console...</div>
   }
 
-  const levelColor = getAcademicLevelColor(batch?.academicLevel || '')
+  const levelColor = getAcademicLevelColor(batchData.academicLevel)
+
+  // Filtered Students
+  const filteredStudents = (batchData.studentEnrollments || []).filter((e: any) => {
+    if (branchFilter === 'ALL') return true
+    return e.branchId === branchFilter
+  })
 
   return (
     <div className="fade-in" style={{ paddingBottom: '4rem' }}>
-      {/* Top Back Navigation */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      {/* Back button */}
+      <div style={{ marginBottom: '1.5rem' }}>
         <Link href="/dashboard/super-admin/batches" className="btn-back">
-          <ArrowLeft size={16} /> Back to Batches Console
+          <ArrowLeft size={16} /> Back to Batches
         </Link>
       </div>
 
       {/* Batch Header Banner */}
-      <div className="card" style={{ 
-        padding: '2rem', 
-        marginBottom: '2rem', 
-        background: levelColor, 
+      <div className="card" style={{
+        padding: '2rem',
+        marginBottom: '2rem',
+        background: levelColor,
         color: '#ffffff',
         border: '3px solid #1a1a2e',
         borderRadius: '20px',
-        boxShadow: '6px 6px 0px #1a1a2e' 
+        boxShadow: '6px 6px 0px #1a1a2e'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <span className="badge" style={{ 
-                backgroundColor: '#ffffff', 
-                color: levelColor, 
-                fontWeight: 900, 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{
+                backgroundColor: '#ffffff',
+                color: levelColor,
+                fontWeight: 900,
                 border: '2px solid #1a1a2e',
                 boxShadow: '2px 2px 0px #1a1a2e',
-                textTransform: 'uppercase',
                 padding: '0.35rem 0.85rem',
                 borderRadius: '50px',
                 fontSize: '0.85rem'
               }}>
-                {batch?.academicLevel || 'Batch'}
+                {batchData.academicLevel}
               </span>
-              {batch?.branch && (
-                <span className="badge" style={{ 
-                  backgroundColor: '#ffffff', 
-                  color: '#1a1a2e', 
-                  border: '2px solid #1a1a2e', 
+
+              {batchData.batchBranches.map((bb: any) => (
+                <span key={bb.branch.id} style={{
+                  backgroundColor: bb.branch.colour || '#ffffff',
+                  color: '#ffffff',
+                  border: '2px solid #1a1a2e',
                   boxShadow: '2px 2px 0px #1a1a2e',
-                  fontWeight: 800,
+                  fontWeight: 900,
                   padding: '0.35rem 0.85rem',
                   borderRadius: '50px',
                   fontSize: '0.85rem'
                 }}>
-                  📍 {batch.branch.name}
+                  📍 {bb.branch.name}
                 </span>
-              )}
+              ))}
             </div>
-            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: 0 }}>{batch?.name}</h1>
-            <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontWeight: 700, fontSize: '1rem', marginTop: '0.35rem' }}>
-              {subjects.length} Subjects • {enrolledStudents.length} Students • {assignedTeachersList.length} Teachers
+
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', margin: 0 }}>
+              {batchData.name}
+            </h1>
+            <p style={{ color: 'rgba(255, 255, 255, 0.95)', fontWeight: 800, fontSize: '1.05rem', marginTop: '0.5rem' }}>
+              {batchData.stats.totalBranches} branches • {batchData.stats.totalSubjects} subjects • {batchData.stats.totalStudents} students • {batchData.stats.totalTeachers} teachers • {batchData.stats.totalAssistants} assistants
             </p>
           </div>
         </div>
       </div>
 
-      {/* FOUR COMIC PILL TABS WITH CIRCLE BADGES */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+      {/* 5 COMIC PILL TABS */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
         {[
-          { id: 'SUBJECTS', label: 'Subjects', count: subjects.length, defaultColor: '#00c853', icon: <BookOpen size={18} /> },
-          { id: 'STUDENTS', label: 'Students', count: enrolledStudents.length, defaultColor: '#2979ff', icon: <Users size={18} /> },
-          { id: 'TEACHERS', label: 'Teachers', count: assignedTeachersList.length, defaultColor: '#aa00ff', icon: <Building2 size={18} /> },
-          { id: 'SETTINGS', label: 'Settings', count: null, defaultColor: null, icon: <Settings size={18} /> },
+          { id: 'OVERVIEW', label: 'Overview', icon: <Layers size={18} /> },
+          { id: 'BRANCHES', label: 'Branches', count: batchData.stats.totalBranches, icon: <Building2 size={18} /> },
+          { id: 'SUBJECTS', label: 'Subjects', count: batchData.stats.totalSubjects, icon: <BookOpen size={18} /> },
+          { id: 'STUDENTS', label: 'Students', count: batchData.stats.totalStudents, icon: <Users size={18} /> },
+          { id: 'SETTINGS', label: 'Settings', icon: <Settings size={18} /> },
         ].map(tab => {
           const isSelected = activeTab === tab.id
-          const badgeColor = tab.count === 0 ? '#f50057' : (tab.defaultColor || '#00c853')
 
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`tab-pill ${isSelected ? 'active' : ''}`}
               style={{
                 background: isSelected ? '#1a1a2e' : '#ffffff',
                 color: isSelected ? '#ffffff' : '#1a1a2e',
@@ -413,32 +477,24 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                 borderRadius: '50px',
                 padding: '0.65rem 1.25rem',
                 cursor: 'pointer',
-                fontSize: '0.95rem',
+                fontSize: '0.9rem',
                 fontWeight: 800,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.65rem',
-                minHeight: '44px',
-                transition: 'all 0.2s ease'
+                gap: '0.5rem',
+                transition: 'all 0.15s ease'
               }}
             >
               {tab.icon}
               <span>{tab.label}</span>
-              {tab.count !== null && (
+              {tab.count !== undefined && (
                 <span style={{
-                  backgroundColor: badgeColor,
-                  color: '#ffffff',
+                  background: isSelected ? '#ffffff' : '#1a1a2e',
+                  color: isSelected ? '#1a1a2e' : '#ffffff',
                   fontSize: '0.75rem',
                   fontWeight: 900,
-                  minWidth: '22px',
-                  height: '22px',
-                  padding: '0 6px',
-                  borderRadius: '50px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1.5px solid #1a1a2e',
-                  lineHeight: 1
+                  padding: '0.15rem 0.5rem',
+                  borderRadius: '50px'
                 }}>
                   {tab.count}
                 </span>
@@ -448,410 +504,490 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
         })}
       </div>
 
-      {/* TAB 1: SUBJECTS */}
+      {/* TAB 1: OVERVIEW */}
+      {activeTab === 'OVERVIEW' && (
+        <div className="fade-in">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.25rem' }}>Branch Performance Summary</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+            {batchData.branchSummary.map((bs: any) => (
+              <div key={bs.branchId} className="card" style={{
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                padding: '1.5rem',
+                borderTop: `8px solid ${bs.branchColour || '#2979ff'}`
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{bs.branchName}</h3>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f1f5f9', border: '1.5px solid #1a1a2e', padding: '0.2rem 0.6rem', borderRadius: '50px' }}>
+                    {bs.branchType}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.95rem', fontWeight: 800 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155' }}>
+                    <span>Enrolled Students:</span>
+                    <span style={{ color: '#00c853' }}>👥 {bs.studentCount}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155' }}>
+                    <span>Running Subjects:</span>
+                    <span style={{ color: '#2979ff' }}>📚 {bs.subjectCount}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#334155' }}>
+                    <span>Assigned Teachers:</span>
+                    <span style={{ color: '#aa00ff' }}>👨‍🏫 {bs.teacherCount}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: BRANCHES */}
+      {activeTab === 'BRANCHES' && (
+        <div className="fade-in">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Branches Running This Batch</h2>
+            <button
+              onClick={() => setShowAddBranchModal(true)}
+              style={{
+                padding: '0.65rem 1.25rem',
+                fontWeight: 800,
+                background: '#00c853',
+                color: '#ffffff',
+                borderRadius: '50px',
+                border: '3px solid #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Plus size={18} /> + Add branch
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.75rem' }}>
+            {batchData.batchBranches.map((bb: any) => {
+              const b = bb.branch
+              const branchSummary = batchData.branchSummary.find((s: any) => s.branchId === b.id)
+
+              return (
+                <div key={b.id} className="card" style={{
+                  padding: '1.75rem',
+                  border: '3px solid #1a1a2e',
+                  borderRadius: '16px',
+                  boxShadow: '5px 5px 0px #1a1a2e',
+                  borderLeft: `8px solid ${b.colour || '#00c853'}`
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{b.name}</h3>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#e2e8f0', color: '#1a1a2e', border: '1.5px solid #1a1a2e', padding: '0.2rem 0.6rem', borderRadius: '50px', display: 'inline-block', marginTop: '0.35rem' }}>
+                        {b.type}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => handleRemoveBranch(b.id, b.name)}
+                      style={{ background: '#fef2f2', color: '#dc2626', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '0.4rem', cursor: 'pointer' }}
+                      title="Remove branch from batch"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.25rem', fontSize: '0.9rem', fontWeight: 800 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Enrolled Students:</span>
+                      <span style={{ color: '#00c853' }}>👥 {branchSummary?.studentCount || 0}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Running Subjects:</span>
+                      <span style={{ color: '#2979ff' }}>📚 {branchSummary?.subjectCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: SUBJECTS */}
       {activeTab === 'SUBJECTS' && (
         <div className="fade-in">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a' }}>Subjects in this Batch</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Batch Subjects & Teacher Breakdown</h2>
             <button
-              className="btn-primary"
-              onClick={() => setShowAddSubjectModal(true)}
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => {
+                setEditingSubject(null)
+                setSubjectName('')
+                setSubjectColour('#2979ff')
+                setSubjectDescription('')
+                setShowAddSubjectModal(true)
+              }}
+              style={{
+                padding: '0.65rem 1.25rem',
+                fontWeight: 800,
+                background: '#00c853',
+                color: '#ffffff',
+                borderRadius: '50px',
+                border: '3px solid #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
             >
               <Plus size={18} /> + Add subject
             </button>
           </div>
 
-          {/* Subjects Cards Grid in Comic Treatment */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.75rem' }}>
-            {subjects.map((subj, idx) => {
-              const cardBg = getSubjectColor(subj.name, idx)
-              const assignedTeacher = subj.teachers?.[0]?.user
-              const studentCount = subj._count?.enrollments || 0
-
-              return (
-                <div
-                  key={subj.id}
-                  style={{
-                    background: cardBg,
-                    color: '#ffffff',
-                    borderRadius: '16px',
-                    padding: '1.75rem',
-                    border: '3px solid #1a1a2e',
-                    boxShadow: '5px 5px 0px #1a1a2e',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '1.25rem',
-                    position: 'relative'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>{subj.name}</h3>
-                      
-                      {/* Actions: Edit & Remove */}
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
-                        <button
-                          onClick={() => {
-                            setEditingSubject(subj)
-                            setSubjectName(subj.name)
-                            setSubjectDescription(subj.description || '')
-                            setSelectedTeacherId(assignedTeacher?.id || '')
-                            setShowAddSubjectModal(true)
-                          }}
-                          style={{ background: 'rgba(255,255,255,0.25)', border: 'none', color: '#ffffff', borderRadius: '8px', padding: '0.35rem', cursor: 'pointer' }}
-                          title="Edit Subject"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSubject(subj)}
-                          style={{ background: 'rgba(255,255,255,0.25)', border: 'none', color: '#ffffff', borderRadius: '8px', padding: '0.35rem', cursor: 'pointer' }}
-                          title="Remove Subject"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {subj.description && (
-                      <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)', marginTop: '0.5rem', fontWeight: 600 }}>
-                        {subj.description}
-                      </p>
-                    )}
-
-                    <div style={{ marginTop: '1.25rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
-                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 800, opacity: 0.85 }}>Assigned Teacher</div>
-                      {assignedTeacher ? (
-                        <div style={{ fontSize: '0.95rem', fontWeight: 900, marginTop: '0.2rem' }}>
-                          👨‍🏫 {assignedTeacher.name} ({assignedTeacher.email})
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#ff4d4d', marginTop: '0.2rem' }}>
-                          ⚠️ No teacher assigned
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', fontWeight: 800 }}>
-                      👥 {studentCount} student(s) enrolled
-                    </div>
-                  </div>
-
-                  {/* Assign Teacher Dropdown */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.35rem', color: '#ffffff' }}>
-                      Assign Teacher:
-                    </label>
-                    <select
-                      className="input-field"
-                      value={assignedTeacher?.id || ''}
-                      onChange={e => {
-                        if (e.target.value) {
-                          assignTeacherToSubject(subj.id, e.target.value)
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        background: '#ffffff',
-                        color: '#0f172a',
-                        fontWeight: 800,
-                        border: '2px solid #1a1a2e',
-                        minHeight: '40px',
-                        fontSize: '0.85rem'
-                      }}
-                    >
-                      <option value="">Select teacher to assign...</option>
-                      {allTeachers.map(t => (
-                        <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )
-            })}
-
-            {subjects.length === 0 && (
-              <div style={{
-                gridColumn: '1/-1',
-                textAlign: 'center',
-                padding: '4rem 2rem',
-                background: `${levelColor}1a`,
-                borderRadius: '24px',
-                border: '3px dashed #1a1a2e',
-                boxShadow: '4px 4px 0px #1a1a2e',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '1.25rem'
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {batchData.subjects.map((sub: any) => (
+              <div key={sub.id} className="card" style={{
+                padding: 0,
+                overflow: 'hidden',
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e'
               }}>
-                <DnaHelixLogo style={{ width: '56px', height: '80px' }} />
-                <div>
-                  <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>No subjects yet</h3>
-                  <p style={{ fontSize: '1rem', color: '#475569', fontWeight: 700, marginTop: '0.35rem' }}>
-                    Add your first subject to get started
-                  </p>
+                {/* Subject Banner Header */}
+                <div style={{
+                  padding: '1.25rem 1.75rem',
+                  background: sub.colour || '#2979ff',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '3px solid #1a1a2e'
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.45rem', fontWeight: 900, margin: 0, color: '#ffffff' }}>{sub.name}</h3>
+                    {sub.description && <p style={{ fontSize: '0.85rem', margin: '0.2rem 0 0 0', opacity: 0.9, fontWeight: 700 }}>{sub.description}</p>}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        setEditingSubject(sub)
+                        setSubjectName(sub.name)
+                        setSubjectColour(sub.colour || '#2979ff')
+                        setSubjectDescription(sub.description || '')
+                        setShowAddSubjectModal(true)
+                      }}
+                      style={{ background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Edit subject
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSubject(sub)}
+                      style={{ background: '#fef2f2', color: '#dc2626', border: '2px solid #1a1a2e', borderRadius: '8px', padding: '0.4rem 0.75rem', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => setShowAddSubjectModal(true)}
-                  style={{
-                    padding: '0.75rem 1.75rem',
-                    fontSize: '1rem',
-                    fontWeight: 900,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginTop: '0.5rem'
-                  }}
-                >
-                  <Plus size={20} /> + Add subject
-                </button>
+
+                {/* Branch-by-Branch Teacher Breakdown */}
+                <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {batchData.batchBranches.map((bb: any) => {
+                    const branch = bb.branch
+                    const branchTeachers = sub.branchTeachers.filter((bt: any) => bt.branchId === branch.id)
+
+                    return (
+                      <div key={branch.id} style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                            📍 {branch.name} branch
+                          </h4>
+                          <button
+                            onClick={() => {
+                              setTeacherModal({
+                                show: true,
+                                subjectId: sub.id,
+                                branchId: branch.id,
+                                branchName: branch.name,
+                                subjectName: sub.name
+                              })
+                            }}
+                            style={{
+                              padding: '0.35rem 0.85rem',
+                              fontSize: '0.78rem',
+                              fontWeight: 800,
+                              background: '#00c853',
+                              color: '#ffffff',
+                              borderRadius: '50px',
+                              border: '2px solid #1a1a2e',
+                              boxShadow: '2px 2px 0px #1a1a2e',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            + Add teacher
+                          </button>
+                        </div>
+
+                        {branchTeachers.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            {branchTeachers.map((bt: any) => {
+                              const assistantObj = bt.assistants[0]
+
+                              return (
+                                <div key={bt.id} style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: '#ffffff',
+                                  border: '2px solid #1a1a2e',
+                                  borderRadius: '10px',
+                                  padding: '0.75rem 1rem',
+                                  flexWrap: 'wrap',
+                                  gap: '0.75rem'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.95rem' }}>
+                                      → {bt.teacher.name}
+                                    </span>
+
+                                    {/* Assistant Badge */}
+                                    {assistantObj ? (
+                                      <span style={{
+                                        background: '#f3e8ff',
+                                        color: '#7e22ce',
+                                        border: '1.5px solid #1a1a2e',
+                                        padding: '0.2rem 0.65rem',
+                                        borderRadius: '50px',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 800
+                                      }}>
+                                        🤝 {assistantObj.assistant.name} — assistant
+                                      </span>
+                                    ) : (
+                                      <span style={{
+                                        background: '#f1f5f9',
+                                        color: '#64748b',
+                                        border: '1.5px solid #cbd5e1',
+                                        padding: '0.2rem 0.65rem',
+                                        borderRadius: '50px',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 800
+                                      }}>
+                                        No assistant
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                      onClick={() => {
+                                        let perms: string[] = []
+                                        try {
+                                          perms = assistantObj ? JSON.parse(assistantObj.permissions) : []
+                                        } catch { perms = [] }
+
+                                        setSelectedAssistantId(assistantObj ? assistantObj.assistant.id : '')
+                                        setSelectedPermissions(perms)
+
+                                        setAssistantModal({
+                                          show: true,
+                                          subjectBranchTeacherId: bt.id,
+                                          teacherName: bt.teacher.name,
+                                          subjectName: sub.name,
+                                          branchName: branch.name,
+                                          existingAssistantId: assistantObj?.id
+                                        })
+                                      }}
+                                      style={{
+                                        padding: '0.3rem 0.75rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        background: '#ffffff',
+                                        color: '#1a1a2e',
+                                        border: '2px solid #1a1a2e',
+                                        borderRadius: '50px',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Edit Assistant
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleRemoveTeacher(bt.id, bt.teacher.name)}
+                                      style={{
+                                        padding: '0.3rem 0.75rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        background: '#fef2f2',
+                                        color: '#dc2626',
+                                        border: '2px solid #1a1a2e',
+                                        borderRadius: '50px',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700, fontStyle: 'italic' }}>
+                            No teachers assigned to this subject at {branch.name} yet.
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {/* TAB 2: STUDENTS */}
+      {/* TAB 4: STUDENTS */}
       {activeTab === 'STUDENTS' && (
         <div className="fade-in">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a' }}>Student Enrolments</h2>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Manage enrolled students and subject allocations.</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Enrolled Students List</h2>
+              <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, margin: '0.2rem 0 0 0' }}>All students enrolled in this batch across branches.</p>
             </div>
-            
+
             <Link
               href={`/dashboard/super-admin/students/import?batchId=${batchId}`}
-              className="btn-primary"
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{
+                padding: '0.65rem 1.25rem',
+                fontWeight: 800,
+                background: '#00c853',
+                color: '#ffffff',
+                borderRadius: '50px',
+                border: '3px solid #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
             >
               <Plus size={18} /> + Add student (Import)
             </Link>
           </div>
 
-          {/* Search & Bulk Controls */}
-          <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Search students by name or email..."
-              value={studentSearch}
-              onChange={e => setStudentSearch(e.target.value)}
-              style={{ flex: 1, minWidth: '240px', minHeight: '42px' }}
-            />
-
-            {/* Bulk Actions Bar */}
-            {selectedStudentIds.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
-                  {selectedStudentIds.length} selected:
-                </span>
-
-                <select
-                  className="input-field"
-                  value={bulkAssignSubjectId}
-                  onChange={e => setBulkAssignSubjectId(e.target.value)}
-                  style={{ width: '180px', minHeight: '40px', fontSize: '0.85rem' }}
-                >
-                  <option value="">Select Subject...</option>
-                  {subjects.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={handleBulkAssignSubject}
-                  disabled={processingBulk || !bulkAssignSubjectId}
-                  className="btn-primary"
-                  style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem', fontWeight: 800 }}
-                >
-                  Assign to Subject
-                </button>
-
-                <button
-                  onClick={handleBulkRemoveStudents}
-                  disabled={processingBulk}
-                  style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #ef4444', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-                >
-                  Remove from Batch
-                </button>
-              </div>
-            )}
+          {/* Filter Pills */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setBranchFilter('ALL')}
+              style={{
+                background: branchFilter === 'ALL' ? '#1a1a2e' : '#ffffff',
+                color: branchFilter === 'ALL' ? '#ffffff' : '#1a1a2e',
+                border: '2px solid #1a1a2e',
+                padding: '0.35rem 0.85rem',
+                borderRadius: '50px',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                cursor: 'pointer'
+              }}
+            >
+              All Branches
+            </button>
+            {batchData.batchBranches.map((bb: any) => (
+              <button
+                key={bb.branch.id}
+                onClick={() => setBranchFilter(bb.branch.id)}
+                style={{
+                  background: branchFilter === bb.branch.id ? bb.branch.colour || '#2979ff' : '#ffffff',
+                  color: branchFilter === bb.branch.id ? '#ffffff' : '#1a1a2e',
+                  border: '2px solid #1a1a2e',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '50px',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                📍 {bb.branch.name}
+              </button>
+            ))}
           </div>
 
           {/* Students Table */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e' }}>
             <div className="table-container">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                    <th style={{ padding: '1rem', width: '40px' }}>
-                      <input
-                        type="checkbox"
-                        checked={enrolledStudents.length > 0 && selectedStudentIds.length === enrolledStudents.length}
-                        onChange={toggleSelectAllStudents}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                    </th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Student</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Enrolled Subjects & Status</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Payment Status</th>
+                  <tr style={{ background: '#f8fafc', borderBottom: '3px solid #1a1a2e', textAlign: 'left' }}>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Student</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Branch</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Enrolled subject</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Status</th>
+                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.85rem', color: '#1a1a2e', fontWeight: 900, textTransform: 'uppercase' }}>Payment</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.map(s => {
-                    const subjectEnrols = s.user.subjectEnrollments || []
-
-                    return (
-                      <tr key={s.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '1rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedStudentIds.includes(s.userId)}
-                            onChange={() => toggleSelectStudent(s.userId)}
-                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                          />
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{s.user.name}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{s.user.email}</div>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            {subjectEnrols.map((se: any, idx: number) => {
-                              const sColor = getSubjectColor(se.subject.name, idx)
-                              return (
-                                <span
-                                  key={se.subject.id}
-                                  style={{
-                                    background: sColor,
-                                    color: '#ffffff',
-                                    padding: '0.25rem 0.65rem',
-                                    borderRadius: '9999px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 800,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem'
-                                  }}
-                                >
-                                  {se.subject.name}
-                                  <span style={{ fontSize: '0.65rem', background: 'rgba(0,0,0,0.25)', padding: '1px 5px', borderRadius: '4px' }}>
-                                    {se.status}
-                                  </span>
-                                </span>
-                              )
-                            })}
-
-                            {subjectEnrols.length === 0 && (
-                              <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>
-                                No specific subjects enrolled
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem' }}>
-                          <span style={{
-                            backgroundColor: s.user.profile?.paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbe5',
-                            color: s.user.profile?.paymentStatus === 'Paid' ? '#166534' : '#b45309',
-                            border: `1px solid ${s.user.profile?.paymentStatus === 'Paid' ? '#86efac' : '#fde68a'}`,
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 800
-                          }}>
-                            💳 {s.user.profile?.paymentStatus || 'Pending'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-
-                  {filteredStudents.length === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
-                        No students enrolled in this batch. Click <strong>"+ Add student"</strong> to import students.
+                  {filteredStudents.map((e: any) => (
+                    <tr key={e.id} style={{ borderBottom: '2px solid #1a1a2e' }}>
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 900, color: '#0f172a' }}>
+                        <div>{e.student.name}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{e.student.email}</div>
                       </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* TAB 3: TEACHERS */}
-      {activeTab === 'TEACHERS' && (
-        <div className="fade-in">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a' }}>Assigned Teachers</h2>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Teachers assigned to teach subjects in this batch.</p>
-            </div>
-            
-            <button
-              className="btn-primary"
-              onClick={() => setShowAssignTeacherModal(true)}
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <Plus size={18} /> + Assign Teacher
-            </button>
-          </div>
-
-          {/* Teachers Roster List */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div className="table-container">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Teacher Name</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Email</th>
-                    <th style={{ padding: '1rem 1.25rem', fontSize: '0.8rem', color: '#475569', fontWeight: 800 }}>Assigned Subject(s) in Batch</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignedTeachersList.map(t => (
-                    <tr key={t.user.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '1rem 1.25rem', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>
-                        👨‍🏫 {t.user.name}
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                        {t.user.email}
-                      </td>
                       <td style={{ padding: '1rem 1.25rem' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          {t.subjects.map((subjName, idx) => {
-                            const sColor = getSubjectColor(subjName, idx)
-                            return (
-                              <span
-                                key={subjName}
-                                style={{
-                                  background: sColor,
-                                  color: '#ffffff',
-                                  padding: '0.25rem 0.65rem',
-                                  borderRadius: '9999px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 800
-                                }}
-                              >
-                                {subjName}
-                              </span>
-                            )
-                          })}
-                        </div>
+                        <span style={{
+                          background: e.branch.colour || '#00c853',
+                          color: '#ffffff',
+                          border: '1.5px solid #1a1a2e',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '50px',
+                          fontSize: '0.75rem',
+                          fontWeight: 900
+                        }}>
+                          📍 {e.branch.name}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <span style={{
+                          background: e.subject.colour || '#2979ff',
+                          color: '#ffffff',
+                          border: '1.5px solid #1a1a2e',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '50px',
+                          fontSize: '0.75rem',
+                          fontWeight: 900
+                        }}>
+                          📚 {e.subject.name}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <span style={{
+                          background: e.status === 'active' ? '#e8f5e9' : e.status === 'admin_approved' ? '#e3f2fd' : '#fff3e0',
+                          color: e.status === 'active' ? '#2e7d32' : e.status === 'admin_approved' ? '#1565c0' : '#e65100',
+                          border: '1.5px solid #1a1a2e',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '50px',
+                          fontSize: '0.75rem',
+                          fontWeight: 900
+                        }}>
+                          {e.status}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 800, fontSize: '0.85rem' }}>
+                        💳 {e.student.profile?.paymentStatus || 'Pending'}
                       </td>
                     </tr>
                   ))}
 
-                  {assignedTeachersList.length === 0 && (
+                  {filteredStudents.length === 0 && (
                     <tr>
-                      <td colSpan={3} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
-                        No teachers currently assigned to subjects in this batch. Click <strong>"+ Assign Teacher"</strong> above.
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontWeight: 600 }}>
+                        No enrolled students found for this filter.
                       </td>
                     </tr>
                   )}
@@ -862,287 +998,345 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
         </div>
       )}
 
-      {/* TAB 4: SETTINGS */}
+      {/* TAB 5: SETTINGS */}
       {activeTab === 'SETTINGS' && (
-        <div className="fade-in">
-          <div className="card" style={{ padding: '2rem', maxWidth: '640px', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.25rem' }}>
-              Batch Configuration
-            </h2>
+        <div className="fade-in" style={{ maxWidth: '650px' }}>
+          <div className="card" style={{ padding: '2rem', border: '3px solid #1a1a2e', borderRadius: '16px', boxShadow: '5px 5px 0px #1a1a2e', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a', marginBottom: '1.25rem' }}>Batch Settings</h2>
 
             <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>
-                  Batch Name
-                </label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Batch name</label>
                 <input
                   type="text"
                   className="input-field"
-                  required
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                  required
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>
-                  Academic Level
-                </label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Academic level</label>
                 <select
                   className="input-field"
                   value={editAcademicLevel}
                   onChange={e => setEditAcademicLevel(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 >
-                  <option value="O Level">O Level</option>
-                  <option value="AS Level">AS Level</option>
-                  <option value="A Level">A Level</option>
-                  <option value="Grade 11">Grade 11</option>
+                  <option value="A Level">A Level (#aa00ff)</option>
+                  <option value="AS Level">AS Level (#2979ff)</option>
+                  <option value="O Level">O Level (#00c853)</option>
+                  <option value="Grade 11">Grade 11 (#ff6d00)</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>
-                  Assigned Branch
-                </label>
-                <select
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem', color: '#0f172a' }}>Description</label>
+                <textarea
                   className="input-field"
-                  value={editBranchId}
-                  onChange={e => setEditBranchId(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
-                >
-                  <option value="">Global / No branch</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  style={{ width: '100%', minHeight: '80px', border: '2px solid #1a1a2e', padding: '0.6rem' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 <button
                   type="submit"
-                  className="btn-primary"
                   disabled={savingSettings}
-                  style={{ padding: '0.65rem 1.5rem', fontWeight: 800 }}
+                  style={{
+                    padding: '0.65rem 1.5rem',
+                    fontWeight: 800,
+                    background: '#00c853',
+                    color: '#ffffff',
+                    borderRadius: '50px',
+                    border: '3px solid #1a1a2e',
+                    boxShadow: '4px 4px 0px #1a1a2e',
+                    cursor: 'pointer'
+                  }}
                 >
-                  {savingSettings ? 'Saving...' : 'Save Settings'}
+                  {savingSettings ? 'Saving...' : 'Save settings'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggleArchive}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    fontWeight: 800,
+                    background: '#ffffff',
+                    color: '#1a1a2e',
+                    borderRadius: '50px',
+                    border: '3px solid #1a1a2e',
+                    boxShadow: '4px 4px 0px #1a1a2e',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {batchData.status === 'archived' ? 'Unarchive batch' : 'Archive batch'}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* DANGER ZONE */}
-          <div className="card" style={{ padding: '2rem', maxWidth: '640px', border: '2px solid #ef4444', borderRadius: '14px', background: '#fef2f2' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#dc2626', marginBottom: '0.5rem' }}>
-              ⚠️ Danger Zone
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: '#991b1b', marginBottom: '1.25rem', fontWeight: 600 }}>
-              Permanently remove or archive this batch and its associated configurations.
+          {/* Danger Zone */}
+          <div className="card" style={{ padding: '2rem', border: '3px solid #dc2626', borderRadius: '16px', boxShadow: '5px 5px 0px #dc2626', background: '#fff5f5' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#dc2626', margin: 0 }}>Danger Zone</h3>
+            <p style={{ fontSize: '0.85rem', color: '#7f1d1d', fontWeight: 700, margin: '0.35rem 0 1.25rem 0' }}>
+              Deleting a batch permanently removes all associated subjects, teacher links, and student enrollments. This action is irreversible.
             </p>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                type="button"
-                onClick={handleDeleteBatch}
-                style={{
-                  background: '#dc2626',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '8px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  fontSize: '0.85rem'
-                }}
-              >
-                Delete Batch
-              </button>
-            </div>
+            <button
+              onClick={handleDeleteBatch}
+              style={{
+                padding: '0.65rem 1.25rem',
+                fontWeight: 900,
+                background: '#dc2626',
+                color: '#ffffff',
+                borderRadius: '50px',
+                border: '3px solid #1a1a2e',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                cursor: 'pointer'
+              }}
+            >
+              Delete batch
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD BRANCH TO BATCH */}
+      {showAddBranchModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e', position: 'relative' }}>
+            <button onClick={() => setShowAddBranchModal(false)} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 1rem 0' }}>Add branch to batch</h3>
+
+            <form onSubmit={handleAddBranchToBatch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Select existing branch</label>
+                <select
+                  className="input-field"
+                  value={selectedBranchId}
+                  onChange={e => setSelectedBranchId(e.target.value)}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                >
+                  <option value="">-- Or create new branch inline --</option>
+                  {allBranches.map(b => (
+                    <option key={b.id} value={b.id}>📍 {b.name} ({b.type})</option>
+                  ))}
+                </select>
+              </div>
+
+              {!selectedBranchId && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Branch name</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g. Kohuwala Branch, City Campus"
+                      value={newBranchName}
+                      onChange={e => setNewBranchName(e.target.value)}
+                      style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Branch type</label>
+                    <select
+                      className="input-field"
+                      value={newBranchType}
+                      onChange={e => setNewBranchType(e.target.value)}
+                      style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                    >
+                      <option value="Physical">Physical</option>
+                      <option value="Online">Online</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddBranchModal(false)} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
+                <button type="submit" disabled={submittingBranch} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Save branch</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* MODAL: ADD / EDIT SUBJECT */}
       {showAddSubjectModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', position: 'relative', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '8px 8px 0px #1a1a2e' }}>
-            <button
-              onClick={closeSubjectModal}
-              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
-            >
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e', position: 'relative' }}>
+            <button onClick={() => setShowAddSubjectModal(false)} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
               <X size={20} />
             </button>
 
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.35rem' }}>
-              {editingSubject ? 'Edit Subject' : '+ Add New Subject'}
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem', fontWeight: 600 }}>
-              {editingSubject ? 'Update subject details and teacher assignment.' : 'Create a new subject and assign a lead teacher.'}
-            </p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 1rem 0' }}>{editingSubject ? 'Edit Subject' : 'Add Subject'}</h3>
 
             <form onSubmit={handleSaveSubject} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>Subject Name</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Subject name</label>
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="e.g. Biology, Chemistry"
+                  placeholder="e.g. Biology, Chemistry, Mathematics"
                   required
                   value={subjectName}
                   onChange={e => setSubjectName(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>Description (Optional)</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Subject color badge</label>
+                <input
+                  type="color"
+                  value={subjectColour}
+                  onChange={e => setSubjectColour(e.target.value)}
+                  style={{ width: '100%', height: '44px', border: '2px solid #1a1a2e', borderRadius: '8px', cursor: 'pointer' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Description</label>
                 <textarea
                   className="input-field"
-                  placeholder="Brief description of the subject syllabus..."
                   value={subjectDescription}
                   onChange={e => setSubjectDescription(e.target.value)}
-                  style={{ width: '100%', minHeight: '70px', padding: '0.5rem' }}
+                  style={{ width: '100%', minHeight: '80px', border: '2px solid #1a1a2e', padding: '0.6rem' }}
                 />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>Assign Teacher</label>
-                <select
-                  className="input-field"
-                  value={selectedTeacherId}
-                  onChange={e => setSelectedTeacherId(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
-                >
-                  <option value="">No teacher assigned yet</option>
-                  {allTeachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                  ))}
-                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn-secondary" onClick={closeSubjectModal} style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary" disabled={submittingSubject} style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}>
-                  {submittingSubject ? 'Saving...' : (editingSubject ? 'Save Changes' : 'Create Subject')}
-                </button>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddSubjectModal(false)} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
+                <button type="submit" disabled={submittingSubject} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Save subject</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL: ASSIGN TEACHER (TAB 3) */}
-      {showAssignTeacherModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '2rem', position: 'relative', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '8px 8px 0px #1a1a2e' }}>
-            <button
-              onClick={() => setShowAssignTeacherModal(false)}
-              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#64748b' }}
-            >
+      {/* MODAL: ADD TEACHER TO SUBJECT BRANCH */}
+      {teacherModal.show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '450px', padding: '2rem', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e', position: 'relative' }}>
+            <button onClick={() => setTeacherModal({ show: false, subjectId: '', branchId: '', branchName: '', subjectName: '' })} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
               <X size={20} />
             </button>
 
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.35rem' }}>
-              Assign Teacher to Subject
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem', fontWeight: 600 }}>
-              Select a teacher and choose the subject they will teach in this batch.
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 0.5rem 0' }}>Assign teacher</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, marginBottom: '1.25rem' }}>
+              Subject: <strong>{teacherModal.subjectName}</strong> at <strong>{teacherModal.branchName}</strong>
             </p>
 
-            <form onSubmit={handleAssignTeacherSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>Select Teacher</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Select teacher</label>
                 <select
                   className="input-field"
-                  required
-                  value={teacherModalTeacherId}
-                  onChange={e => setTeacherModalTeacherId(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
+                  value={teacherIdToAssign}
+                  onChange={e => setTeacherIdToAssign(e.target.value)}
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
                 >
-                  <option value="">Choose a teacher...</option>
+                  <option value="">Select teacher from dropdown...</option>
                   {allTeachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.35rem', color: '#0f172a' }}>Select Subject</label>
-                <select
-                  className="input-field"
-                  required
-                  value={teacherModalSubjectId}
-                  onChange={e => setTeacherModalSubjectId(e.target.value)}
-                  style={{ width: '100%', minHeight: '42px' }}
-                >
-                  <option value="">Choose a subject...</option>
-                  {subjects.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={t.id} value={t.id}>👨‍🏫 {t.name} ({t.email})</option>
                   ))}
                 </select>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowAssignTeacherModal(false)} style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary" style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}>
-                  Assign Teacher
-                </button>
+                <button type="button" className="btn-secondary" onClick={() => setTeacherModal({ show: false, subjectId: '', branchId: '', branchName: '', subjectName: '' })} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
+                <button onClick={handleAssignTeacher} disabled={!teacherIdToAssign} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Assign teacher</button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: REASSIGNMENT WARNING */}
-      {reassignModal.show && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1100,
-          background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '460px', padding: '2rem', position: 'relative', borderRadius: '16px', border: '3px solid #ff6d00', boxShadow: '8px 8px 0px #ff6d00' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.75rem' }}>
-              ⚠️ Teacher Already Assigned
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 600, marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              This teacher (<strong>{reassignModal.teacherName}</strong>) is already assigned to <strong>{reassignModal.existingSubjectName}</strong> in this batch. Reassign?
+      {/* MODAL: ASSIGN ASSISTANT (WITH 8 PERMISSION CHECKBOXES) */}
+      {assistantModal.show && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '2rem', borderRadius: '16px', border: '3px solid #1a1a2e', boxShadow: '6px 6px 0px #1a1a2e', position: 'relative' }}>
+            <button onClick={() => setAssistantModal({ show: false, subjectBranchTeacherId: '', teacherName: '', subjectName: '', branchName: '' })} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 0.35rem 0' }}>Assign assistant</h3>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, marginBottom: '1.25rem' }}>
+              Teacher: <strong>{assistantModal.teacherName}</strong> | {assistantModal.subjectName} ({assistantModal.branchName})
             </p>
 
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setReassignModal({ show: false, teacherId: '', teacherName: '', targetSubjectId: '', existingSubjectName: '' })}
-                style={{ padding: '0.65rem 1.25rem', fontWeight: 800 }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => {
-                  const { targetSubjectId, teacherId } = reassignModal
-                  setReassignModal({ show: false, teacherId: '', teacherName: '', targetSubjectId: '', existingSubjectName: '' })
-                  assignTeacherToSubject(targetSubjectId, teacherId, true)
-                }}
-                style={{ padding: '0.65rem 1.25rem', fontWeight: 800, background: '#ff6d00', borderColor: '#1a1a2e' }}
-              >
-                Reassign Teacher
-              </button>
-            </div>
+            <form onSubmit={handleSaveAssistant} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.35rem' }}>Select assistant</label>
+                <select
+                  className="input-field"
+                  value={selectedAssistantId}
+                  onChange={e => setSelectedAssistantId(e.target.value)}
+                  required
+                  style={{ width: '100%', minHeight: '42px', border: '2px solid #1a1a2e' }}
+                >
+                  <option value="">Select user with Assistant role...</option>
+                  {allAssistants.map(ast => (
+                    <option key={ast.id} value={ast.id}>🤝 {ast.name} ({ast.email})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>
+                  Permission checkboxes (tick any combination):
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  {ASSISTANT_PERMISSIONS.map(perm => {
+                    const isChecked = selectedPermissions.includes(perm)
+
+                    return (
+                      <label key={perm} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        background: '#f8fafc',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1.5px solid #1a1a2e',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setSelectedPermissions(selectedPermissions.filter(p => p !== perm))
+                            } else {
+                              setSelectedPermissions([...selectedPermissions, perm])
+                            }
+                          }}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span>{perm}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => setAssistantModal({ show: false, subjectBranchTeacherId: '', teacherName: '', subjectName: '', branchName: '' })} style={{ borderRadius: '50px', border: '3px solid #1a1a2e' }}>Cancel</button>
+                <button type="submit" disabled={submittingAssistant || !selectedAssistantId} style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', boxShadow: '4px 4px 0px #1a1a2e', borderRadius: '50px', padding: '0.6rem 1.25rem', fontWeight: 800 }}>Save assistant</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -62,7 +62,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     Return the response strictly in JSON format with the following keys:
     - title: String (A catchy title for the lesson)
     - objectives: String (A Markdown list of 3-5 learning objectives, prioritized by syllabus requirements)
-    - content: String (Extensive lesson content in Markdown, integrating any teacher notes provided. Include sections like Introduction, Key Concepts, Syllabus Alignment, and Conclusion)
+    - content: String (Extensive lesson content in Markdown, integrating any teacher notes provided. Include parts like Introduction, Key Concepts, Syllabus Alignment, and Conclusion)
     - keywords: String (A comma-separated list of 5-8 key scientific terms)
     - quizDraft: Array of Objects (3 multiple choice questions based on the content)
 

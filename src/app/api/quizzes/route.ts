@@ -15,15 +15,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'batchId is required' }, { status: 400 })
   }
 
-  // Ensure user has access to this batch
-  const enrollment = await prisma.batchEnrollment.findUnique({
-    where: {
-      userId_batchId: { userId: session.user.id, batchId: batchId }
-    }
+  // Ensure student has access to this batch
+  const enrollment = await prisma.studentEnrollment.findFirst({
+    where: { studentId: session.user.id, batchId }
   })
 
-  // SUPER_ADMIN has global access, TEACHER/STUDENT need enrollment
-  if (session.user.role !== 'SUPER_ADMIN' && !enrollment) {
+  // SUPER_ADMIN and TEACHER have global/assigned access, STUDENT needs enrollment
+  if (session.user.role === 'STUDENT' && !enrollment) {
     return NextResponse.json({ error: 'Access denied to this batch' }, { status: 403 })
   }
 

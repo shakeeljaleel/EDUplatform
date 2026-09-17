@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       include: {
         subjects: {
           include: {
-            teachers: { select: { userId: true } }
+            branchTeachers: { select: { teacherId: true } }
           }
         }
       }
@@ -45,10 +45,12 @@ export async function POST(request: Request) {
     // Collect all unique teacher IDs assigned to this batch's subjects
     const teacherUserIds = new Set<string>()
     for (const subject of subjects) {
-      for (const t of subject.teachers) {
-        if (t.userId) teacherUserIds.add(t.userId)
+      for (const t of subject.branchTeachers) {
+        if (t.teacherId) teacherUserIds.add(t.teacherId)
       }
     }
+
+    const defaultBranch = await prisma.branch.findFirst()
 
     for (const record of records) {
       if (!record.email || !record.name) continue
@@ -75,38 +77,22 @@ export async function POST(request: Request) {
         }
       })
 
-      // Enroll in batch
-      await prisma.batchEnrollment.upsert({
-        where: {
-          userId_batchId: {
-            userId: user.id,
-            batchId: batchId
-          }
-        },
-        update: {},
-        create: {
-          userId: user.id,
-          batchId: batchId,
-          role: 'STUDENT'
-        }
-      })
-
-      // Admin-imported students skip Stage 1: status is ADMIN_APPROVED awaiting Stage 3 Teacher confirmation
-      for (const subject of subjects) {
-        await prisma.subjectEnrollment.upsert({
-          where: {
-            subjectId_userId: {
+      if (defaultBranch) {
+        for (const subject of subjects) {
+          await prisma.studentEnrollment.upsert({
+            where: { id: `enroll-${user.id}-${subject.id}` },
+            update: { status: 'admin_approved', adminApprovedAt: new Date() },
+            create: {
+              id: `enroll-${user.id}-${subject.id}`,
+              studentId: user.id,
+              batchId: batchId,
+              branchId: defaultBranch.id,
               subjectId: subject.id,
-              userId: user.id
+              status: 'admin_approved',
+              adminApprovedAt: new Date()
             }
-          },
-          update: { status: 'ADMIN_APPROVED' },
-          create: {
-            subjectId: subject.id,
-            userId: user.id,
-            status: 'ADMIN_APPROVED'
-          }
-        })
+          })
+        }
       }
 
       // Notify teachers about new admin-imported student

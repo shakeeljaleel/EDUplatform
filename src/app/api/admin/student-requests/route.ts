@@ -36,19 +36,14 @@ export async function PATCH(req: Request) {
 
   if (status === 'APPROVED') {
     if (request.type === 'REMOVE') {
-      await prisma.batchEnrollment.deleteMany({
-        where: { userId: request.studentId, batchId: request.batchId }
-      });
-      // Also remove from subjects in that batch
-      await prisma.subjectEnrollment.deleteMany({
-        where: { userId: request.studentId, subject: { batchId: request.batchId } }
+      await prisma.studentEnrollment.deleteMany({
+        where: { studentId: request.studentId, batchId: request.batchId }
       });
     } else if (request.type === 'SWITCH' && request.newBatchId) {
-      await prisma.batchEnrollment.updateMany({
-        where: { userId: request.studentId, batchId: request.batchId },
+      await prisma.studentEnrollment.updateMany({
+        where: { studentId: request.studentId, batchId: request.batchId },
         data: { batchId: request.newBatchId }
       });
-      // Re-map subject enrollments if applicable, or just leave for manual subject reassignment
     }
   }
 

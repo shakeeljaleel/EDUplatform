@@ -19,8 +19,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (session.user.role === 'STUDENT') {
-      const enrollment = await prisma.subjectEnrollment.findFirst({
-        where: { subjectId: recording.subjectId, userId: session.user.id, status: { in: ['APPROVED', 'ACTIVE'] } }
+      const enrollment = await prisma.studentEnrollment.findFirst({
+        where: { subjectId: recording.subjectId, studentId: session.user.id, status: 'active' }
       })
       if (!enrollment) return NextResponse.json({ error: 'Not enrolled in this course' }, { status: 403 })
 

@@ -11,9 +11,9 @@ export default async function GlobalAttendancePage() {
   const classSessions = await prisma.classSession.findMany({
     where: {
       subject: {
-        teachers: {
+        branchTeachers: {
           some: {
-            userId: session.user.id
+            teacherId: session.user.id
           }
         }
       },
@@ -24,12 +24,10 @@ export default async function GlobalAttendancePage() {
     include: {
       subject: {
         include: {
-          batch: {
-            include: { branch: true }
-          },
+          batch: true,
           _count: {
             select: {
-              enrollments: { where: { status: 'APPROVED' } }
+              studentEnrollments: { where: { status: 'active' } }
             }
           }
         }
@@ -48,7 +46,7 @@ export default async function GlobalAttendancePage() {
   let pendingSessionsCount = 0
 
   classSessions.forEach(s => {
-    const totalStudents = s.subject._count.enrollments
+    const totalStudents = s.subject._count.studentEnrollments
     const markedCount = s.attendance.length
     if (markedCount < totalStudents && totalStudents > 0) {
       pendingSessionsCount++
@@ -168,10 +166,10 @@ export default async function GlobalAttendancePage() {
       {/* Main Content Cards Grid / Box List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {classSessions.map(s => {
-          const totalStudents = s.subject._count.enrollments
-          const physical = s.attendance.filter(a => a.status === 'PHYSICAL').length
-          const online = s.attendance.filter(a => a.status === 'ONLINE').length
-          const absent = s.attendance.filter(a => a.status === 'ABSENT').length
+          const totalStudents = s.subject._count.studentEnrollments
+          const physical = s.attendance.filter((a: any) => a.status === 'PHYSICAL').length
+          const online = s.attendance.filter((a: any) => a.status === 'ONLINE').length
+          const absent = s.attendance.filter((a: any) => a.status === 'ABSENT').length
           const markedCount = physical + online + absent
           const unmarked = Math.max(0, totalStudents - markedCount)
           const markedPct = totalStudents > 0 ? Math.round((markedCount / totalStudents) * 100) : 0
@@ -233,7 +231,7 @@ export default async function GlobalAttendancePage() {
                     color: '#2563eb',
                     border: '1px solid rgba(59, 130, 246, 0.2)'
                   }}>
-                    📍 {s.subject.batch.branch?.name || 'Main Branch'}
+                    📍 {s.subject?.batch?.name || 'Main Campus'}
                   </span>
                   <span style={{
                     padding: '0.2rem 0.65rem',

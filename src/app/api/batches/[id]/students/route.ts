@@ -10,27 +10,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const { id: batchId } = await params;
 
-  const enrollments = await prisma.batchEnrollment.findMany({
-    where: { 
-      batchId,
-      user: { role: 'STUDENT' } 
-    },
+  const enrollments = await prisma.studentEnrollment.findMany({
+    where: { batchId },
     include: {
       batch: true,
-      user: {
+      branch: true,
+      subject: { select: { id: true, name: true } },
+      student: {
         select: {
           id: true,
           name: true,
           email: true,
-          profile: { select: { paymentStatus: true } },
-          subjectEnrollments: {
-            where: { subject: { batchId } },
-            include: { subject: { select: { id: true, name: true } } }
-          }
+          profile: { select: { paymentStatus: true } }
         }
       }
     },
-    orderBy: { user: { name: 'asc' } }
+    orderBy: { student: { name: 'asc' } }
   });
 
   return NextResponse.json({ students: enrollments });
@@ -45,51 +40,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id: batchId } = await params;
   const body = await req.json();
 
-  // Bulk action: assign subject
-  if (body.action === 'assign_subject' && Array.isArray(body.studentIds) && body.subjectId) {
-    const { studentIds, subjectId } = body;
-
-    for (const studentId of studentIds) {
-      // Ensure batch enrollment exists
-      await prisma.batchEnrollment.upsert({
-        where: { userId_batchId: { userId: studentId, batchId } },
-        update: {},
-        create: { userId: studentId, batchId, role: 'STUDENT' }
-      });
-
-      // Create subject enrollment
-      await prisma.subjectEnrollment.upsert({
-        where: { subjectId_userId: { subjectId, userId: studentId } },
-        update: { status: 'APPROVED' },
-        create: { subjectId, userId: studentId, status: 'APPROVED' }
-      });
-    }
-
-    return NextResponse.json({ success: true, count: studentIds.length });
+  const { studentId, subjectId, branchId } = body;
+  if (!studentId || !subjectId || !branchId) {
+    return NextResponse.json({ error: 'studentId, subjectId, and branchId required' }, { status: 400 });
   }
 
-  // Single student enrollment
-  const { userId } = body;
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID or bulk action parameters required' }, { status: 400 });
-  }
-
-  const enrollment = await prisma.batchEnrollment.upsert({
-    where: { userId_batchId: { userId, batchId } },
-    update: {},
-    create: { userId, batchId, role: 'STUDENT' },
-    include: { user: true, batch: true }
+  const enrollment = await prisma.studentEnrollment.upsert({
+    where: { id: `enroll-${studentId}-${subjectId}` },
+    update: { status: 'active', branchId },
+    create: { id: `enroll-${studentId}-${subjectId}`, studentId, batchId, branchId, subjectId, status: 'active' },
+    include: { student: true, batch: true, branch: true, subject: true }
   });
-
-  // Automatically enroll student into subjects of this batch
-  const subjects = await prisma.subject.findMany({ where: { batchId } });
-  for (const subject of subjects) {
-    await prisma.subjectEnrollment.upsert({
-      where: { subjectId_userId: { subjectId: subject.id, userId } },
-      update: { status: 'APPROVED' },
-      create: { subjectId: subject.id, userId, status: 'APPROVED' }
-    });
-  }
 
   return NextResponse.json({ enrollment });
 }
@@ -122,26 +83,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: 'Student ID(s) required' }, { status: 400 });
   }
 
-  // Remove batch enrollments
-  await prisma.batchEnrollment.deleteMany({
+  // Remove student enrollments
+  await prisma.studentEnrollment.deleteMany({
     where: {
       batchId,
-      userId: { in: studentIds }
+      studentId: { in: studentIds }
     }
   });
-
-  // Remove subject enrollments for subjects in this batch
-  const subjects = await prisma.subject.findMany({ where: { batchId }, select: { id: true } });
-  const subjectIds = subjects.map(s => s.id);
-
-  if (subjectIds.length > 0) {
-    await prisma.subjectEnrollment.deleteMany({
-      where: {
-        subjectId: { in: subjectIds },
-        userId: { in: studentIds }
-      }
-    });
-  }
 
   return NextResponse.json({ success: true, count: studentIds.length });
 }

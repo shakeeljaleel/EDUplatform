@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const students = await prisma.user.findMany({
     where: { 
       role: 'STUDENT',
-      enrollments: { some: { batchId } }
+      studentEnrollments: { some: { batchId } }
     },
     include: {
       quizAttempts: {

@@ -8,45 +8,69 @@ export async function GET() {
 
   const batches = await prisma.batch.findMany({
     include: {
-      branch: true,
+      batchBranches: {
+        include: {
+          branch: true
+        }
+      },
       subjects: {
-        select: {
-          id: true,
-          teachers: {
-            select: { userId: true }
+        include: {
+          branchTeachers: {
+            include: {
+              assistants: true
+            }
           }
         }
       },
-      _count: {
-        select: { enrollments: true, subjects: true }
+      studentEnrollments: {
+        select: {
+          id: true,
+          studentId: true,
+          status: true
+        }
       }
     },
     orderBy: { createdAt: 'desc' }
   })
 
   const formatted = batches.map(batch => {
+    const uniqueStudents = new Set(batch.studentEnrollments.map(e => e.studentId))
+    
     const teacherIds = new Set<string>()
+    const assistantIds = new Set<string>()
     batch.subjects.forEach(s => {
-      s.teachers.forEach(t => teacherIds.add(t.userId))
+      s.branchTeachers.forEach(bt => {
+        teacherIds.add(bt.teacherId)
+        bt.assistants.forEach(ast => assistantIds.add(ast.assistantId))
+      })
     })
 
-    const { subjects, ...rest } = batch
     return {
-      ...rest,
-      teacherCount: teacherIds.size
+      id: batch.id,
+      name: batch.name,
+      academicLevel: batch.academicLevel,
+      description: batch.description,
+      status: batch.status,
+      createdAt: batch.createdAt,
+      branchesCount: batch.batchBranches.length,
+      studentsCount: uniqueStudents.size,
+      subjectsCount: batch.subjects.length,
+      teachersCount: teacherIds.size,
+      assistantsCount: assistantIds.size,
+      branches: batch.batchBranches.map(bb => bb.branch)
     }
   })
-  
+
   return NextResponse.json({ batches: formatted })
 }
 
 export async function POST(request: Request) {
   const session = await getSession()
-  if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TEACHER')) {
+  if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { name, academicLevel, branchId, description } = await request.json()
+  const { name, academicLevel, description, branchIds } = await request.json()
 
   if (!name?.trim() || !academicLevel?.trim()) {
     return NextResponse.json({ error: 'Name and academic level are required' }, { status: 400 })
@@ -57,10 +81,28 @@ export async function POST(request: Request) {
       name: name.trim(),
       academicLevel: academicLevel.trim(),
       description: description?.trim() || null,
-      branchId: branchId ? branchId : null
-    },
-    include: {
-      branch: true
+      status: 'active'
+    }
+  })
+
+  if (Array.isArray(branchIds) && branchIds.length > 0) {
+    await prisma.batchBranch.createMany({
+      data: branchIds.map((branchId: string) => ({
+        batchId: batch.id,
+        branchId,
+        status: 'active'
+      }))
+    })
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: session.user.id,
+      actorRole: session.user.role,
+      action: 'CREATE_BATCH',
+      targetType: 'BATCH',
+      targetId: batch.id,
+      details: JSON.stringify({ name: batch.name, academicLevel: batch.academicLevel })
     }
   })
 

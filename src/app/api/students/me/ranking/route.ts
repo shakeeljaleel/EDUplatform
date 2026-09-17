@@ -9,9 +9,9 @@ export async function GET() {
   try {
     const studentUserId = session.user.id
 
-    // Get student's batch
-    const enrollment = await prisma.batchEnrollment.findFirst({
-      where: { userId: studentUserId },
+    // Get student's enrollment
+    const enrollment = await prisma.studentEnrollment.findFirst({
+      where: { studentId: studentUserId, status: 'active' },
       include: { batch: true }
     })
 
@@ -20,12 +20,12 @@ export async function GET() {
     const batchId = enrollment.batchId
 
     // Get all students in this batch
-    const batchStudents = await prisma.batchEnrollment.findMany({
-      where: { batchId: batchId, role: 'STUDENT' },
-      select: { userId: true }
+    const batchStudents = await prisma.studentEnrollment.findMany({
+      where: { batchId: batchId, status: 'active' },
+      select: { studentId: true }
     })
 
-    const studentIds = batchStudents.map(s => s.userId)
+    const studentIds = Array.from(new Set(batchStudents.map(s => s.studentId)))
 
     // Calculate scores for all students in the batch
     // Ranking based on Stars + Quiz Avg + Exam Avg

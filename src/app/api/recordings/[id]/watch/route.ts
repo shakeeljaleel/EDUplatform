@@ -19,8 +19,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!recording) return NextResponse.json({ error: 'Recording not found' }, { status: 404 })
 
     // Check: student enrolled + paid
-    const enrollment = await prisma.subjectEnrollment.findFirst({
-      where: { subjectId: recording.subjectId, userId: session.user.id, status: { in: ['APPROVED', 'ACTIVE'] } }
+    const enrollment = await prisma.studentEnrollment.findFirst({
+      where: { subjectId: recording.subjectId, studentId: session.user.id, status: 'active' }
     })
     if (!enrollment) return NextResponse.json({ error: 'Access denied' }, { status: 403 })
 

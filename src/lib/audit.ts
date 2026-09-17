@@ -8,7 +8,7 @@ export async function logAdminAction({
   details
 }: {
   adminId: string
-  adminName: string
+  adminName?: string
   action: string
   targetUserId?: string
   details?: string
@@ -16,10 +16,11 @@ export async function logAdminAction({
   try {
     await prisma.auditLog.create({
       data: {
-        adminId,
-        adminName,
+        actorId: adminId,
+        actorRole: 'SUPER_ADMIN',
         action,
-        targetUserId: targetUserId || null,
+        targetType: targetUserId ? 'USER' : null,
+        targetId: targetUserId || null,
         details: details || null,
       }
     })
@@ -27,3 +28,4 @@ export async function logAdminAction({
     console.error('Failed to create audit log:', err)
   }
 }
+

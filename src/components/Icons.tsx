@@ -315,3 +315,21 @@ export function MoreVertical(props: IconProps) {
   )
 }
 
+export function Shield(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </IconBase>
+  )
+}
+
+export function Archive(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <polyline points="21 8 21 21 3 21 3 8" />
+      <rect x="1" y="3" width="22" height="5" />
+      <line x1="10" y1="12" x2="14" y2="12" />
+    </IconBase>
+  )
+}
+

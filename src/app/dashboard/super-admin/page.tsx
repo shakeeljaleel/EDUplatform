@@ -17,7 +17,7 @@ export default async function SuperAdminDashboard() {
     prisma.user.count({ where: { role: 'STUDENT' } }),
     prisma.user.count({ where: { role: 'TEACHER' } }),
     prisma.user.count({ where: { role: 'PARENT' } }),
-    prisma.batchEnrollment.count(),
+    prisma.studentEnrollment.count(),
     prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
     prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
@@ -221,7 +221,7 @@ export default async function SuperAdminDashboard() {
           {auditLogs.map((log) => (
             <div key={log.id} style={{ marginBottom: '0.65rem', borderBottom: '1px solid rgba(0, 230, 118, 0.1)', paddingBottom: '0.5rem' }}>
               <span style={{ color: '#82b1ff' }}>[{new Date(log.createdAt).toLocaleString()}]</span>{' '}
-              <strong style={{ color: '#69f0ae' }}>{log.adminName}</strong> executed{' '}
+              <strong style={{ color: '#69f0ae' }}>[{log.actorRole}]</strong> executed{' '}
               <span style={{ color: '#ffd180' }}>{log.action}</span>
               {log.details && <span style={{ color: '#00e676' }}> — {log.details}</span>}
             </div>
