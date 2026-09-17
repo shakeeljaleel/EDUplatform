@@ -20,15 +20,33 @@ const ASSISTANT_PERMISSIONS = [
 
 function formatBranchLabel(name: string): string {
   if (!name) return ''
-  let str = name.trim()
-  str = str.replace(/\bBRANCH\s+BRANCH\b/gi, 'Branch')
-  str = str.replace(/\bbranch\s+branch\b/gi, 'Branch')
-  if (/ branch$/i.test(str)) {
-    const base = str.replace(/ branch$/i, '').trim()
-    const formattedBase = base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-    return `${formattedBase} Branch`
+  let cleaned = name.trim()
+
+  // Collapse repetitive "BRANCH" or "branch" tokens
+  cleaned = cleaned.replace(/\b(branch)(\s+\1)+\b/gi, 'Branch')
+
+  // Split words and sanitize
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  const titleCased = words.map(w => {
+    if (w.toUpperCase() === 'BRANCH') return 'Branch'
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+  })
+
+  // Remove consecutive duplicates of 'Branch'
+  const result: string[] = []
+  for (const word of titleCased) {
+    if (word === 'Branch' && result.length > 0 && result[result.length - 1] === 'Branch') {
+      continue
+    }
+    result.push(word)
   }
-  return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+
+  // Ensure 'Branch' suffix is present exactly once
+  if (!result.includes('Branch')) {
+    result.push('Branch')
+  }
+
+  return result.join(' ')
 }
 
 export default function SuperAdminBatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -849,7 +867,7 @@ export default function SuperAdminBatchDetailPage({ params }: { params: Promise<
                           </div>
                         ) : (
                           <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 700, fontStyle: 'italic' }}>
-                            No teachers assigned to this subject at {branch.name} yet.
+                            No teachers assigned to this subject at {formatBranchLabel(branch.name)} yet.
                           </div>
                         )}
                       </div>

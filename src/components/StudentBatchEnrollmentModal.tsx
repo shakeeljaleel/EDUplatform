@@ -20,6 +20,8 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null)
   const [selectedBranch, setSelectedBranch] = useState<any | null>(null)
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
+  const [availableSubjects, setAvailableSubjects] = useState<any[]>([])
+  const [loadingSubjects, setLoadingSubjects] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -28,9 +30,34 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
       setSelectedBatch(null)
       setSelectedBranch(null)
       setSelectedSubjectIds([])
+      setAvailableSubjects([])
       fetchBatches()
     }
   }, [isOpen])
+
+  useEffect(() => {
+    if (step === 3 && selectedBatch && selectedBranch) {
+      fetchAvailableSubjects(selectedBatch.id, selectedBranch.id)
+    }
+  }, [step, selectedBatch, selectedBranch])
+
+  const fetchAvailableSubjects = async (batchId: string, branchId: string) => {
+    setLoadingSubjects(true)
+    try {
+      const res = await fetch(`/api/batches/${batchId}/subjects?branchId=${branchId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setAvailableSubjects(data.subjects || [])
+      } else {
+        setAvailableSubjects([])
+      }
+    } catch {
+      showToast('Failed to load subjects for selected branch', 'error')
+      setAvailableSubjects([])
+    } finally {
+      setLoadingSubjects(false)
+    }
+  }
 
   const fetchBatches = async () => {
     setLoading(true)
@@ -271,60 +298,68 @@ export default function StudentBatchEnrollmentModal({ isOpen, onClose, onSuccess
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {selectedBatch.subjects?.map((sub: any) => {
-                  const isChecked = selectedSubjectIds.includes(sub.id)
-
-                  return (
-                    <label
-                      key={sub.id}
-                      style={{
-                        padding: '1rem 1.25rem',
-                        borderRadius: '12px',
-                        border: '3px solid #1a1a2e',
-                        boxShadow: '3px 3px 0px #1a1a2e',
-                        background: isChecked ? '#e8f5e9' : '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleSubject(sub.id)}
-                          style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                        />
-                        <div>
-                          <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
-                            📚 {sub.name}
-                          </div>
-                          {sub.description && (
-                            <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{sub.description}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      <span style={{
-                        background: sub.colour || '#2979ff',
-                        color: '#ffffff',
-                        border: '1.5px solid #1a1a2e',
-                        padding: '0.25rem 0.65rem',
-                        borderRadius: '50px',
-                        fontSize: '0.75rem',
-                        fontWeight: 900
-                      }}>
-                        {sub.name}
-                      </span>
-                    </label>
-                  )
-                })}
-
-                {(!selectedBatch.subjects || selectedBatch.subjects.length === 0) && (
-                  <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontWeight: 700 }}>
-                    No subjects available in this batch yet.
+                {loadingSubjects ? (
+                  <div className="pulse" style={{ padding: '2rem', textAlign: 'center', color: '#64748b', fontWeight: 800 }}>
+                    Loading available subjects for {selectedBranch.name}...
                   </div>
+                ) : (
+                  <>
+                    {availableSubjects.map((sub: any) => {
+                      const isChecked = selectedSubjectIds.includes(sub.id)
+
+                      return (
+                        <label
+                          key={sub.id}
+                          style={{
+                            padding: '1rem 1.25rem',
+                            borderRadius: '12px',
+                            border: '3px solid #1a1a2e',
+                            boxShadow: '3px 3px 0px #1a1a2e',
+                            background: isChecked ? '#e8f5e9' : '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSubject(sub.id)}
+                              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
+                                📚 {sub.name}
+                              </div>
+                              {sub.description && (
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{sub.description}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <span style={{
+                            background: sub.colour || '#2979ff',
+                            color: '#ffffff',
+                            border: '1.5px solid #1a1a2e',
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '50px',
+                            fontSize: '0.75rem',
+                            fontWeight: 900
+                          }}>
+                            {sub.name}
+                          </span>
+                        </label>
+                      )
+                    })}
+
+                    {availableSubjects.length === 0 && (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontWeight: 700 }}>
+                        No subjects available in this batch at {selectedBranch.name} yet.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
