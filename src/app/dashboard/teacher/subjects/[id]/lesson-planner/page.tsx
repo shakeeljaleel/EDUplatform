@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, use, useRef } from 'react'
+import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 
 export default function LessonPlannerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -272,6 +273,24 @@ export default function LessonPlannerPage({ params }: { params: Promise<{ id: st
                     >
                       🚀 Convert to Live Buzzer Quiz
                     </button>
+                    <Link
+                      href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder?topic=${encodeURIComponent(selectedPlan.title)}`}
+                      style={{
+                        display: 'block',
+                        textAlign: 'center',
+                        marginTop: '0.5rem',
+                        padding: '0.65rem',
+                        background: '#00c853',
+                        color: '#ffffff',
+                        border: '2px solid #1a1a2e',
+                        borderRadius: '8px',
+                        fontWeight: 800,
+                        fontSize: '0.85rem',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      + Create quiz for this lesson
+                    </Link>
                   </div>
                 </div>
               </div>

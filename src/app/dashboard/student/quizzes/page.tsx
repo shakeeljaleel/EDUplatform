@@ -1,117 +1,194 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { QuizzesIcon, RoughFilter } from '@/components/HandDrawnIcons'
 
-const TOPIC_GRADIENTS = [
-  { border: '#00c853', bg: 'linear-gradient(135deg, #00c853, #00e676)', labelBg: '#e8f5e9', textColor: '#00c853' },
-  { border: '#2979ff', bg: 'linear-gradient(135deg, #2979ff, #40c4ff)', labelBg: '#e3f2fd', textColor: '#2979ff' },
-  { border: '#aa00ff', bg: 'linear-gradient(135deg, #aa00ff, #ea80fc)', labelBg: '#f3e5f5', textColor: '#aa00ff' },
-  { border: '#ff6d00', bg: 'linear-gradient(135deg, #ff6d00, #ffd180)', labelBg: '#fff3e0', textColor: '#ff6d00' },
-  { border: '#f50057', bg: 'linear-gradient(135deg, #f50057, #ff80ab)', labelBg: '#fce4ec', textColor: '#f50057' },
-]
-
-export default async function AllQuizzesPage() {
+export default async function StudentQuizzesPage() {
   const session = await getSession()
   if (!session) return null
   const userId = session.user.id
 
-  // Get all batches student is enrolled in
+  // Get active enrollments for student
   const enrollments = await prisma.studentEnrollment.findMany({
     where: { studentId: userId, status: 'active' },
-    select: { batchId: true }
+    select: { subjectId: true, batchId: true }
   })
 
-  const batchIds = enrollments.map(e => e.batchId)
+  const subjectIds = enrollments.map(e => e.subjectId).filter(Boolean)
+  const batchIds = enrollments.map(e => e.batchId).filter(Boolean)
 
-  // Get all published quizzes for these batches
+  // Fetch published and closed quizzes for these subjects/batches
   const quizzes = await prisma.quiz.findMany({
     where: {
-      batchId: { in: batchIds },
-      status: 'PUBLISHED'
+      OR: [
+        { subjectId: { in: subjectIds } },
+        { batchId: { in: batchIds } }
+      ],
+      status: { in: ['PUBLISHED', 'CLOSED'] }
     },
     include: {
       subject: true,
-      _count: { select: { questions: true } },
+      linkedSession: true,
+      questions: { select: { id: true, points: true, maxMarks: true } },
       attempts: {
         where: { userId },
-        select: { score: true, status: true }
+        select: { score: true, status: true, submittedAt: true, helixPointsAwarded: true }
       }
     },
     orderBy: { createdAt: 'desc' }
   })
 
+  const now = new Date()
+
   return (
-    <div className="content-wrapper fade-in">
-      <RoughFilter />
-      <div style={{ marginBottom: '4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <QuizzesIcon size={48} color="var(--accent-primary)" />
-          <h1 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.04em' }}>Assessment Helix</h1>
-        </div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 600 }}>Active quizzes and academic performance records.</p>
+    <div className="content-wrapper fade-in" style={{ maxWidth: '1100px' }}>
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#1a1a2e' }}>Quizzes & Assessments</h1>
+        <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: 600 }}>
+          Test your mastery, earn HELIX points, stars, and climb the leaderboard!
+        </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '3rem' }}>
-        {quizzes.map((quiz, idx) => {
-          const isCompleted = quiz.attempts && quiz.attempts.length > 0;
-          const score = isCompleted ? quiz.attempts[0].score : null;
-          const topicTheme = TOPIC_GRADIENTS[idx % TOPIC_GRADIENTS.length];
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '2rem' }}>
+        {quizzes.map((quiz) => {
+          const attempt = quiz.attempts && quiz.attempts.length > 0 ? quiz.attempts[0] : null
+          const isCompleted = !!attempt
+          const isOverdue = quiz.dueDate && new Date(quiz.dueDate) < now && !isCompleted
+
+          const maxScore = quiz.questions.reduce((acc, q) => acc + (q.maxMarks || q.points || 10), 0)
+          const pct = isCompleted && maxScore > 0 ? Math.round((attempt.score / maxScore) * 100) : null
+
+          let stars = 0
+          if (pct !== null) {
+            if (pct >= 90) stars = 5
+            else if (pct >= 75) stars = 4
+            else if (pct >= 60) stars = 3
+            else if (pct >= 40) stars = 2
+            else stars = 1
+          }
+
+          const subjectColor = quiz.subject?.colour || '#2979ff'
 
           return (
-            <div key={quiz.id} className="premium-card-v2" style={{ 
-              opacity: isCompleted ? 0.85 : 1,
-              borderLeft: `8px solid ${topicTheme.border}`,
-              borderTop: isCompleted ? '8px solid #94a3b8' : `8px solid ${topicTheme.border}`,
-              boxShadow: `0 8px 24px ${topicTheme.border}22`
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.75rem', fontWeight: 900, lineHeight: 1.2 }}>{quiz.title}</h3>
-                {isCompleted ? (
-                  <span style={{ background: '#94a3b8', color: 'white', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>Done</span>
-                ) : (
-                  <span style={{ background: topicTheme.bg, color: 'white', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, boxShadow: `0 2px 8px ${topicTheme.border}44` }}>Live</span>
-                )}
-              </div>
-              
-              <div style={{ background: topicTheme.labelBg, padding: '1rem', borderRadius: '12px', border: `1px solid ${topicTheme.border}44`, marginBottom: '2rem' }}>
-                <div style={{ fontSize: '0.85rem', color: topicTheme.textColor, fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                  {quiz.subject?.name || 'General Batch'}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                  {quiz.chapter ? `Unit: ${quiz.chapter}` : 'General Sequence'}
-                </div>
-              </div>
+            <div
+              key={quiz.id}
+              style={{
+                background: isOverdue ? '#fff5f5' : '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '16px',
+                boxShadow: '5px 5px 0px #1a1a2e',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                position: 'relative'
+              }}
+            >
+              <div>
+                {/* Header Pills */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  <span style={{
+                    background: subjectColor,
+                    color: '#ffffff',
+                    border: '1.5px solid #1a1a2e',
+                    borderRadius: '50px',
+                    padding: '0.2rem 0.65rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 900
+                  }}>
+                    {quiz.subject?.name || 'General'}
+                  </span>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                <div style={{ fontWeight: 900, fontSize: '1rem' }}>
-                  {isCompleted ? (
-                    <span style={{ color: topicTheme.textColor }}>🎯 Result: {score}%</span>
-                  ) : (
-                    <span>📋 {quiz._count.questions} Qs</span>
+                  {quiz.linkedSession && (
+                    <span style={{
+                      background: '#2979ff',
+                      color: '#ffffff',
+                      border: '1.5px solid #1a1a2e',
+                      borderRadius: '50px',
+                      padding: '0.15rem 0.6rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 800
+                    }}>
+                      Based on: {quiz.linkedSession.title}
+                    </span>
                   )}
                 </div>
-                {isCompleted ? (
-                  <button disabled style={{ padding: '8px 16px', fontSize: '0.75rem', background: '#e2e8f0', cursor: 'not-allowed', color: '#94a3b8', borderRadius: '12px', border: 'none', fontWeight: 800 }}>
-                    Completed
-                  </button>
-                ) : (
-                  <Link href={`/dashboard/student/quizzes/${quiz.id}`} style={{
-                    padding: '8px 20px', fontSize: '0.85rem', background: topicTheme.bg, color: 'white', borderRadius: '12px', textDecoration: 'none', fontWeight: 800, boxShadow: `0 4px 12px ${topicTheme.border}44`
-                  }}>
-                    Engage
-                  </Link>
+
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.4rem' }}>{quiz.title}</h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem' }}>
+                  Topic: {quiz.topic || 'General Sequence'}
+                </p>
+
+                {/* Details */}
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#1a1a2e', fontWeight: 800, marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <div>❓ {quiz.questions.length} Questions</div>
+                  <div>🎯 {maxScore} Marks Total</div>
+                </div>
+
+                {/* Due Date & Overdue Tag */}
+                {quiz.dueDate && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    {isOverdue ? (
+                      <span style={{ background: '#f50057', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                        ⚠️ Overdue — Due {new Date(quiz.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>
+                        ⏰ Due {new Date(quiz.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
+
+              {/* Status / Button Bar */}
+              <div style={{ borderTop: '2px dashed #cbd5e1', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {isCompleted ? (
+                  <div>
+                    <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#00c853' }}>
+                      Result: {pct}% ({attempt.score}/{maxScore})
+                    </div>
+                    <div style={{ color: '#ffd700', fontSize: '0.85rem' }}>{'★'.repeat(stars)}</div>
+                  </div>
+                ) : (
+                  <span style={{
+                    background: quiz.status === 'CLOSED' ? '#1a1a2e' : '#ffab00',
+                    color: '#ffffff',
+                    border: '1.5px solid #1a1a2e',
+                    borderRadius: '50px',
+                    padding: '0.2rem 0.65rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 900
+                  }}>
+                    {quiz.status === 'CLOSED' ? 'Closed' : 'Not started'}
+                  </span>
+                )}
+
+                <Link
+                  href={`/dashboard/student/quizzes/${quiz.id}`}
+                  style={{
+                    background: isCompleted ? '#ffffff' : '#00c853',
+                    color: isCompleted ? '#1a1a2e' : '#ffffff',
+                    border: '2.5px solid #1a1a2e',
+                    borderRadius: '50px',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    padding: '0.5rem 1.3rem',
+                    fontWeight: 900,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none'
+                  }}
+                >
+                  {isCompleted ? 'View results' : quiz.status === 'CLOSED' ? 'View quiz' : 'Start quiz →'}
+                </Link>
+              </div>
             </div>
-          );
+          )
         })}
 
         {quizzes.length === 0 && (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '6rem' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🧪</div>
-            <h3 style={{ fontWeight: 900, color: 'var(--text-secondary)' }}>Helix is Clear</h3>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>No active assessments currently scheduled for your profile.</p>
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '6px 6px 0px #1a1a2e' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🧪</div>
+            <h3 style={{ fontWeight: 900, fontSize: '1.5rem', color: '#1a1a2e' }}>No Quizzes Available</h3>
+            <p style={{ color: '#64748b', fontWeight: 600 }}>Your teachers have not published any assessments for your enrolled subjects yet.</p>
           </div>
         )}
       </div>

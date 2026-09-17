@@ -1,46 +1,40 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { notifySubjectMembers, notifyBatchMembers } from '@/lib/notifications'
+import { notifySubjectMembers } from '@/lib/notifications'
 
-// List quizzes for a given batch (via query param)
+// GET - List quizzes for a given subject or batch
 export async function GET(request: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
+  const subjectId = searchParams.get('subjectId')
   const batchId = searchParams.get('batchId')
 
-  if (!batchId) {
-    return NextResponse.json({ error: 'batchId is required' }, { status: 400 })
-  }
-
-  // Ensure student has access to this batch
-  const enrollment = await prisma.studentEnrollment.findFirst({
-    where: { studentId: session.user.id, batchId }
-  })
-
-  // SUPER_ADMIN and TEACHER have global/assigned access, STUDENT needs enrollment
-  if (session.user.role === 'STUDENT' && !enrollment) {
-    return NextResponse.json({ error: 'Access denied to this batch' }, { status: 403 })
+  if (!subjectId && !batchId) {
+    return NextResponse.json({ error: 'subjectId or batchId is required' }, { status: 400 })
   }
 
   try {
-    const subjectId = searchParams.get('subjectId')
-    const statusFilter = session.user.role === 'STUDENT' ? { status: 'PUBLISHED' } : {}
+    const statusFilter = session.user.role === 'STUDENT' ? { status: { in: ['PUBLISHED', 'CLOSED'] } } : {}
 
     const quizzes = await prisma.quiz.findMany({
       where: {
-        batchId: batchId,
         ...(subjectId ? { subjectId } : {}),
+        ...(batchId ? { batchId } : {}),
         ...statusFilter
       },
       include: {
-        subject: { select: { id: true, name: true } },
-        _count: { select: { questions: true } },
+        subject: { select: { id: true, name: true, colour: true } },
+        linkedSession: { select: { id: true, title: true, scheduledDate: true } },
+        _count: { select: { questions: true, attempts: true } },
+        questions: { select: { id: true, points: true, maxMarks: true } },
         attempts: {
-          where: { userId: session.user.id },
-          select: { status: true, score: true }
+          where: session.user.role === 'STUDENT' ? { userId: session.user.id } : undefined,
+          include: {
+            user: { select: { id: true, name: true, email: true } }
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -53,7 +47,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Create a new quiz (Teachers/Super Admins only)
+// POST - Create a new quiz with questions (Teacher/Super Admin)
 export async function POST(request: Request) {
   const session = await getSession()
   if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TEACHER')) {
@@ -62,50 +56,76 @@ export async function POST(request: Request) {
 
   try {
     const data = await request.json()
-    const { batchId, subjectId, title, chapter, topic, subtopic, scheduledDate } = data
+    const {
+      subjectId,
+      batchId,
+      branchId,
+      linkedSessionId,
+      title,
+      topic,
+      description,
+      dueDate,
+      showAnswersAfterSubmission = true,
+      status = 'DRAFT',
+      questions = []
+    } = data
 
-    if (!batchId || !title) {
-      return NextResponse.json({ error: 'Missing batchId or title' }, { status: 400 })
+    if (!title) {
+      return NextResponse.json({ error: 'Quiz title is required' }, { status: 400 })
     }
 
     const quiz = await prisma.quiz.create({
       data: {
-        batchId,
         subjectId: subjectId || null,
+        batchId: batchId || null,
+        branchId: branchId || null,
+        teacherId: session.user.id,
+        linkedSessionId: linkedSessionId || null,
         title,
-        chapter: chapter || null,
         topic: topic || null,
-        subtopic: subtopic || null,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-        status: 'DRAFT'
+        description: description || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        showAnswersAfterSubmission: !!showAnswersAfterSubmission,
+        status: status || 'DRAFT',
+        questions: {
+          create: questions.map((q: any, idx: number) => ({
+            type: q.type || 'MCQ',
+            text: q.text,
+            options: q.options ? JSON.stringify(q.options) : null,
+            correctOption: q.correctOption ?? null,
+            markScheme: q.markScheme || null,
+            maxMarks: q.maxMarks || q.points || 10,
+            points: q.maxMarks || q.points || 10,
+            orderIndex: idx
+          }))
+        }
+      },
+      include: {
+        questions: true,
+        linkedSession: true
       }
     })
 
-    // Notify participants
-    try {
-      if (subjectId) {
+    // If published immediately, send notification
+    if (status === 'PUBLISHED' && subjectId) {
+      try {
         const subject = await prisma.subject.findUnique({ where: { id: subjectId }, select: { name: true } })
+        const dueStr = dueDate ? new Date(dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'No due date'
         await notifySubjectMembers(
-          subjectId, 
-          null, 
-          'QUIZ_ADDED', 
-          'New Quiz Posted', 
-          `A new quiz "${title}" has been posted for ${subject?.name}.`
+          subjectId,
+          null,
+          'QUIZ_ADDED',
+          `New quiz published: ${title}`,
+          `A new quiz "${title}" has been published for ${subject?.name}. Due: ${dueStr}.`
         )
-      } else {
-        await notifyBatchMembers(
-          batchId, 
-          'QUIZ_ADDED', 
-          'General Quiz Posted', 
-          `A new general quiz "${title}" has been posted for your batch.`
-        )
+      } catch (err) {
+        console.error('Quiz notification error:', err)
       }
-    } catch (notifyErr) {
-      console.error('Quiz notification failed:', notifyErr)
     }
 
     return NextResponse.json({ success: true, quiz })
   } catch (error: any) {
+    console.error('Create quiz error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

@@ -173,24 +173,32 @@ model StudyMaterial {
 }
 
 model ClassSession {
-  id            String             @id @default(uuid())
-  subjectId     String
-  title         String
-  description   String?
-  scheduledDate DateTime
-  durationMins  Int                @default(60)
-  status        String             @default("SCHEDULED")
-  cancelReason  String?
-  taughtAt      DateTime?
-  lessonPlanId  String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  attendance    AttendanceRecord[]
-  resources     ClassResource[]
-  subject            Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  lessonPlan         LessonPlan?        @relation(fields: [lessonPlanId], references: [id])
+  id                 String              @id @default(uuid())
+  subjectId          String
+  title              String
+  description        String?
+  scheduledDate      DateTime
+  durationMins       Int                 @default(60)
+  status             String              @default("SCHEDULED")
+  cancelReason       String?
+  taughtAt           DateTime?
+  lessonPlanId       String?
+  classType          String              @default("PHYSICAL") // PHYSICAL / ONLINE / HYBRID
+  meetingLink        String?
+  recordingAvailable Boolean             @default(false)
+  isRecurring        Boolean             @default(false)
+  recurrenceRule     String?             // JSON string: { frequency, days, endDate }
+  syllabusCodes      String?
+  resourcesList      String?             // JSON string: [{ title, url }]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  attendance         AttendanceRecord[]
+  resources          ClassResource[]
+  subject            Subject             @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  lessonPlan         LessonPlan?         @relation(fields: [lessonPlanId], references: [id])
   syllabusObjectives SyllabusObjective[]
   notifications      Notification[]
+  quizzes            Quiz[]
 }
 
 model RecurringSchedule {
@@ -271,20 +279,27 @@ model StudentEnrollment {
 }
 
 model Quiz {
-  id            String        @id @default(uuid())
-  batchId       String
-  subjectId     String?
-  title         String
-  chapter       String?
-  topic         String?
-  subtopic      String?
-  status        String        @default("DRAFT")
-  scheduledDate DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  questions     Question[]
-  subject       Subject?      @relation(fields: [subjectId], references: [id])
-  attempts      QuizAttempt[]
+  id                          String        @id @default(uuid())
+  batchId                     String?
+  subjectId                   String?
+  branchId                    String?
+  teacherId                   String?
+  linkedSessionId             String?
+  title                       String
+  description                 String?
+  chapter                     String?
+  topic                       String?
+  subtopic                    String?
+  status                      String        @default("DRAFT")
+  dueDate                     DateTime?
+  scheduledDate               DateTime?
+  showAnswersAfterSubmission Boolean       @default(true)
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+  questions                   Question[]
+  subject                     Subject?      @relation(fields: [subjectId], references: [id])
+  linkedSession               ClassSession? @relation(fields: [linkedSessionId], references: [id], onDelete: SetNull)
+  attempts                    QuizAttempt[]
 }
 
 model Question {
@@ -294,6 +309,9 @@ model Question {
   text          String
   options       String?
   correctOption Int?
+  markScheme    String?
+  maxMarks      Int      @default(10)
+  orderIndex    Int      @default(0)
   points        Int      @default(10)
   createdAt     DateTime @default(now())
   answers       Answer[]
@@ -301,31 +319,39 @@ model Question {
 }
 
 model QuizAttempt {
-  id        String   @id @default(uuid())
-  quizId    String
-  userId    String
-  score     Int      @default(0)
-  status    String   @default("PENDING_REVIEW")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  answers   Answer[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(uuid())
+  quizId             String
+  userId             String
+  startedAt          DateTime  @default(now())
+  submittedAt        DateTime?
+  score              Int       @default(0)
+  maxPossibleScore   Int       @default(0)
+  status             String    @default("SUBMITTED")
+  helixPointsAwarded Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  answers            Answer[]
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz               Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@unique([quizId, userId])
 }
 
 model Answer {
-  id              String      @id @default(uuid())
-  attemptId       String
-  questionId      String
-  selectedOption  Int?
-  shortAnswerText String?
-  isCorrect       Boolean?
-  pointsAwarded   Int         @default(0)
-  createdAt       DateTime    @default(now())
-  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  attempt         QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  id               String      @id @default(uuid())
+  attemptId        String
+  questionId       String
+  selectedOption   Int?
+  selectedOptionId String?
+  answerText       String?
+  shortAnswerText  String?
+  isCorrect        Boolean?
+  marksAwarded     Int         @default(0)
+  aiFeedback       String?
+  pointsAwarded    Int         @default(0)
+  createdAt        DateTime    @default(now())
+  question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt          QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@unique([attemptId, questionId])
 }
