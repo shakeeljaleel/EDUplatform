@@ -238,6 +238,7 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
 
           {role === 'TEACHER' && (<>
             <NavLink href="/dashboard/teacher" label="My Classes" icon={<BookOpen size={20} />} exact />
+            <NavLink href="/dashboard/teacher/students" label="My Students" icon={<Users size={20} />} />
             <NavLink href="/dashboard/teacher/grading" label="AI Marking & Grader" icon={<Sparkles size={20} />} />
             <NavLink href="/dashboard/teacher/buzzer" label="Live Speed Buzzer" icon={<Sparkles size={20} />} />
             <NavLink href="/dashboard/teacher/forum" label="Discussion Forums" icon={<MessageSquare size={20} />} />

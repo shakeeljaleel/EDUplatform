@@ -82,3 +82,31 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: err.message || 'Failed to save exam session' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session || session.user.role !== 'TEACHER') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const { id: subjectId } = await params
+  const { searchParams } = new URL(request.url)
+  const sessionId = searchParams.get('id')
+  const title = searchParams.get('title')
+
+  try {
+    if (sessionId) {
+      const examSess = await prisma.examSession.findUnique({ where: { id: sessionId } })
+      if (examSess) {
+        await prisma.examRecord.deleteMany({ where: { subjectId, title: examSess.title } })
+        await prisma.examSession.delete({ where: { id: sessionId } })
+      }
+    } else if (title) {
+      await prisma.examRecord.deleteMany({ where: { subjectId, title } })
+      await prisma.examSession.deleteMany({ where: { subjectId, title } })
+    }
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Failed to delete exam session' }, { status: 500 })
+  }
+}
+

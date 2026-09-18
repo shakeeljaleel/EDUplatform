@@ -14,6 +14,10 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
   const [analyticsQuiz, setAnalyticsQuiz] = useState<any>(null)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsTab, setAnalyticsTab] = useState<'SUMMARY' | 'CROSS_TABLE'>('SUMMARY')
+  const [crossTableData, setCrossTableData] = useState<{ quizzes: any[]; students: any[] } | null>(null)
+  const [crossTableLoading, setCrossTableLoading] = useState(false)
+  const [selectedCellDetail, setSelectedCellDetail] = useState<{ studentName: string; quizTitle: string; cellData: any } | null>(null)
 
   // Teacher Marking Modal
   const [markingQuiz, setMarkingQuiz] = useState<any>(null)
@@ -62,6 +66,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
 
   const openAnalytics = async (quiz: any) => {
     setAnalyticsQuiz(quiz)
+    setAnalyticsTab('SUMMARY')
     setAnalyticsLoading(true)
     try {
       const res = await fetch(`/api/quizzes/${quiz.id}/analytics`)
@@ -71,6 +76,21 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
       }
     } finally {
       setAnalyticsLoading(false)
+    }
+
+    fetchCrossTableData()
+  }
+
+  const fetchCrossTableData = async () => {
+    setCrossTableLoading(true)
+    try {
+      const res = await fetch(`/api/subjects/${subjectId}/student-performance-table`)
+      if (res.ok) {
+        const data = await res.json()
+        setCrossTableData(data)
+      }
+    } finally {
+      setCrossTableLoading(false)
     }
   }
 
@@ -82,7 +102,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
       if (res.ok) {
         const data = await res.json()
         setAnalyticsData(data)
-        // Fetch full attempts with answers for grading
         const attemptsRes = await fetch(`/api/quizzes/${quiz.id}`)
         if (attemptsRes.ok) {
           const fullQuiz = (await attemptsRes.json()).quiz
@@ -219,12 +238,10 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
     document.body.removeChild(link)
   }
 
-  // Summary stats across all quizzes
   const totalQuizzes = quizzes.length
   const publishedQuizzes = quizzes.filter(q => q.status === 'PUBLISHED').length
   const totalSubmissions = quizzes.reduce((sum, q) => sum + (q._count?.attempts || q.attempts?.length || 0), 0)
 
-  // Fix 2: Calculate real average score percentage or show '--' if 0 submissions
   let totalPctSum = 0
   let totalAttemptsCount = 0
   quizzes.forEach(q => {
@@ -240,16 +257,16 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
   })
   const avgClassScoreStr = totalAttemptsCount > 0 ? `${Math.round(totalPctSum / totalAttemptsCount)}%` : '--'
 
-  // Fix 3: Capitalize subject name
   const formattedSubjectName = subjectInfo?.name
     ? (subjectInfo.name.charAt(0).toUpperCase() + subjectInfo.name.slice(1))
     : 'Subject'
+
+  const branchName = subjectInfo?.branchTeachers?.[0]?.branch?.name || 'Helix Test Campus'
 
   if (loading) return <div className="pulse">Loading quizzes...</div>
 
   return (
     <div className="content-wrapper" style={{ maxWidth: '1150px' }}>
-      
       {/* Header: Subject Name + Batch Name + Branch Pill */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -261,14 +278,13 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
               🎓 {subjectInfo?.batch?.name || 'Batch'}
             </span>
             <span style={{ background: '#00c853', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', padding: '0.25rem 0.85rem', fontWeight: 900, fontSize: '0.8rem', boxShadow: '2px 2px 0px #1a1a2e' }}>
-              📍 Kohuwala Branch
+              📍 {branchName}
             </span>
           </div>
           <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1a1a2e' }}>Quizzes & Assessments</h2>
           <p style={{ color: '#64748b', fontWeight: 600 }}>Create topic assessments, evaluate student performance, and view mark analytics.</p>
         </div>
 
-        {/* Fix 7: '+ Create quiz' button with comic treatment and btn-bob */}
         <Link
           href={`/dashboard/teacher/subjects/${subjectId}/quizzes/builder`}
           className="btn-bob"
@@ -288,7 +304,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
-      {/* Stats Row — Fix 1: Sentence case & Fix 4: Comic treatment */}
+      {/* Stats Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
         {[
           { label: 'Total quizzes', val: totalQuizzes, bg: '#2979ff', icon: '📝' },
@@ -312,7 +328,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Quizzes List */}
+      {/* Quizzes List — Comic cards with hover lift */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {quizzes.map(q => {
           const now = new Date()
@@ -324,6 +340,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
           return (
             <div
               key={q.id}
+              className="card-hover-lift"
               style={{
                 background: '#ffffff',
                 border: '3px solid #1a1a2e',
@@ -332,7 +349,8 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                 padding: '1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease'
               }}
             >
               <div>
@@ -443,7 +461,6 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
           )
         })}
 
-        {/* Fix 6: Empty state container comic treatment & Fix 7: '+ Create your first quiz' button */}
         {quizzes.length === 0 && (
           <div style={{
             gridColumn: '1 / -1',
@@ -479,10 +496,10 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
         )}
       </div>
 
-      {/* Mark Analytics Modal */}
+      {/* Mark Analytics Modal — Comic styled with 2 Tabs */}
       {analyticsQuiz && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-          <div style={{ maxWidth: '850px', width: '100%', maxHeight: '85vh', overflowY: 'auto', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '2rem', position: 'relative' }}>
+          <div style={{ maxWidth: '920px', width: '100%', maxHeight: '88vh', overflowY: 'auto', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '2rem', position: 'relative' }}>
             <button
               onClick={() => setAnalyticsQuiz(null)}
               style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50%', width: '36px', height: '36px', fontWeight: 900, cursor: 'pointer' }}
@@ -491,93 +508,263 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
             </button>
 
             <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.4rem' }}>
-              Mark Analytics — {analyticsQuiz.title}
+              Mark analytics — {analyticsQuiz.title}
             </h3>
-            <p style={{ color: '#64748b', fontWeight: 600, marginBottom: '1.5rem' }}>
+            <p style={{ color: '#64748b', fontWeight: 600, marginBottom: '1.25rem' }}>
               Student submission breakdown and performance trends.
             </p>
 
-            {analyticsLoading ? (
-              <div className="pulse">Loading analytics...</div>
-            ) : analyticsData ? (
+            {/* Modal Tabs Header */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: '2px solid #1a1a2e', paddingBottom: '0.75rem' }}>
+              <button
+                onClick={() => setAnalyticsTab('SUMMARY')}
+                style={{
+                  background: analyticsTab === 'SUMMARY' ? '#1a1a2e' : '#ffffff',
+                  color: analyticsTab === 'SUMMARY' ? '#ffffff' : '#1a1a2e',
+                  border: '2px solid #1a1a2e',
+                  borderRadius: '50px',
+                  padding: '0.5rem 1.25rem',
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  boxShadow: analyticsTab === 'SUMMARY' ? 'none' : '3px 3px 0px #1a1a2e',
+                  cursor: 'pointer'
+                }}
+              >
+                📊 Quiz summary
+              </button>
+              <button
+                onClick={() => {
+                  setAnalyticsTab('CROSS_TABLE')
+                  if (!crossTableData) fetchCrossTableData()
+                }}
+                style={{
+                  background: analyticsTab === 'CROSS_TABLE' ? '#1a1a2e' : '#ffffff',
+                  color: analyticsTab === 'CROSS_TABLE' ? '#ffffff' : '#1a1a2e',
+                  border: '2px solid #1a1a2e',
+                  borderRadius: '50px',
+                  padding: '0.5rem 1.25rem',
+                  fontWeight: 900,
+                  fontSize: '0.85rem',
+                  boxShadow: analyticsTab === 'CROSS_TABLE' ? 'none' : '3px 3px 0px #1a1a2e',
+                  cursor: 'pointer'
+                }}
+              >
+                👥 Student performance
+              </button>
+            </div>
+
+            {/* TAB 1: SUMMARY */}
+            {analyticsTab === 'SUMMARY' && (
               <div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                  {[
-                    { label: 'Submission Rate', val: `${analyticsData.stats.submissionRate}% (${analyticsData.stats.submittedCount}/${analyticsData.stats.totalEnrolled})`, bg: '#e0f2fe', color: '#0284c7' },
-                    { label: 'Average Score', val: `${analyticsData.stats.avgScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#fef3c7', color: '#b45309' },
-                    { label: 'Highest Score', val: `${analyticsData.stats.highestScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#dcfce7', color: '#15803d' },
-                    { label: 'Lowest Score', val: `${analyticsData.stats.lowestScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#ffebee', color: '#d32f2f' }
-                  ].map((st, i) => (
-                    <div key={i} style={{ background: st.bg, border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', textAlign: 'center', boxShadow: '3px 3px 0px #1a1a2e' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.2rem' }}>{st.label}</div>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 900, color: st.color }}>{st.val}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>Student Results ({analyticsData.students.length})</h4>
-                  <button
-                    onClick={exportCSV}
-                    style={{
-                      background: '#00c853',
-                      color: '#ffffff',
-                      border: '2px solid #1a1a2e',
-                      borderRadius: '50px',
-                      boxShadow: '3px 3px 0px #1a1a2e',
-                      padding: '0.4rem 1.2rem',
-                      fontWeight: 900,
-                      fontSize: '0.85rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    📥 Export CSV
-                  </button>
-                </div>
-
-                <div style={{ border: '2px solid #1a1a2e', borderRadius: '12px', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead style={{ background: '#f8fafc', borderBottom: '2px solid #1a1a2e' }}>
-                      <tr>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Student Name</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Score</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Percentage</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Stars</th>
-                        <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Alert</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analyticsData.students.map((st: any) => (
-                        <tr key={st.attemptId} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: '#1a1a2e' }}>
-                            {st.studentName}
-                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{st.studentEmail}</div>
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: '#1a1a2e' }}>
-                            {st.score} / {st.maxScore}
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: st.percentage >= 60 ? '#15803d' : '#d32f2f' }}>
-                            {st.percentage}%
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: '#ffd700' }}>
-                            {'★'.repeat(st.stars)}
-                          </td>
-                          <td style={{ padding: '0.75rem 1rem' }}>
-                            {st.isFlagged ? (
-                              <span style={{ background: '#ffebee', color: '#d32f2f', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.6rem', fontSize: '0.75rem', fontWeight: 900 }}>
-                                ⚠️ Low score &lt;50%
-                              </span>
-                            ) : (
-                              <span style={{ color: '#00c853', fontWeight: 800, fontSize: '0.8rem' }}>✓ On track</span>
-                            )}
-                          </td>
-                        </tr>
+                {analyticsLoading ? (
+                  <div className="pulse" style={{ padding: '2rem', textAlign: 'center', fontWeight: 800 }}>Loading analytics...</div>
+                ) : analyticsData ? (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                      {[
+                        { label: 'Submission rate', val: `${analyticsData.stats.submissionRate}% (${analyticsData.stats.submittedCount}/${analyticsData.stats.totalEnrolled})`, bg: '#e0f2fe', color: '#0284c7' },
+                        { label: 'Average score', val: `${analyticsData.stats.avgScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#fef3c7', color: '#b45309' },
+                        { label: 'Highest score', val: `${analyticsData.stats.highestScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#dcfce7', color: '#15803d' },
+                        { label: 'Lowest score', val: `${analyticsData.stats.lowestScore} / ${analyticsData.stats.maxPossibleScore}`, bg: '#ffebee', color: '#d32f2f' }
+                      ].map((st, i) => (
+                        <div key={i} style={{ background: st.bg, border: '3px solid #1a1a2e', borderRadius: '12px', padding: '1rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.2rem' }}>{st.label}</div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: 900, color: st.color }}>{st.val}</div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#1a1a2e' }}>Student results ({analyticsData.students.length})</h4>
+                      <button
+                        onClick={exportCSV}
+                        style={{
+                          background: '#00c853',
+                          color: '#ffffff',
+                          border: '2px solid #1a1a2e',
+                          borderRadius: '50px',
+                          boxShadow: '3px 3px 0px #1a1a2e',
+                          padding: '0.4rem 1.2rem',
+                          fontWeight: 900,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📥 Export CSV
+                      </button>
+                    </div>
+
+                    <div style={{ border: '3px solid #1a1a2e', borderRadius: '12px', overflow: 'hidden', boxShadow: '4px 4px 0px #1a1a2e' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead style={{ background: '#f8fafc', borderBottom: '2px solid #1a1a2e' }}>
+                          <tr>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Student Name</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Score</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Percentage</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Stars</th>
+                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 800, color: '#1a1a2e', fontSize: '0.8rem' }}>Alert</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analyticsData.students.map((st: any) => (
+                            <tr key={st.attemptId} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '0.75rem 1rem', fontWeight: 800, color: '#1a1a2e' }}>
+                                {st.studentName}
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{st.studentEmail}</div>
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: '#1a1a2e' }}>
+                                {st.score} / {st.maxScore}
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: st.percentage >= 60 ? '#15803d' : '#d32f2f' }}>
+                                {st.percentage}%
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', fontWeight: 900, color: '#ffd700' }}>
+                                {'★'.repeat(st.stars)}
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem' }}>
+                                {st.isFlagged ? (
+                                  <span style={{ background: '#ffebee', color: '#d32f2f', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.6rem', fontSize: '0.75rem', fontWeight: 900 }}>
+                                    ⚠️ Low score &lt;50%
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#00c853', fontWeight: 800, fontSize: '0.8rem' }}>✓ On track</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
+            )}
+
+            {/* TAB 2: STUDENT PERFORMANCE CROSS-TABLE */}
+            {analyticsTab === 'CROSS_TABLE' && (
+              <div>
+                {crossTableLoading ? (
+                  <div className="pulse" style={{ padding: '2rem', textAlign: 'center', fontWeight: 800 }}>Loading cross-table analytics...</div>
+                ) : crossTableData ? (
+                  <div>
+                    <p style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 700, marginBottom: '1rem' }}>
+                      Click any score cell to view detailed student answers & AI feedback for that quiz.
+                    </p>
+                    <div style={{ border: '3px solid #1a1a2e', borderRadius: '16px', overflowX: 'auto', boxShadow: '5px 5px 0px #1a1a2e' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead style={{ background: '#f8fafc', borderBottom: '2px solid #1a1a2e' }}>
+                          <tr>
+                            <th style={{ padding: '0.85rem 1rem', fontWeight: 900, color: '#1a1a2e', fontSize: '0.85rem' }}>Student</th>
+                            {crossTableData.quizzes.map((q, idx) => (
+                              <th key={q.id} style={{ padding: '0.85rem 1rem', fontWeight: 900, color: '#1a1a2e', fontSize: '0.85rem', textAlign: 'center' }}>
+                                {q.title || `Quiz ${idx + 1}`}
+                              </th>
+                            ))}
+                            <th style={{ padding: '0.85rem 1rem', fontWeight: 900, color: '#1a1a2e', fontSize: '0.85rem', textAlign: 'center' }}>Avg</th>
+                            <th style={{ padding: '0.85rem 1rem', fontWeight: 900, color: '#1a1a2e', fontSize: '0.85rem', textAlign: 'center' }}>HELIX</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {crossTableData.students.map(st => (
+                            <tr key={st.studentId} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '0.85rem 1rem', fontWeight: 900, color: '#1a1a2e' }}>
+                                {st.name}
+                                {st.hasLowScore && <span style={{ marginLeft: '0.4rem', color: '#f50057' }}>⚠️</span>}
+                              </td>
+                              {crossTableData.quizzes.map(q => {
+                                const scoreData = st.quizScores[q.id]
+                                if (!scoreData) {
+                                  return (
+                                    <td key={q.id} style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#94a3b8', fontWeight: 800 }}>
+                                      --
+                                    </td>
+                                  )
+                                }
+                                const isLow = scoreData.percentage < 50
+                                return (
+                                  <td
+                                    key={q.id}
+                                    onClick={() => setSelectedCellDetail({ studentName: st.name, quizTitle: q.title, cellData: scoreData })}
+                                    style={{
+                                      padding: '0.85rem 1rem',
+                                      textAlign: 'center',
+                                      fontWeight: 900,
+                                      cursor: 'pointer',
+                                      color: isLow ? '#f50057' : '#15803d',
+                                      background: isLow ? '#fff0f3' : '#f0fdf4',
+                                      border: isLow ? '2px solid #f50057' : '1px solid #dcfce7',
+                                      borderRadius: '8px'
+                                    }}
+                                  >
+                                    {scoreData.percentage}% {isLow ? '⚠️' : ''}
+                                  </td>
+                                )
+                              })}
+                              <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontWeight: 900, color: '#1a1a2e' }}>
+                                {st.avgPct !== null ? `${st.avgPct}%` : '--'}
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontWeight: 900, color: '#aa00ff' }}>
+                                {st.helixScore}pts
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* Cross Table Detailed Cell Modal */}
+      {selectedCellDetail && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '1.5rem' }}>
+          <div style={{ maxWidth: '650px', width: '100%', maxHeight: '80vh', overflowY: 'auto', background: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '20px', boxShadow: '8px 8px 0px #1a1a2e', padding: '1.75rem', position: 'relative' }}>
+            <button
+              onClick={() => setSelectedCellDetail(null)}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50%', width: '32px', height: '32px', fontWeight: 900, cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+
+            <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#1a1a2e', marginBottom: '0.2rem' }}>
+              {selectedCellDetail.studentName} — {selectedCellDetail.quizTitle}
+            </h4>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <span style={{ background: selectedCellDetail.cellData.percentage < 50 ? '#f50057' : '#00c853', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.75rem', fontWeight: 900, fontSize: '0.8rem' }}>
+                Score: {selectedCellDetail.cellData.score} / {selectedCellDetail.cellData.maxScore} ({selectedCellDetail.cellData.percentage}%)
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {selectedCellDetail.cellData.answers.map((ans: any, idx: number) => (
+                <div key={ans.id || idx} style={{ border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', background: '#f8fafc', boxShadow: '3px 3px 0px #1a1a2e' }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.9rem', color: '#1a1a2e', marginBottom: '0.5rem' }}>
+                    Q{idx + 1}. {ans.questionText}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                    <strong>Student Answer:</strong> {ans.studentAnswer}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 900, color: ans.marksAwarded > 0 ? '#15803d' : '#d32f2f', marginBottom: '0.4rem' }}>
+                    Marks: {ans.marksAwarded} / {ans.maxMarks}
+                  </div>
+                  {ans.aiFeedback && (
+                    <div style={{ fontSize: '0.8rem', background: '#f0fdf4', border: '1.5px solid #00c853', borderRadius: '8px', padding: '0.5rem 0.75rem', color: '#15803d', fontWeight: 700 }}>
+                      🤖 AI Feedback: {ans.aiFeedback}
+                    </div>
+                  )}
+                  {ans.teacherFeedback && (
+                    <div style={{ fontSize: '0.8rem', background: '#eff6ff', border: '1.5px solid #2979ff', borderRadius: '8px', padding: '0.5rem 0.75rem', color: '#1e40af', fontWeight: 700, marginTop: '0.4rem' }}>
+                      👤 Teacher Feedback: {ans.teacherFeedback}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -596,7 +783,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <div>
                 <span style={{ background: '#00c853', color: '#ffffff', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.75rem', fontSize: '0.75rem', fontWeight: 900 }}>
-                  Teacher Marking Mode
+                  Teacher marking mode
                 </span>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1a1a2e', marginTop: '0.2rem' }}>
                   {markingQuiz.title}
@@ -655,22 +842,22 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
 
                     <div style={{ background: '#f8fafc', border: '2px solid #1a1a2e', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
                       <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', marginBottom: '0.4rem' }}>
-                        Student Answer ({currentSub.user?.name || 'Student'})
+                        Student answer ({currentSub.user?.name || 'Student'})
                       </div>
                       <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1a1a2e', whiteSpace: 'pre-wrap' }}>
-                        {currentAns.shortAnswerText || currentAns.answerText || currentAns.selectedOption !== null ? `Selected Option: ${currentAns.selectedOption}` : 'No answer submitted.'}
+                        {currentAns.shortAnswerText || currentAns.answerText || (currentAns.selectedOption !== null ? `Selected Option: ${currentAns.selectedOption}` : 'No answer submitted.')}
                       </div>
                     </div>
 
                     {currentAns.aiFeedback && (
                       <div style={{ background: '#f0fdf4', border: '1.5px solid #00c853', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#15803d', fontWeight: 700 }}>
-                        🤖 <strong>AI Initial Suggestion:</strong> {currentAns.aiFeedback}
+                        🤖 <strong>AI initial suggestion:</strong> {currentAns.aiFeedback}
                       </div>
                     )}
 
                     <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', marginBottom: '1.25rem' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.25rem' }}>Marks Awarded:</label>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.25rem' }}>Marks awarded:</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           <input
                             type="number"
@@ -688,12 +875,12 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                         onClick={() => setIsOverriding(!isOverriding)}
                         style={{ background: '#ff6d00', color: '#ffffff', border: '2px solid #1a1a2e', borderRadius: '50px', boxShadow: '3px 3px 0px #1a1a2e', padding: '0.5rem 1rem', fontWeight: 900, fontSize: '0.8rem', cursor: 'pointer' }}
                       >
-                        ⚡ Override AI Mark
+                        ⚡ Override AI mark
                       </button>
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.4rem' }}>Teacher Feedback for Student:</label>
+                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#1a1a2e', marginBottom: '0.4rem' }}>Teacher feedback for student:</label>
                       <textarea
                         rows={3}
                         value={editFeedback}
@@ -725,7 +912,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                   {showMarkSchemePanel && (
                     <div style={{ background: '#f0fdf4', border: '3px solid #1a1a2e', borderLeft: '6px solid #00c853', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', padding: '1.25rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#15803d' }}>📖 Model Mark Scheme</h4>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#15803d' }}>📖 Model mark scheme</h4>
                         <button onClick={() => setShowMarkSchemePanel(false)} style={{ background: 'none', border: 'none', fontWeight: 900, cursor: 'pointer' }}>✕</button>
                       </div>
 

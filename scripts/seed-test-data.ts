@@ -54,6 +54,8 @@ async function main() {
   // Clean up existing Test Branch and Batch if they exist
   const existingBranch = await prisma.branch.findFirst({ where: { name: 'Helix Test Campus' } })
   if (existingBranch) {
+    await prisma.examRecord.deleteMany({ where: { subject: { branchTeachers: { some: { branchId: existingBranch.id } } } } })
+    await prisma.examSession.deleteMany({ where: { subject: { branchTeachers: { some: { branchId: existingBranch.id } } } } })
     await prisma.classResource.deleteMany({ where: { session: { subject: { branchTeachers: { some: { branchId: existingBranch.id } } } } } })
     await prisma.question.deleteMany({ where: { quiz: { branchId: existingBranch.id } } })
     await prisma.quiz.deleteMany({ where: { branchId: existingBranch.id } })
@@ -1202,10 +1204,79 @@ async function main() {
         title: 'New Class Scheduled',
         message: `New class scheduled: Enzymes & Metabolism on ${session6DateStr} at 09:45.`,
         link: `/dashboard/parent/children/${studentAlex.id}`,
-        createdAt: getPastDate(1, 9, 0)
       }
     ]
   })
+
+  console.log('📝 Creating Exam Sessions & Exam Records...')
+
+  // Exam Session 1 (Cell Biology End of Topic Test)
+  const examSession1Date = getPastDate(21)
+  await prisma.examSession.upsert({
+    where: { subjectId_title: { subjectId: subject.id, title: 'Cell Biology End of Topic Test' } },
+    update: {},
+    create: {
+      subjectId: subject.id,
+      title: 'Cell Biology End of Topic Test',
+      highlights: 'Strong understanding of cell organelle structures across the batch.',
+      lows: 'Some students struggled with organelle magnification calculations.',
+      suggestions: 'Add extra practice on microscopy scale conversions.'
+    }
+  })
+
+  const exam1Data = [
+    { userId: studentAlex.id, marks: 42, maxMarks: 50, grade: 'A' },
+    { userId: studentEmma.id, marks: 38, maxMarks: 50, grade: 'B' },
+    { userId: studentRyan.id, marks: 28, maxMarks: 50, grade: 'C' }
+  ]
+
+  for (const record of exam1Data) {
+    await prisma.examRecord.create({
+      data: {
+        subjectId: subject.id,
+        userId: record.userId,
+        title: 'Cell Biology End of Topic Test',
+        marks: record.marks,
+        maxMarks: record.maxMarks,
+        grade: record.grade,
+        date: examSession1Date
+      }
+    })
+  }
+
+  // Exam Session 2 (DNA & Genetics Paper)
+  const examSession2Date = getPastDate(7)
+  await prisma.examSession.upsert({
+    where: { subjectId_title: { subjectId: subject.id, title: 'DNA & Genetics Paper' } },
+    update: {},
+    create: {
+      subjectId: subject.id,
+      title: 'DNA & Genetics Paper',
+      highlights: 'Mastery of base pairing rules and double helix structure.',
+      lows: 'Semi-conservative replication explanation lacked details on helicase/polymerase roles.',
+      suggestions: 'Use interactive diagrams for enzyme functions in replication.'
+    }
+  })
+
+  const exam2Data = [
+    { userId: studentAlex.id, marks: 35, maxMarks: 40, grade: 'A' },
+    { userId: studentEmma.id, marks: 30, maxMarks: 40, grade: 'B' },
+    { userId: studentRyan.id, marks: 22, maxMarks: 40, grade: 'C' }
+  ]
+
+  for (const record of exam2Data) {
+    await prisma.examRecord.create({
+      data: {
+        subjectId: subject.id,
+        userId: record.userId,
+        title: 'DNA & Genetics Paper',
+        marks: record.marks,
+        maxMarks: record.maxMarks,
+        grade: record.grade,
+        date: examSession2Date
+      }
+    })
+  }
 
   console.log('✅ Seeding completed successfully!')
   console.log('----------------------------------------------------')

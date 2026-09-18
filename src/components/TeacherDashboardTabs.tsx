@@ -257,13 +257,29 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                 try { assistantPermissions = JSON.parse(assistantObj.permissions) } catch { assistantPermissions = [] }
               }
 
+              const rawColour = cls.subject.colour || '#2979ff'
+              const cardBg = rawColour.includes('gradient') ? '#2979ff' : rawColour
+
+              const getPermissionBadgeColor = (perm: string) => {
+                const p = perm.toLowerCase()
+                if (p.includes('attendance')) return '#00c853'
+                if (p.includes('grad')) return '#2979ff'
+                if (p.includes('resource')) return '#ff6d00'
+                if (p.includes('forum')) return '#aa00ff'
+                if (p.includes('performance') || p.includes('analytic')) return '#00bcd4'
+                if (p.includes('announc')) return '#f50057'
+                if (p.includes('quiz')) return '#ffab00'
+                if (p.includes('contact')) return '#795548'
+                return '#1a1a2e'
+              }
+
               return (
                 <div
                   key={cls.id}
                   className="card"
                   style={{
                     padding: '1.75rem',
-                    background: cls.subject.colour || '#2979ff',
+                    background: cardBg,
                     color: '#ffffff',
                     border: '3px solid #1a1a2e',
                     boxShadow: '5px 5px 0px #1a1a2e',
@@ -288,7 +304,6 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                         {cls.subject.batch.name}
                       </span>
 
-                      {/* Fix 13: Green Branch Pill */}
                       <span style={{
                         backgroundColor: '#00c853',
                         color: '#ffffff',
@@ -319,8 +334,8 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                       marginBottom: '1rem'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '0.05em' }}>
-                          My Assistant
+                        <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.05em' }}>
+                          My assistant
                         </span>
 
                         {assistantObj ? (
@@ -385,13 +400,14 @@ export default function TeacherDashboardTabs({ teacherClasses, pendingConfirmati
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                               {assistantPermissions.map((perm: string) => (
                                 <span key={perm} style={{
-                                  background: 'rgba(255,255,255,0.2)',
+                                  background: getPermissionBadgeColor(perm),
                                   color: '#ffffff',
-                                  padding: '0.15rem 0.5rem',
+                                  padding: '0.2rem 0.65rem',
                                   borderRadius: '50px',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 800,
-                                  border: '1px solid rgba(255,255,255,0.4)'
+                                  fontSize: '0.75rem',
+                                  fontWeight: 900,
+                                  border: '2px solid #1a1a2e',
+                                  boxShadow: '1px 1px 0px #1a1a2e'
                                 }}>
                                   ✓ {perm}
                                 </span>
