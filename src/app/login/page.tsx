@@ -177,7 +177,7 @@ export default function LoginPage() {
         <div style={{ width: '100%', maxWidth: '400px' }}>
           
           <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-            <h4 style={{ color: '#00c853', marginBottom: '0.5rem', fontSize: '0.875rem', letterSpacing: '0.05em', fontWeight: 800 }}>
+            <h4 style={{ color: '#00c853', marginBottom: '0.5rem', fontSize: '0.8rem', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'none' }}>
               Secure portal access
             </h4>
             <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.25rem', color: '#1a1a2e' }}>Welcome Back</h2>
@@ -251,7 +251,7 @@ export default function LoginPage() {
                 <button 
                   type="button" 
                   onClick={() => setShowForgot(true)}
-                  style={{ background: 'none', border: 'none', color: '#2979ff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  style={{ background: 'transparent', border: 'none', boxShadow: 'none', color: '#2979ff', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', padding: 0, outline: 'none' }}
                 >
                   Forgot Password?
                 </button>
