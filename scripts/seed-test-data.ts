@@ -68,15 +68,15 @@ async function main() {
 
   console.log('👥 Creating test accounts...')
 
-  const adminPass = await bcrypt.hash('HelixAdmin2026!', 10)
-  const teacherPass = await bcrypt.hash('HelixTeacher2026!', 10)
-  const assistPass = await bcrypt.hash('HelixAssist2026!', 10)
-  const studentPass = await bcrypt.hash('HelixStudent2026!', 10)
-  const parentPass = await bcrypt.hash('HelixParent2026!', 10)
-  const dummyPass = await bcrypt.hash('HelixTest2026!', 10)
+  const adminPass = await bcrypt.hash('HelixAdmin2026!', 12)
+  const teacherPass = await bcrypt.hash('HelixTeacher2026!', 12)
+  const assistPass = await bcrypt.hash('HelixAssist2026!', 12)
+  const studentPass = await bcrypt.hash('HelixStudent2026!', 12)
+  const parentPass = await bcrypt.hash('HelixParent2026!', 12)
+  const dummyPass = await bcrypt.hash('HelixTest2026!', 12)
 
   // 1. Super Admin
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Dr. Admin',
       email: 'admin@helix.test',
@@ -138,7 +138,7 @@ async function main() {
     }
   })
 
-  const profileAlex = await prisma.studentProfile.create({
+  await prisma.studentProfile.create({
     data: {
       userId: studentAlex.id,
       parentId: parentProfile.id,
@@ -166,7 +166,7 @@ async function main() {
     }
   })
 
-  const profileEmma = await prisma.studentProfile.create({
+  await prisma.studentProfile.create({
     data: {
       userId: studentEmma.id,
       paymentStatus: 'Paid',
@@ -193,7 +193,7 @@ async function main() {
     }
   })
 
-  const profileRyan = await prisma.studentProfile.create({
+  await prisma.studentProfile.create({
     data: {
       userId: studentRyan.id,
       paymentStatus: 'Paid',
@@ -318,7 +318,7 @@ async function main() {
     { code: 'BIO-5.2', description: 'Light Independent Photosynthesis' }
   ]
 
-  const objectivesMap: Record<string, any> = {}
+  const objectivesMap: Record<string, { id: string; code: string }> = {}
   for (const obj of objectivesData) {
     const createdObj = await prisma.syllabusObjective.upsert({
       where: { code: obj.code },
@@ -471,7 +471,7 @@ async function main() {
 
   // Upcoming Session 6: 3 days from now at 10:00 (or 09:45 broadcast note)
   const dateS6 = getFutureDate(3, 10, 0)
-  const session6 = await prisma.classSession.create({
+  await prisma.classSession.create({
     data: {
       subjectId: subject.id,
       title: 'Enzymes & Metabolism',
@@ -628,7 +628,7 @@ async function main() {
   })
 
   // Quiz 1 Attempt - Alex Johnson (Score 9/10, 95 points, 5 stars, Gold medal)
-  const attempt1Alex = await prisma.quizAttempt.create({
+  await prisma.quizAttempt.create({
     data: {
       quizId: quiz1.id,
       userId: studentAlex.id,
