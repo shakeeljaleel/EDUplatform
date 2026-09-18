@@ -125,10 +125,9 @@ export default function MyStudentsPage() {
           </p>
         </div>
 
-        {/* View Filter Pills */}
+        {/* View Filter Pills — Fix 4: Consistent active state without gaps */}
         <div style={{
           display: 'flex',
-          gap: '0.5rem',
           background: '#ffffff',
           border: '3px solid #1a1a2e',
           borderRadius: '50px',
@@ -144,16 +143,16 @@ export default function MyStudentsPage() {
               key={tab.key}
               onClick={() => setViewMode(tab.key as 'BATCH' | 'SUBJECT' | 'ALL')}
               style={{
-                padding: '0.5rem 1.25rem',
+                padding: '10px 20px',
                 borderRadius: '50px',
-                border: viewMode === tab.key ? '2px solid #1a1a2e' : 'none',
-                background: viewMode === tab.key ? '#1a1a2e' : 'transparent',
+                border: 'none',
+                background: viewMode === tab.key ? '#1a1a2e' : '#ffffff',
                 color: viewMode === tab.key ? '#ffffff' : '#1a1a2e',
                 fontWeight: 900,
                 fontSize: '0.875rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: viewMode === tab.key ? '2px 2px 0px #1a1a2e' : 'none'
+                boxShadow: 'none'
               }}
             >
               {tab.label}
@@ -177,19 +176,19 @@ export default function MyStudentsPage() {
                 const isCollapsed = collapsedGroups[group.key]
                 return (
                   <div key={group.key} style={{
-                    border: '2px solid #1a1a2e',
+                    border: '3px solid #1a1a2e',
                     borderRadius: '16px',
-                    boxShadow: '4px 4px 0px #1a1a2e',
+                    boxShadow: '5px 5px 0px #1a1a2e',
                     background: '#ffffff',
                     overflow: 'hidden'
                   }}>
-                    {/* Collapsible Section Header */}
+                    {/* Collapsible Section Header — Fix 12 */}
                     <div 
                       onClick={() => toggleGroup(group.key)}
                       style={{
                         padding: '1.25rem 1.5rem',
-                        background: 'rgba(41, 121, 255, 0.06)',
-                        borderBottom: isCollapsed ? 'none' : '2px solid #1a1a2e',
+                        background: 'rgba(41, 121, 255, 0.08)',
+                        borderBottom: isCollapsed ? 'none' : '3px solid #1a1a2e',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -211,7 +210,8 @@ export default function MyStudentsPage() {
                           padding: '0.2rem 0.75rem',
                           fontSize: '0.75rem',
                           fontWeight: 900,
-                          boxShadow: '2px 2px 0px #1a1a2e'
+                          boxShadow: '2px 2px 0px #1a1a2e',
+                          whiteSpace: 'nowrap'
                         }}>
                           📍 {group.branchName}
                         </span>
@@ -225,7 +225,8 @@ export default function MyStudentsPage() {
                           padding: '0.2rem 0.75rem',
                           fontSize: '0.75rem',
                           fontWeight: 900,
-                          boxShadow: '2px 2px 0px #1a1a2e'
+                          boxShadow: '2px 2px 0px #1a1a2e',
+                          whiteSpace: 'nowrap'
                         }}>
                           {group.subjectName}
                         </span>
@@ -240,7 +241,7 @@ export default function MyStudentsPage() {
                       </div>
                     </div>
 
-                    {/* Table of Students in Group */}
+                    {/* Table of Students in Group — Fix 11 */}
                     {!isCollapsed && (
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -251,7 +252,7 @@ export default function MyStudentsPage() {
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800 }}>Subject</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Attendance</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Last Quiz Score</th>
-                              <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>HELIX Score</th>
+                              <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center', minWidth: '120px' }}>HELIX Score</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Status</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Action</th>
                             </tr>
@@ -259,10 +260,22 @@ export default function MyStudentsPage() {
                           <tbody>
                             {group.students.map((student: StudentRecord) => (
                               <tr key={student.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
-                                <td style={{ padding: '1rem 1.25rem', fontWeight: 900, color: '#1a1a2e' }}>
+                                {/* Student Name — Fix 1: Plain bold text, no pill background, no border */}
+                                <td style={{ padding: '1rem 1.25rem' }}>
                                   <button 
                                     onClick={() => setSelectedStudent(student)} 
-                                    style={{ background: 'none', border: 'none', color: '#1a1a2e', fontWeight: 900, cursor: 'pointer', textAlign: 'left', padding: 0 }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      boxShadow: 'none',
+                                      color: '#1a1a2e',
+                                      fontWeight: 700,
+                                      fontSize: '0.95rem',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      padding: 0,
+                                      outline: 'none'
+                                    }}
                                   >
                                     {student.name}
                                   </button>
@@ -275,7 +288,8 @@ export default function MyStudentsPage() {
                                     padding: '0.2rem 0.6rem',
                                     borderRadius: '50px',
                                     fontSize: '0.75rem',
-                                    fontWeight: 800
+                                    fontWeight: 800,
+                                    whiteSpace: 'nowrap'
                                   }}>
                                     {student.subjectName}
                                   </span>
@@ -288,7 +302,8 @@ export default function MyStudentsPage() {
                                 <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800 }}>
                                   {student.lastQuizScore}
                                 </td>
-                                <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                                {/* HELIX Score Badge — Fix 3: Full display */}
+                                <td style={{ padding: '1rem 1.25rem', textAlign: 'center', minWidth: '120px' }}>
                                   <span style={{
                                     background: '#ffd700',
                                     color: '#1a1a2e',
@@ -297,7 +312,9 @@ export default function MyStudentsPage() {
                                     padding: '0.2rem 0.65rem',
                                     fontSize: '0.8rem',
                                     fontWeight: 900,
-                                    boxShadow: '1.5px 1.5px 0px #1a1a2e'
+                                    boxShadow: '1.5px 1.5px 0px #1a1a2e',
+                                    whiteSpace: 'nowrap',
+                                    display: 'inline-block'
                                   }}>
                                     ⚡ {student.helixScore} pts
                                   </span>
@@ -393,18 +410,19 @@ export default function MyStudentsPage() {
                 const isCollapsed = collapsedGroups[group.key]
                 return (
                   <div key={`subj_${group.key}`} style={{
-                    border: '2px solid #1a1a2e',
+                    border: '3px solid #1a1a2e',
                     borderRadius: '16px',
-                    boxShadow: '4px 4px 0px #1a1a2e',
+                    boxShadow: '5px 5px 0px #1a1a2e',
                     background: '#ffffff',
                     overflow: 'hidden'
                   }}>
+                    {/* Collapsible Section Header — Fix 12 */}
                     <div 
                       onClick={() => toggleGroup(group.key)}
                       style={{
                         padding: '1.25rem 1.5rem',
-                        background: 'rgba(0, 200, 83, 0.06)',
-                        borderBottom: isCollapsed ? 'none' : '2px solid #1a1a2e',
+                        background: 'rgba(0, 200, 83, 0.08)',
+                        borderBottom: isCollapsed ? 'none' : '3px solid #1a1a2e',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -422,7 +440,8 @@ export default function MyStudentsPage() {
                           padding: '0.25rem 0.85rem',
                           fontSize: '0.85rem',
                           fontWeight: 900,
-                          boxShadow: '2px 2px 0px #1a1a2e'
+                          boxShadow: '2px 2px 0px #1a1a2e',
+                          whiteSpace: 'nowrap'
                         }}>
                           🟢 {group.subjectName}
                         </span>
@@ -440,7 +459,8 @@ export default function MyStudentsPage() {
                           padding: '0.2rem 0.75rem',
                           fontSize: '0.75rem',
                           fontWeight: 900,
-                          boxShadow: '2px 2px 0px #1a1a2e'
+                          boxShadow: '2px 2px 0px #1a1a2e',
+                          whiteSpace: 'nowrap'
                         }}>
                           📍 {group.branchName}
                         </span>
@@ -464,7 +484,7 @@ export default function MyStudentsPage() {
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800 }}>Email Address</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Attendance</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Last Quiz Score</th>
-                              <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>HELIX Score</th>
+                              <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center', minWidth: '120px' }}>HELIX Score</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Status</th>
                               <th style={{ padding: '0.85rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Action</th>
                             </tr>
@@ -472,8 +492,23 @@ export default function MyStudentsPage() {
                           <tbody>
                             {group.students.map((student: StudentRecord) => (
                               <tr key={student.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
-                                <td style={{ padding: '1rem 1.25rem', fontWeight: 900, color: '#1a1a2e' }}>
-                                  <button onClick={() => setSelectedStudent(student)} style={{ background: 'none', border: 'none', color: '#1a1a2e', fontWeight: 900, cursor: 'pointer', padding: 0 }}>
+                                {/* Student Name — Fix 1: Plain bold text */}
+                                <td style={{ padding: '1rem 1.25rem' }}>
+                                  <button 
+                                    onClick={() => setSelectedStudent(student)} 
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      boxShadow: 'none',
+                                      color: '#1a1a2e',
+                                      fontWeight: 700,
+                                      fontSize: '0.95rem',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      padding: 0,
+                                      outline: 'none'
+                                    }}
+                                  >
                                     {student.name}
                                   </button>
                                 </td>
@@ -482,8 +517,8 @@ export default function MyStudentsPage() {
                                   {student.attendancePct}%
                                 </td>
                                 <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800 }}>{student.lastQuizScore}</td>
-                                <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                                  <span style={{ background: '#ffd700', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontSize: '0.8rem', fontWeight: 900 }}>
+                                <td style={{ padding: '1rem 1.25rem', textAlign: 'center', minWidth: '120px' }}>
+                                  <span style={{ background: '#ffd700', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontSize: '0.8rem', fontWeight: 900, whiteSpace: 'nowrap', display: 'inline-block' }}>
                                     ⚡ {student.helixScore} pts
                                   </span>
                                 </td>
@@ -505,76 +540,114 @@ export default function MyStudentsPage() {
             </div>
           )}
 
-          {/* ── View 3: All Students Flat List ────────────────────── */}
+          {/* ── View 3: All Students Flat List — Fixes 1, 2, 3, 11 ────── */}
           {viewMode === 'ALL' && (
-            <div style={{ border: '2.5px solid #1a1a2e', borderRadius: '16px', boxShadow: '4px 4px 0px #1a1a2e', background: '#ffffff', overflow: 'hidden' }}>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '2.5px solid #1a1a2e', fontSize: '0.85rem', color: '#64748b' }}>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Name</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Email</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Batch</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Branch</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Subject</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Attendance</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Last Quiz</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>HELIX Score</th>
-                      <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Status</th>
+            <div style={{
+              border: '3px solid #1a1a2e',
+              borderRadius: '16px',
+              boxShadow: '5px 5px 0px #1a1a2e',
+              background: '#ffffff',
+              overflow: 'hidden',
+              overflowX: 'auto'
+            }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '950px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '2.5px solid #1a1a2e', fontSize: '0.85rem', color: '#64748b' }}>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Name</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Email</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Batch</th>
+                    {/* Fix 2: Widen Branch column to min 160px */}
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800, minWidth: '160px', width: '160px' }}>Branch</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800 }}>Subject</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Attendance</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Last Quiz</th>
+                    {/* Fix 3: Min width 120px for HELIX Score column */}
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center', minWidth: '120px', width: '120px' }}>HELIX Score</th>
+                    <th style={{ padding: '1rem 1.25rem', fontWeight: 800, textAlign: 'center' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allStudents.map(student => (
+                    <tr key={`all_${student.id}_${student.subjectId}_${student.branchId}`} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
+                      {/* Fix 1: Plain bold text for student name */}
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <button 
+                          onClick={() => setSelectedStudent(student)} 
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            color: '#1a1a2e',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            padding: 0,
+                            outline: 'none'
+                          }}
+                        >
+                          {student.name}
+                        </button>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontWeight: 600 }}>{student.email}</td>
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 700, color: '#1a1a2e' }}>{student.batchName}</td>
+                      {/* Fix 2: Branch Pill with white-space: nowrap */}
+                      <td style={{ padding: '1rem 1.25rem', minWidth: '160px' }}>
+                        <span style={{
+                          background: student.branchColour || '#2979ff',
+                          color: '#ffffff',
+                          border: '1.5px solid #1a1a2e',
+                          borderRadius: '50px',
+                          padding: '0.2rem 0.65rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block'
+                        }}>
+                          📍 {student.branchName}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem' }}>
+                        <span style={{
+                          background: student.subjectColour || '#00c853',
+                          color: '#ffffff',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '50px',
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block'
+                        }}>
+                          {student.subjectName}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800, color: student.attendancePct >= 75 ? '#00c853' : '#dc2626' }}>
+                        {student.attendancePct}%
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800 }}>{student.lastQuizScore}</td>
+                      {/* Fix 3: Full score display */}
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center', minWidth: '120px' }}>
+                        <span style={{
+                          background: '#ffd700',
+                          color: '#1a1a2e',
+                          border: '1.5px solid #1a1a2e',
+                          borderRadius: '50px',
+                          padding: '0.2rem 0.65rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block'
+                        }}>
+                          ⚡ {student.helixScore} pts
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <span style={{ background: '#e8f5e9', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '50px', padding: '0.15rem 0.6rem', fontSize: '0.75rem', fontWeight: 800 }}>Active</span>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {allStudents.map(student => (
-                      <tr key={`all_${student.id}_${student.subjectId}_${student.branchId}`} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
-                        <td style={{ padding: '1rem 1.25rem', fontWeight: 900, color: '#1a1a2e' }}>
-                          <button onClick={() => setSelectedStudent(student)} style={{ background: 'none', border: 'none', color: '#1a1a2e', fontWeight: 900, cursor: 'pointer', padding: 0 }}>
-                            {student.name}
-                          </button>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem', color: '#64748b', fontWeight: 600 }}>{student.email}</td>
-                        <td style={{ padding: '1rem 1.25rem', fontWeight: 700, color: '#1a1a2e' }}>{student.batchName}</td>
-                        <td style={{ padding: '1rem 1.25rem' }}>
-                          <span style={{
-                            background: student.branchColour || '#2979ff',
-                            color: '#ffffff',
-                            border: '1.5px solid #1a1a2e',
-                            borderRadius: '50px',
-                            padding: '0.2rem 0.65rem',
-                            fontSize: '0.75rem',
-                            fontWeight: 900
-                          }}>
-                            {student.branchName}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem' }}>
-                          <span style={{
-                            background: student.subjectColour || '#00c853',
-                            color: '#ffffff',
-                            padding: '0.2rem 0.6rem',
-                            borderRadius: '50px',
-                            fontSize: '0.75rem',
-                            fontWeight: 800
-                          }}>
-                            {student.subjectName}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800, color: student.attendancePct >= 75 ? '#00c853' : '#dc2626' }}>
-                          {student.attendancePct}%
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 800 }}>{student.lastQuizScore}</td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                          <span style={{ background: '#ffd700', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.2rem 0.65rem', fontSize: '0.8rem', fontWeight: 900 }}>
-                            ⚡ {student.helixScore} pts
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                          <span style={{ background: '#e8f5e9', color: '#2e7d32', border: '1.5px solid #2e7d32', borderRadius: '50px', padding: '0.15rem 0.6rem', fontSize: '0.75rem', fontWeight: 800 }}>Active</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>
@@ -647,7 +720,8 @@ export default function MyStudentsPage() {
                   borderRadius: '50px',
                   padding: '0.2rem 0.75rem',
                   fontSize: '0.75rem',
-                  fontWeight: 900
+                  fontWeight: 900,
+                  whiteSpace: 'nowrap'
                 }}>
                   📍 {selectedStudent.branchName}
                 </span>
@@ -659,7 +733,8 @@ export default function MyStudentsPage() {
                   borderRadius: '50px',
                   padding: '0.2rem 0.75rem',
                   fontSize: '0.75rem',
-                  fontWeight: 900
+                  fontWeight: 900,
+                  whiteSpace: 'nowrap'
                 }}>
                   {selectedStudent.subjectName}
                 </span>
@@ -804,6 +879,7 @@ export default function MyStudentsPage() {
                 </div>
               </div>
             )}
+
           </div>
         </div>
       )}

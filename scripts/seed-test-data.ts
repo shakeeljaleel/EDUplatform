@@ -1214,14 +1214,19 @@ async function main() {
   const examSession1Date = getPastDate(21)
   await prisma.examSession.upsert({
     where: { subjectId_title: { subjectId: subject.id, title: 'Cell Biology End of Topic Test' } },
-    update: {},
+    update: { createdAt: examSession1Date },
     create: {
       subjectId: subject.id,
       title: 'Cell Biology End of Topic Test',
       highlights: 'Strong understanding of cell organelle structures across the batch.',
       lows: 'Some students struggled with organelle magnification calculations.',
-      suggestions: 'Add extra practice on microscopy scale conversions.'
+      suggestions: 'Add extra practice on microscopy scale conversions.',
+      createdAt: examSession1Date
     }
+  })
+
+  await prisma.examRecord.deleteMany({
+    where: { subjectId: subject.id, title: 'Cell Biology End of Topic Test' }
   })
 
   const exam1Data = [
@@ -1248,14 +1253,19 @@ async function main() {
   const examSession2Date = getPastDate(7)
   await prisma.examSession.upsert({
     where: { subjectId_title: { subjectId: subject.id, title: 'DNA & Genetics Paper' } },
-    update: {},
+    update: { createdAt: examSession2Date },
     create: {
       subjectId: subject.id,
       title: 'DNA & Genetics Paper',
       highlights: 'Mastery of base pairing rules and double helix structure.',
       lows: 'Semi-conservative replication explanation lacked details on helicase/polymerase roles.',
-      suggestions: 'Use interactive diagrams for enzyme functions in replication.'
+      suggestions: 'Use interactive diagrams for enzyme functions in replication.',
+      createdAt: examSession2Date
     }
+  })
+
+  await prisma.examRecord.deleteMany({
+    where: { subjectId: subject.id, title: 'DNA & Genetics Paper' }
   })
 
   const exam2Data = [

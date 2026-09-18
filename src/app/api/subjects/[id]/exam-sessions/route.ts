@@ -14,7 +14,43 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       where: { subjectId },
       orderBy: { createdAt: 'desc' }
     })
-    return NextResponse.json({ sessions })
+
+    const sessionWithStats = await Promise.all(
+      sessions.map(async (sess) => {
+        const records = await prisma.examRecord.findMany({
+          where: { subjectId, title: sess.title }
+        })
+
+        let date = sess.createdAt
+        let studentsSat = 0
+        let avgScore = 0
+        let highestScore = 0
+        let lowestScore = 0
+
+        if (records.length > 0) {
+          date = records[0].date
+          studentsSat = records.length
+          const percentages = records.map(r => Math.round((r.marks / r.maxMarks) * 100))
+          highestScore = Math.max(...percentages)
+          lowestScore = Math.min(...percentages)
+          const sum = percentages.reduce((a, b) => a + b, 0)
+          avgScore = Math.round(sum / percentages.length)
+        }
+
+        return {
+          ...sess,
+          date,
+          stats: {
+            studentsSat,
+            avgScore,
+            highestScore,
+            lowestScore
+          }
+        }
+      })
+    )
+
+    return NextResponse.json({ sessions: sessionWithStats })
   } catch (err) {
     return NextResponse.json({ error: 'Failed to fetch exam sessions' }, { status: 500 })
   }

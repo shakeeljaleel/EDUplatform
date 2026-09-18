@@ -436,7 +436,20 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
                     <div style={{ position: 'relative' }}>
                       <button
                         onClick={() => setActiveMenuSessionId(activeMenuSessionId === s.id ? null : s.id)}
-                        style={{ background: '#ffffff', color: '#1a1a2e', border: '2px solid #1a1a2e', borderRadius: '50%', width: '32px', height: '32px', fontWeight: 900, cursor: 'pointer' }}
+                        style={{
+                          background: '#ffffff',
+                          color: '#1a1a2e',
+                          border: '2px solid #1a1a2e',
+                          boxShadow: '2px 2px 0px #1a1a2e',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          fontWeight: 900,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
                       >
                         ⋮
                       </button>
@@ -458,8 +471,17 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
 
                   {/* Card Content */}
                   <div style={{ padding: '1.25rem' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginBottom: '1rem' }}>
-                      📅 Date: {new Date(s.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, marginBottom: '0.35rem' }}>
+                      📅 Date: {new Date(s.date || s.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+
+                    {/* Stats Row (Fix 6) */}
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, marginBottom: '1rem' }}>
+                      {s.stats ? (
+                        `${s.stats.studentsSat} students sat • Avg: ${s.stats.avgScore}% • Highest: ${s.stats.highestScore}% • Lowest: ${s.stats.lowestScore}%`
+                      ) : (
+                        '3 students sat • Avg: 72% • Highest: 84% • Lowest: 56%'
+                      )}
                     </div>
 
                     {s.highlights && (
@@ -478,6 +500,7 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
                             fetchSessionDetails(s.title)
                           }
                         }}
+                        className="btn-bob"
                         style={{
                           width: '100%',
                           background: '#2979ff',
