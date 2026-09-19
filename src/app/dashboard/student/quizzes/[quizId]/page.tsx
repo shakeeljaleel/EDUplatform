@@ -281,6 +281,8 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
                             if (isCorrect) { bg = '#00c853'; color = '#ffffff' }
                             else if (isSelected && !isCorrect) { bg = '#f50057'; color = '#ffffff' }
 
+                            const optText = typeof opt === 'string' ? opt : (opt?.text || opt?.content || opt?.label || opt?.optionText || '')
+
                             return (
                               <div
                                 key={oIdx}
@@ -294,7 +296,7 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
                                   fontSize: '0.85rem'
                                 }}
                               >
-                                {String.fromCharCode(65 + oIdx)}. {opt.text} {isCorrect ? '✓ Correct' : isSelected ? '❌ Your selection' : ''}
+                                {String.fromCharCode(65 + oIdx)}. {optText} {isCorrect ? '✓ Correct' : isSelected ? '❌ Your selection' : ''}
                               </div>
                             )
                           })}
@@ -510,6 +512,7 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
             {opts.map((opt: any, optIdx: number) => {
               const optLabel = String.fromCharCode(65 + optIdx)
               const isSelected = currentAnswer?.selectedOption === optIdx
+              const optText = typeof opt === 'string' ? opt : (opt?.text || opt?.content || opt?.label || opt?.optionText || '')
 
               return (
                 <button
@@ -544,7 +547,7 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
                   }}>
                     {optLabel}
                   </span>
-                  <span>{opt.text}</span>
+                  <span>{optText}</span>
                 </button>
               )
             })}

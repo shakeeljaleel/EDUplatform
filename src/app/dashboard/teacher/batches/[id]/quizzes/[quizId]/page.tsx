@@ -188,18 +188,21 @@ export default function ManageQuizPage({ params }: { params: Promise<{ id: strin
               
               {q.type === 'MCQ' && q.options && (
                 <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1rem' }}>
-                  {JSON.parse(q.options).map((opt: string, idx: number) => (
-                    <div key={idx} style={{ 
-                      padding: '0.65rem 1rem', 
-                      borderRadius: '10px', 
-                      backgroundColor: q.correctOption === idx ? 'rgba(0, 200, 83, 0.12)' : '#f8fafc',
-                      border: q.correctOption === idx ? '2px solid #00c853' : '1px solid #e2e8f0',
-                      color: q.correctOption === idx ? '#00c853' : '#334155',
-                      fontWeight: q.correctOption === idx ? 800 : 600
-                    }}>
-                      {String.fromCharCode(65 + idx)}. {opt} {q.correctOption === idx && '✓'}
-                    </div>
-                  ))}
+                  {JSON.parse(q.options).map((opt: any, idx: number) => {
+                    const optText = typeof opt === 'string' ? opt : (opt?.text || opt?.content || opt?.label || '')
+                    return (
+                      <div key={idx} style={{ 
+                        padding: '0.65rem 1rem', 
+                        borderRadius: '10px', 
+                        backgroundColor: q.correctOption === idx ? 'rgba(0, 200, 83, 0.12)' : '#f8fafc',
+                        border: q.correctOption === idx ? '2px solid #00c853' : '1px solid #e2e8f0',
+                        color: q.correctOption === idx ? '#00c853' : '#334155',
+                        fontWeight: q.correctOption === idx ? 800 : 600
+                      }}>
+                        {String.fromCharCode(65 + idx)}. {optText} {q.correctOption === idx && '✓'}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
               

@@ -705,7 +705,12 @@ async function main() {
       quizId: quiz1.id,
       type: 'MCQ',
       text: 'Which organelle is known as the powerhouse of the cell?',
-      options: JSON.stringify(['A) Nucleus', 'B) Mitochondria', 'C) Ribosome', 'D) Golgi apparatus']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'Nucleus' },
+        { id: 'opt_2', text: 'Mitochondria' },
+        { id: 'opt_3', text: 'Ribosome' },
+        { id: 'opt_4', text: 'Golgi apparatus' }
+      ]),
       correctOption: 1,
       maxMarks: 2,
       points: 2,
@@ -718,7 +723,12 @@ async function main() {
       quizId: quiz1.id,
       type: 'MCQ',
       text: 'What is the function of the cell membrane?',
-      options: JSON.stringify(['A) Energy production', 'B) Protein synthesis', 'C) Controls what enters and exits the cell', 'D) DNA storage']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'Energy production' },
+        { id: 'opt_2', text: 'Protein synthesis' },
+        { id: 'opt_3', text: 'Controls what enters and exits the cell' },
+        { id: 'opt_4', text: 'DNA storage' }
+      ]),
       correctOption: 2,
       maxMarks: 2,
       points: 2,
@@ -731,7 +741,12 @@ async function main() {
       quizId: quiz1.id,
       type: 'MCQ',
       text: 'Which organelle contains digestive enzymes?',
-      options: JSON.stringify(['A) Mitochondria', 'B) Nucleus', 'C) Lysosome', 'D) Vacuole']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'Mitochondria' },
+        { id: 'opt_2', text: 'Nucleus' },
+        { id: 'opt_3', text: 'Lysosome' },
+        { id: 'opt_4', text: 'Vacuole' }
+      ]),
       correctOption: 2,
       maxMarks: 2,
       points: 2,
@@ -870,7 +885,12 @@ async function main() {
       quizId: quiz2.id,
       type: 'MCQ',
       text: 'Where does the Krebs cycle occur?',
-      options: JSON.stringify(['A) Cytoplasm', 'B) Matrix of mitochondria', 'C) Inner membrane', 'D) Nucleus']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'Cytoplasm' },
+        { id: 'opt_2', text: 'Matrix of mitochondria' },
+        { id: 'opt_3', text: 'Inner membrane' },
+        { id: 'opt_4', text: 'Nucleus' }
+      ]),
       correctOption: 1,
       maxMarks: 2,
       points: 2,
@@ -1026,7 +1046,12 @@ async function main() {
       quizId: quiz3.id,
       type: 'MCQ',
       text: 'What is the base pairing rule for DNA?',
-      options: JSON.stringify(['A) A-G, T-C', 'B) A-T, G-C', 'C) A-C, T-G', 'D) A-U, G-C']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'A-G, T-C' },
+        { id: 'opt_2', text: 'A-T, G-C' },
+        { id: 'opt_3', text: 'A-C, T-G' },
+        { id: 'opt_4', text: 'A-U, G-C' }
+      ]),
       correctOption: 1,
       maxMarks: 2,
       points: 2,
@@ -1039,7 +1064,12 @@ async function main() {
       quizId: quiz3.id,
       type: 'MCQ',
       text: 'During which phase does DNA replication occur?',
-      options: JSON.stringify(['A) G1', 'B) G2', 'C) S phase', 'D) M phase']),
+      options: JSON.stringify([
+        { id: 'opt_1', text: 'G1' },
+        { id: 'opt_2', text: 'G2' },
+        { id: 'opt_3', text: 'S phase' },
+        { id: 'opt_4', text: 'M phase' }
+      ]),
       correctOption: 2,
       maxMarks: 2,
       points: 2,
