@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
+import bcryptjs from 'bcryptjs'
 import { createSession, deleteSession } from '@/lib/auth'
 import { validateEnv } from '@/lib/env'
 
@@ -38,11 +38,16 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase()
     console.log('[LOGIN_ATTEMPT] Processing authentication for:', cleanEmail)
 
-    // 4. Query Database with explicit select including passwordHash (Step 4)
+    // 4. Query Database case-insensitively with explicit select including passwordHash
     let user = null
     try {
-      user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
+      user = await prisma.user.findFirst({
+        where: {
+          email: {
+            equals: cleanEmail,
+            mode: 'insensitive'
+          }
+        },
         select: {
           id: true,
           email: true,
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Step 6: Detailed diagnostic logs
+    // Detailed diagnostic logs
     console.log('[LOGIN_DIAGNOSTIC] User found:', !!user)
     console.log('[LOGIN_DIAGNOSTIC] User role:', user?.role)
     console.log('[LOGIN_DIAGNOSTIC] Password hash exists:', !!user?.passwordHash)
@@ -77,7 +82,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.passwordHash)
+    const passwordMatch = await bcryptjs.compare(password, user.passwordHash)
     console.log('[LOGIN_DIAGNOSTIC] Password valid:', passwordMatch)
 
     if (!passwordMatch) {
@@ -152,6 +157,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       role: user.role,
+      token: sessionToken,
+      session: sessionToken,
       user: {
         id: user.id,
         email: user.email,

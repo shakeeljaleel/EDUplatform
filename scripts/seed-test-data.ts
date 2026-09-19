@@ -1,7 +1,14 @@
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import bcryptjs from 'bcryptjs'
+import dotenv from 'dotenv'
 
-const prisma = new PrismaClient()
+dotenv.config({ path: '.env.production' })
+dotenv.config()
+
+const dbUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL
+const prisma = new PrismaClient({
+  datasourceUrl: dbUrl
+})
 
 async function main() {
   console.log('🌱 Starting test data seeding for EDUPLATFORM...')
@@ -70,12 +77,12 @@ async function main() {
 
   console.log('👥 Creating test accounts...')
 
-  const adminPass = await bcrypt.hash('HelixAdmin2026!', 12)
-  const teacherPass = await bcrypt.hash('HelixTeacher2026!', 12)
-  const assistPass = await bcrypt.hash('HelixAssist2026!', 12)
-  const studentPass = await bcrypt.hash('HelixStudent2026!', 12)
-  const parentPass = await bcrypt.hash('HelixParent2026!', 12)
-  const dummyPass = await bcrypt.hash('HelixTest2026!', 12)
+  const adminPass = await bcryptjs.hash('HelixAdmin2026!', 12)
+  const teacherPass = await bcryptjs.hash('HelixTeacher2026!', 12)
+  const assistPass = await bcryptjs.hash('HelixAssist2026!', 12)
+  const studentPass = await bcryptjs.hash('HelixStudent2026!', 12)
+  const parentPass = await bcryptjs.hash('HelixParent2026!', 12)
+  const dummyPass = await bcryptjs.hash('HelixTest2026!', 12)
 
   // 1. Super Admin
   await prisma.user.create({
