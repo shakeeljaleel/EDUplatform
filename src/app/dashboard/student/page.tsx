@@ -231,12 +231,56 @@ export default async function StudentDashboard() {
   })
 
   // Calculate Syllabus Progress Indicator
+  const taughtSessionsForStudent = await prisma.classSession.findMany({
+    where: { subjectId: { in: subjectIds }, status: 'TAUGHT' },
+    select: {
+      subjectId: true,
+      syllabusCodes: true,
+      syllabusObjectives: { select: { id: true, code: true } },
+      lessonPlan: { select: { syllabusObjectiveId: true } }
+    }
+  })
+
+  const coveredCodesBySub = new Map<string, Set<string>>()
+  const coveredIdsBySub = new Map<string, Set<string>>()
+
+  taughtSessionsForStudent.forEach(s => {
+    let codeSet = coveredCodesBySub.get(s.subjectId)
+    if (!codeSet) {
+      codeSet = new Set<string>()
+      coveredCodesBySub.set(s.subjectId, codeSet)
+    }
+    let idSet = coveredIdsBySub.get(s.subjectId)
+    if (!idSet) {
+      idSet = new Set<string>()
+      coveredIdsBySub.set(s.subjectId, idSet)
+    }
+    if (s.lessonPlan?.syllabusObjectiveId) {
+      idSet.add(s.lessonPlan.syllabusObjectiveId)
+    }
+    s.syllabusObjectives.forEach(o => {
+      idSet!.add(o.id)
+      codeSet!.add(o.code.trim().toUpperCase())
+    })
+    if (s.syllabusCodes) {
+      s.syllabusCodes.split(',').forEach(c => {
+        const trimmed = c.trim().toUpperCase()
+        if (trimmed) codeSet!.add(trimmed)
+      })
+    }
+  })
+
   let totalObjCount = 0
   let completedObjCount = 0
   subjectsWithObjectives.forEach(s => {
+    const codeSet = coveredCodesBySub.get(s.id) || new Set<string>()
+    const idSet = coveredIdsBySub.get(s.id) || new Set<string>()
     s.syllabusObjectives.forEach(obj => {
       totalObjCount++
-      if (obj.classes && obj.classes.length > 0) completedObjCount++
+      const isCoveredRelation = obj.classes && obj.classes.length > 0
+      const isCoveredCode = codeSet.has(obj.code.trim().toUpperCase())
+      const isCoveredId = idSet.has(obj.id)
+      if (isCoveredRelation || isCoveredCode || isCoveredId) completedObjCount++
     })
   })
   const syllabusProgressPct = totalObjCount > 0 ? Math.round((completedObjCount / totalObjCount) * 100) : 0

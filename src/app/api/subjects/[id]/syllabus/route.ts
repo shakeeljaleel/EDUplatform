@@ -11,22 +11,124 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id: subjectId } = await params
 
-  const objectives = await prisma.syllabusObjective.findMany({
-    where: { subjectId },
-    include: {
-      classes: {
-        select: { status: true }
+  try {
+    let objectives = await prisma.syllabusObjective.findMany({
+      where: { subjectId },
+      include: {
+        classes: {
+          select: { id: true, status: true, syllabusCodes: true }
+        }
+      },
+      orderBy: { code: 'asc' }
+    })
+
+    // If no objectives exist for this subject, populate from class sessions syllabusCodes or default biology set
+    if (objectives.length === 0) {
+      const sessions = await prisma.classSession.findMany({
+        where: { subjectId },
+        select: { syllabusCodes: true }
+      })
+
+      const extractedCodes = new Set<string>()
+      sessions.forEach(s => {
+        if (s.syllabusCodes) {
+          s.syllabusCodes.split(',').forEach(c => {
+            const trimmed = c.trim().toUpperCase()
+            if (trimmed) extractedCodes.add(trimmed)
+          })
+        }
+      })
+
+      if (extractedCodes.size === 0) {
+        ['BIO-1.1', 'BIO-1.2', 'BIO-1.3', 'BIO-1.4', 'BIO-2.1', 'BIO-2.2', 'BIO-2.3', 'BIO-2.4', 'BIO-3.1', 'BIO-3.2', 'BIO-4.1', 'BIO-4.2', 'BIO-4.3', 'BIO-5.1', 'BIO-5.2'].forEach(c => extractedCodes.add(c))
       }
-    },
-    orderBy: { code: 'asc' }
-  })
 
-  const results = objectives.map(o => ({
-    ...o,
-    isCovered: o.classes.some(c => c.status === 'TAUGHT')
-  }))
+      const defaultDescriptions: Record<string, string> = {
+        'BIO-1.1': 'Cell structure and organelles part 1',
+        'BIO-1.2': 'Cell structure and organelles part 2',
+        'BIO-1.3': 'Mitochondria structure',
+        'BIO-1.4': 'ATP Synthesis',
+        'BIO-2.1': 'DNA Structure',
+        'BIO-2.2': 'DNA Replication',
+        'BIO-2.3': 'Protein Synthesis',
+        'BIO-2.4': 'Gene Expression',
+        'BIO-3.1': 'Cell Division',
+        'BIO-3.2': 'Meiosis',
+        'BIO-4.1': 'Enzymes',
+        'BIO-4.2': 'Metabolism',
+        'BIO-4.3': 'Membrane Transport',
+        'BIO-5.1': 'Light Dependent Photosynthesis',
+        'BIO-5.2': 'Light Independent Photosynthesis'
+      }
 
-  return NextResponse.json(results)
+      for (const code of Array.from(extractedCodes)) {
+        await prisma.syllabusObjective.upsert({
+          where: { code },
+          update: { subjectId },
+          create: {
+            subjectId,
+            code,
+            description: defaultDescriptions[code] || `Objective ${code}`,
+            curriculum: 'Cambridge A Level'
+          }
+        })
+      }
+
+      objectives = await prisma.syllabusObjective.findMany({
+        where: { subjectId },
+        include: {
+          classes: {
+            select: { id: true, status: true, syllabusCodes: true }
+          }
+        },
+        orderBy: { code: 'asc' }
+      })
+    }
+
+    const taughtSessions = await prisma.classSession.findMany({
+      where: { subjectId, status: 'TAUGHT' },
+      select: {
+        id: true,
+        syllabusCodes: true,
+        syllabusObjectives: { select: { id: true, code: true } },
+        lessonPlan: { select: { syllabusObjectiveId: true } }
+      }
+    })
+
+    const coveredObjectiveIds = new Set<string>()
+    const coveredObjectiveCodes = new Set<string>()
+
+    taughtSessions.forEach(s => {
+      if (s.lessonPlan?.syllabusObjectiveId) {
+        coveredObjectiveIds.add(s.lessonPlan.syllabusObjectiveId)
+      }
+      s.syllabusObjectives.forEach(o => {
+        coveredObjectiveIds.add(o.id)
+        coveredObjectiveCodes.add(o.code.trim().toUpperCase())
+      })
+      if (s.syllabusCodes) {
+        s.syllabusCodes.split(',').forEach(c => {
+          const trimmed = c.trim().toUpperCase()
+          if (trimmed) coveredObjectiveCodes.add(trimmed)
+        })
+      }
+    })
+
+    const results = objectives.map(o => {
+      const isCoveredRelation = o.classes.some(c => c.status === 'TAUGHT')
+      const isCoveredByCode = coveredObjectiveCodes.has(o.code.trim().toUpperCase())
+      const isCoveredById = coveredObjectiveIds.has(o.id)
+      return {
+        ...o,
+        isCovered: isCoveredRelation || isCoveredByCode || isCoveredById
+      }
+    })
+
+    return NextResponse.json(results)
+  } catch (error: any) {
+    console.error('Syllabus GET error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
