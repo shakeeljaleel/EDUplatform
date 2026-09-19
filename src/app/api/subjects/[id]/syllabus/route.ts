@@ -10,6 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id: subjectId } = await params
+  console.log('subjectId param:', subjectId)
 
   try {
     let objectives = await prisma.syllabusObjective.findMany({
@@ -21,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
       orderBy: { code: 'asc' }
     })
+    console.log('Initial objectives query result count:', objectives.length)
 
     // If no objectives exist for this subject, populate from class sessions syllabusCodes or default biology set
     if (objectives.length === 0) {
@@ -123,6 +125,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         isCovered: isCoveredRelation || isCoveredByCode || isCoveredById
       }
     })
+
+    console.log('Final results count:', results.length, 'Covered count:', results.filter(r => r.isCovered).length)
 
     return NextResponse.json(results)
   } catch (error: any) {
