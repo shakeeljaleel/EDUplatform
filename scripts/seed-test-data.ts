@@ -85,8 +85,15 @@ async function main() {
   const dummyPass = await bcryptjs.hash('HelixTest2026!', 12)
 
   // 1. Super Admin
-  await prisma.user.create({
-    data: {
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@helix.test' },
+    update: {
+      name: 'Dr. Admin',
+      passwordHash: adminPass,
+      role: 'SUPER_ADMIN',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Dr. Admin',
       email: 'admin@helix.test',
       passwordHash: adminPass,
@@ -96,8 +103,16 @@ async function main() {
   })
 
   // 2. Teacher
-  const teacherUser = await prisma.user.create({
-    data: {
+  const teacherUser = await prisma.user.upsert({
+    where: { email: 'teacher@helix.test' },
+    update: {
+      name: 'Ms. Sarah Smith',
+      passwordHash: teacherPass,
+      role: 'TEACHER',
+      approvalStatus: 'APPROVED',
+      subjectArea: 'Biology'
+    },
+    create: {
       name: 'Ms. Sarah Smith',
       email: 'teacher@helix.test',
       passwordHash: teacherPass,
@@ -108,8 +123,15 @@ async function main() {
   })
 
   // 3. Assistant
-  const assistantUser = await prisma.user.create({
-    data: {
+  const assistantUser = await prisma.user.upsert({
+    where: { email: 'assistant@helix.test' },
+    update: {
+      name: 'Mr. James Assist',
+      passwordHash: assistPass,
+      role: 'ASSISTANT',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Mr. James Assist',
       email: 'assistant@helix.test',
       passwordHash: assistPass,
@@ -119,8 +141,15 @@ async function main() {
   })
 
   // 4. Parent User
-  const parentUser = await prisma.user.create({
-    data: {
+  const parentUser = await prisma.user.upsert({
+    where: { email: 'parent@helix.test' },
+    update: {
+      name: 'Mr. David Johnson',
+      passwordHash: parentPass,
+      role: 'PARENT',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Mr. David Johnson',
       email: 'parent@helix.test',
       passwordHash: parentPass,
@@ -129,16 +158,25 @@ async function main() {
     }
   })
 
-  const parentProfile = await prisma.parentProfile.create({
-    data: {
+  const parentProfile = await prisma.parentProfile.upsert({
+    where: { userId: parentUser.id },
+    update: { phone: '+94-77-9876543' },
+    create: {
       userId: parentUser.id,
       phone: '+94-77-9876543'
     }
   })
 
   // 5. Main Student: Alex Johnson
-  const studentAlex = await prisma.user.create({
-    data: {
+  const studentAlex = await prisma.user.upsert({
+    where: { email: 'student@helix.test' },
+    update: {
+      name: 'Alex Johnson',
+      passwordHash: studentPass,
+      role: 'STUDENT',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Alex Johnson',
       email: 'student@helix.test',
       passwordHash: studentPass,
@@ -147,8 +185,22 @@ async function main() {
     }
   })
 
-  await prisma.studentProfile.create({
-    data: {
+  await prisma.studentProfile.upsert({
+    where: { userId: studentAlex.id },
+    update: {
+      parentId: parentProfile.id,
+      paymentStatus: 'Paid',
+      helixScore: 175,
+      stars: 9,
+      totalStars: 9,
+      medals: 2,
+      goldMedals: 1,
+      silverMedals: 1,
+      bronzeMedals: 0,
+      quizCount: 2,
+      perfectScores: 0
+    },
+    create: {
       userId: studentAlex.id,
       parentId: parentProfile.id,
       paymentStatus: 'Paid',
@@ -165,8 +217,15 @@ async function main() {
   })
 
   // 6. Student 2: Emma Clarke
-  const studentEmma = await prisma.user.create({
-    data: {
+  const studentEmma = await prisma.user.upsert({
+    where: { email: 'emma@helix.test' },
+    update: {
+      name: 'Emma Clarke',
+      passwordHash: dummyPass,
+      role: 'STUDENT',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Emma Clarke',
       email: 'emma@helix.test',
       passwordHash: dummyPass,
@@ -175,8 +234,21 @@ async function main() {
     }
   })
 
-  await prisma.studentProfile.create({
-    data: {
+  await prisma.studentProfile.upsert({
+    where: { userId: studentEmma.id },
+    update: {
+      paymentStatus: 'Paid',
+      helixScore: 140,
+      stars: 7,
+      totalStars: 7,
+      medals: 2,
+      goldMedals: 0,
+      silverMedals: 1,
+      bronzeMedals: 1,
+      quizCount: 2,
+      perfectScores: 0
+    },
+    create: {
       userId: studentEmma.id,
       paymentStatus: 'Paid',
       helixScore: 140,
@@ -192,8 +264,15 @@ async function main() {
   })
 
   // 7. Student 3: Ryan Patel
-  const studentRyan = await prisma.user.create({
-    data: {
+  const studentRyan = await prisma.user.upsert({
+    where: { email: 'ryan@helix.test' },
+    update: {
+      name: 'Ryan Patel',
+      passwordHash: dummyPass,
+      role: 'STUDENT',
+      approvalStatus: 'APPROVED'
+    },
+    create: {
       name: 'Ryan Patel',
       email: 'ryan@helix.test',
       passwordHash: dummyPass,
@@ -202,8 +281,21 @@ async function main() {
     }
   })
 
-  await prisma.studentProfile.create({
-    data: {
+  await prisma.studentProfile.upsert({
+    where: { userId: studentRyan.id },
+    update: {
+      paymentStatus: 'Paid',
+      helixScore: 95,
+      stars: 5,
+      totalStars: 5,
+      medals: 1,
+      goldMedals: 0,
+      silverMedals: 0,
+      bronzeMedals: 1,
+      quizCount: 2,
+      perfectScores: 0
+    },
+    create: {
       userId: studentRyan.id,
       paymentStatus: 'Paid',
       helixScore: 95,
