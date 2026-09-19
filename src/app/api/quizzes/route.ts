@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { notifySubjectMembers } from '@/lib/notifications'
 
-// GET - List quizzes for a given subject or batch
+// GET - List quizzes for a given subject or batch, or for student's active enrollments
 export async function GET(request: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -12,26 +12,45 @@ export async function GET(request: Request) {
   const subjectId = searchParams.get('subjectId')
   const batchId = searchParams.get('batchId')
 
-  if (!subjectId && !batchId) {
-    return NextResponse.json({ error: 'subjectId or batchId is required' }, { status: 400 })
-  }
-
   try {
-    const statusFilter = session.user.role === 'STUDENT' ? { status: { in: ['PUBLISHED', 'CLOSED'] } } : {}
+    const isStudent = session.user.role === 'STUDENT'
+    const statusFilter = isStudent ? { status: { in: ['PUBLISHED', 'CLOSED'] } } : {}
+
+    let whereClause: any = { ...statusFilter }
+
+    if (subjectId || batchId) {
+      if (subjectId) whereClause.subjectId = subjectId
+      if (batchId) whereClause.batchId = batchId
+    } else if (isStudent) {
+      // Find all active enrollments for this student
+      const enrollments = await prisma.studentEnrollment.findMany({
+        where: {
+          studentId: session.user.id,
+          status: { in: ['active', 'admin_approved', 'ACTIVE', 'APPROVED'] }
+        },
+        select: { subjectId: true, batchId: true, branchId: true }
+      })
+
+      const enrolledSubjectIds = Array.from(new Set(enrollments.map(e => e.subjectId).filter(Boolean)))
+      const enrolledBatchIds = Array.from(new Set(enrollments.map(e => e.batchId).filter(Boolean)))
+      const enrolledBranchIds = Array.from(new Set(enrollments.map(e => e.branchId).filter(Boolean)))
+
+      whereClause.OR = [
+        { subjectId: { in: enrolledSubjectIds } },
+        { batchId: { in: enrolledBatchIds } },
+        { branchId: { in: enrolledBranchIds } }
+      ]
+    }
 
     const quizzes = await prisma.quiz.findMany({
-      where: {
-        ...(subjectId ? { subjectId } : {}),
-        ...(batchId ? { batchId } : {}),
-        ...statusFilter
-      },
+      where: whereClause,
       include: {
         subject: { select: { id: true, name: true, colour: true } },
         linkedSession: { select: { id: true, title: true, scheduledDate: true } },
         _count: { select: { questions: true, attempts: true } },
         questions: { select: { id: true, points: true, maxMarks: true } },
         attempts: {
-          where: session.user.role === 'STUDENT' ? { userId: session.user.id } : undefined,
+          where: isStudent ? { userId: session.user.id } : undefined,
           include: {
             user: { select: { id: true, name: true, email: true } }
           }

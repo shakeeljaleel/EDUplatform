@@ -709,7 +709,9 @@ export default async function StudentDashboard() {
                   <StatusBadge status={e.status} useFullLabel={true} size="sm" />
                 </div>
 
-                <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: cardTextColor, margin: '0.25rem 0' }}>{e.subject.name}</h3>
+                <Link href={`/dashboard/student/subjects/${e.subject.id}`} style={{ color: cardTextColor, textDecoration: 'none' }}>
+                  <h3 style={{ fontSize: '1.85rem', fontWeight: 900, color: cardTextColor, margin: '0.25rem 0' }}>{e.subject.name} →</h3>
+                </Link>
 
                 {/* Branch Pill */}
                 <div style={{ marginTop: '0.4rem', marginBottom: '0.5rem' }}>
