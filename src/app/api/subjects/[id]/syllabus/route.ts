@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import * as pdf from 'pdf-parse'
+
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  (globalThis as any).DOMMatrix = class DOMMatrix {
+    constructor() {}
+  }
+}
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -154,9 +159,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
 
       const buffer = Buffer.from(await file.arrayBuffer())
-      const parser = new pdf.PDFParse({ data: buffer })
-      const pdfData = await parser.getText()
-      const fullText = pdfData.text
+      const pdfModule: any = await import('pdf-parse')
+      const pdfParse = pdfModule.default || pdfModule
+      const pdfData = typeof pdfParse === 'function' ? await pdfParse(buffer) : await (new (pdfParse as any)({ data: buffer })).getText()
+      const fullText = typeof pdfData === 'string' ? pdfData : (pdfData.text || '')
 
       // AI Analysis with Gemini
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })

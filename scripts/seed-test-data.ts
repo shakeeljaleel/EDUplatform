@@ -401,6 +401,14 @@ async function main() {
 
   // 5. Syllabus Objectives
   console.log('📚 Creating Syllabus Objectives...')
+  const biologySubject = await prisma.subject.findFirst({
+    where: { name: { contains: 'Biology', mode: 'insensitive' } }
+  }) || subject
+
+  const allBiologySubjects = await prisma.subject.findMany({
+    where: { name: { contains: 'Biology', mode: 'insensitive' } }
+  })
+
   const objectivesData = [
     { code: 'BIO-1.1', description: 'Cell structure and organelles part 1' },
     { code: 'BIO-1.2', description: 'Cell structure and organelles part 2' },
@@ -423,15 +431,31 @@ async function main() {
   for (const obj of objectivesData) {
     const createdObj = await prisma.syllabusObjective.upsert({
       where: { code: obj.code },
-      update: { subjectId: subject.id, description: obj.description },
+      update: { subjectId: biologySubject.id, description: obj.description },
       create: {
         code: obj.code,
         description: obj.description,
         curriculum: 'Cambridge A Level',
-        subjectId: subject.id
+        subjectId: biologySubject.id
       }
     })
     objectivesMap[obj.code] = createdObj
+
+    // Ensure all active Biology subjects have these objectives
+    for (const bioSub of allBiologySubjects) {
+      if (bioSub.id !== biologySubject.id) {
+        await prisma.syllabusObjective.upsert({
+          where: { code: `${obj.code}_${bioSub.id}` },
+          update: { subjectId: bioSub.id, description: obj.description },
+          create: {
+            code: `${obj.code}_${bioSub.id}`,
+            description: obj.description,
+            curriculum: 'Cambridge A Level',
+            subjectId: bioSub.id
+          }
+        }).catch(() => {})
+      }
+    }
   }
 
   // 6. Class Sessions (5 past, 3 upcoming)
