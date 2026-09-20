@@ -245,7 +245,7 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
             {/* Header: Fix 2 (Roadmap alerts) and Fix 3 (Mark all as read button styling) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>Roadmap alerts</h4>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#1a1a2e', margin: 0 }}>Notifications</h4>
                 {unreadCount > 0 && (
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, background: '#f50057', color: '#ffffff', padding: '0.15rem 0.55rem', borderRadius: '50px', border: '1.5px solid #1a1a2e' }}>
                     {unreadCount} New
