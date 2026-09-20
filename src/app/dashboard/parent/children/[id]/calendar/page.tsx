@@ -7,8 +7,8 @@ export default async function ChildCalendarPage({ params }: { params: Promise<{ 
   const { id } = await params
 
   // Fetch the child's subjects
-  const childProfile = await prisma.studentProfile.findUnique({
-    where: { id },
+  const childProfile = await prisma.studentProfile.findFirst({
+    where: { OR: [{ id }, { userId: id }] },
     include: { user: true }
   })
 
