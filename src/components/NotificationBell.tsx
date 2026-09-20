@@ -170,6 +170,8 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
 
   const markRead = async () => {
     try {
+      setUnreadCount(0)
+      setNotifications([])
       await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +194,11 @@ export default function NotificationBell({ userRole }: NotificationBellProps) {
   }
 
   const toggleDropdown = () => {
-    setShow(!show)
+    const nextShow = !show
+    setShow(nextShow)
+    if (nextShow && unreadCount > 0) {
+      markRead()
+    }
   }
 
   return (
