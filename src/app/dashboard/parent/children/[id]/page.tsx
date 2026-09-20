@@ -115,7 +115,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #00c853, #69f0ae)',
+          background: '#00c853',
           borderRadius: '20px',
           padding: '1.5rem',
           color: '#ffffff',
@@ -171,7 +171,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
         {/* Formal Exam Tracker */}
-        <div className="card stagger-4" style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(240,253,244,0.9))' }}>
+        <div className="card stagger-4">
           <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Formal Exam Tracker</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Compare child's physical and formal mock exam scores against the class average.</p>
           <div style={{ height: '220px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '2rem 1rem', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.02)', position: 'relative' }}>
@@ -183,7 +183,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '2px dashed var(--warning)', zIndex: 1, opacity: 0.5 }}>
                     <div style={{ position: 'absolute', top: '-16px', right: '-10px', fontSize: '0.6rem', color: 'var(--warning)', fontWeight: 700 }}>Avg {Math.round(avgPct)}</div>
                   </div>
-                  <div style={{ width: '80%', height: `${pct}%`, background: 'linear-gradient(to top, var(--accent-primary), #34d399)', borderRadius: '6px 6px 0 0', position: 'absolute', bottom: '0', minHeight: '10px', transition: 'all 0.3s ease', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', zIndex: 2 }}>
+                  <div style={{ width: '80%', height: `${pct}%`, background: '#00c853', borderRadius: '6px 6px 0 0', position: 'absolute', bottom: '0', minHeight: '10px', transition: 'all 0.3s ease', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', zIndex: 2 }}>
                     <div style={{ position: 'absolute', top: '-24px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>{Math.round(pct)}%</div>
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', fontWeight: 500, position: 'absolute', bottom: '-20px' }} title={e.title}>
@@ -201,7 +201,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Quiz Analytics */}
-        <div className="card stagger-4" style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.9), rgba(239,246,255,0.9))' }}>
+        <div className="card stagger-4">
           <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Continuous Quiz Analytics</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Track continuous practice quiz performance vs peers.</p>
           <div style={{ height: '220px', display: 'flex', alignItems: 'flex-end', gap: '16px', padding: '2rem 1rem', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.02)', position: 'relative' }}>
@@ -213,7 +213,7 @@ export default async function ChildDetailPage({ params }: { params: Promise<{ id
                   <div style={{ position: 'absolute', bottom: '0', width: '100%', height: `${avgPct}%`, borderTop: '2px dashed var(--dna-purple)', zIndex: 1, opacity: 0.5 }}>
                     <div style={{ position: 'absolute', top: '-16px', right: '-10px', fontSize: '0.6rem', color: 'var(--dna-purple)', fontWeight: 700 }}>Avg {Math.round(avgPct)}</div>
                   </div>
-                  <div style={{ width: '80%', height: `${pct}%`, background: 'linear-gradient(to top, var(--dna-blue), #60a5fa)', borderRadius: '6px 6px 0 0', position: 'absolute', bottom: '0', minHeight: '10px', transition: 'all 0.3s ease', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', zIndex: 2 }}>
+                  <div style={{ width: '80%', height: `${pct}%`, background: '#2979ff', borderRadius: '6px 6px 0 0', position: 'absolute', bottom: '0', minHeight: '10px', transition: 'all 0.3s ease', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', zIndex: 2 }}>
                     <div style={{ position: 'absolute', top: '-24px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>{Math.round(pct)}%</div>
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', fontWeight: 500, position: 'absolute', bottom: '-20px' }} title={q.title}>
