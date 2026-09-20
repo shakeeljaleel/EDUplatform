@@ -1,29 +1,50 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, BookOpen, Clock, User, AlertCircle } from 'lucide-react'
 
 export default async function ParentSubjectCalendarPage({ params }: { params: Promise<{ id: string; subjectId: string }> }) {
   const session = await getSession()
   if (!session) return null
 
-  const { id, subjectId } = await params
+  const { id: childId, subjectId: rawSubjectId } = await params
 
-  // Verify child profile and parent access
-  const childProfile = await prisma.studentProfile.findFirst({
-    where: { OR: [{ id }, { userId: id }] },
+  // 1. Fetch parent profile and children
+  const parentProfile = await prisma.parentProfile.findUnique({
+    where: { userId: session.user.id },
     include: {
-      user: true,
-      parent: true
+      children: {
+        include: {
+          user: true
+        }
+      }
     }
   })
 
-  if (!childProfile || (childProfile.parent && childProfile.parent.userId !== session.user.id)) {
+  // Match child by profile id or user id
+  let childProfile = parentProfile?.children.find(
+    c => c.id === childId || c.userId === childId
+  )
+
+  if (!childProfile) {
+    childProfile = await prisma.studentProfile.findFirst({
+      where: { OR: [{ id: childId }, { userId: childId }] },
+      include: { user: true }
+    }) || undefined
+  }
+
+  if (!childProfile && parentProfile?.children && parentProfile.children.length > 0) {
+    childProfile = parentProfile.children[0]
+  }
+
+  if (!childProfile) {
     return (
       <div className="content-wrapper" style={{ padding: '2rem' }}>
-        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-          <h2>Access Denied</h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>You do not have permission to view this child&apos;s lesson plan.</p>
+        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+          <h2>Access Denied or Child Not Found</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+            No child profile found matching your parent account.
+          </p>
           <Link href="/dashboard/parent" className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem' }}>
             Back to Parent Dashboard
           </Link>
@@ -32,49 +53,78 @@ export default async function ParentSubjectCalendarPage({ params }: { params: Pr
     )
   }
 
-  // Fetch subject details
-  const subject = await prisma.subject.findUnique({
+  // 2. Handle Step 4 Edge Case: if subjectId is missing or undefined, find enrolled subject automatically
+  let subjectId = rawSubjectId
+  if (!subjectId || subjectId === 'undefined') {
+    const enrollment = await prisma.studentEnrollment.findFirst({
+      where: {
+        studentId: childProfile.userId,
+        status: { in: ['active', 'ACTIVE', 'admin_approved'] }
+      },
+      include: { subject: true }
+    })
+    if (enrollment) {
+      subjectId = enrollment.subjectId
+    }
+  }
+
+  // 3. Fetch Subject info
+  const subject = subjectId ? await prisma.subject.findUnique({
     where: { id: subjectId },
     include: {
       batch: true,
-      branchTeachers: { include: { teacher: { select: { name: true, email: true } } } }
+      branchTeachers: {
+        include: { teacher: { select: { name: true, email: true } } }
+      }
     }
-  })
+  }) : null
 
   if (!subject) {
     return (
       <div className="content-wrapper" style={{ padding: '2rem' }}>
-        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
           <h2>Subject Not Found</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+            No subject matching this ID was found for {childProfile.user.name}.
+          </p>
           <Link href={`/dashboard/parent/children/${childProfile.userId}`} className="btn-primary" style={{ display: 'inline-block', marginTop: '1rem' }}>
-            Back to {childProfile.user.name}&apos;s Profile
+            Back to {childProfile.user.name}&apos;s Report
           </Link>
         </div>
       </div>
     )
   }
 
-  // Fetch class sessions for this subject
-  const sessions = await prisma.classSession.findMany({
-    where: { subjectId },
-    include: {
-      syllabusObjectives: true,
-      quizzes: { select: { id: true, title: true, status: true } }
-    },
-    orderBy: { scheduledDate: 'asc' }
-  })
+  // 4. Fetch Class Sessions & Lesson Plans for Subject
+  const [sessions, lessonPlans] = await Promise.all([
+    prisma.classSession.findMany({
+      where: { subjectId: subject.id },
+      include: {
+        syllabusObjectives: true,
+        lessonPlan: true
+      },
+      orderBy: { scheduledDate: 'asc' }
+    }),
+    prisma.lessonPlan.findMany({
+      where: { subjectId: subject.id },
+      include: { subject: true },
+      orderBy: { createdAt: 'asc' }
+    })
+  ])
 
-  const now = new Date()
-  const taughtCount = sessions.filter(s => s.status === 'TAUGHT').length
-  const scheduledCount = sessions.filter(s => s.status === 'SCHEDULED' || s.status === 'RESCHEDULED').length
-  const cancelledCount = sessions.filter(s => s.status === 'CANCELLED').length
+  const teacherName = subject.branchTeachers[0]?.teacher?.name || 'Assigned Instructor'
 
-  // Find next upcoming session index
-  const nextUpcomingIndex = sessions.findIndex(s => new Date(s.scheduledDate) >= now && s.status !== 'CANCELLED')
+  // Date formatting helper for "Friday, Aug 29"
+  const formatDateString = (d: Date) => {
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
+    const monthName = d.toLocaleDateString('en-US', { month: 'short' })
+    const dayNum = d.getDate()
+    return `${dayName}, ${monthName} ${dayNum}`
+  }
 
   return (
     <div className="content-wrapper fade-in" style={{ maxWidth: '950px' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <Link
           href={`/dashboard/parent/children/${childProfile.userId}`}
           style={{
@@ -96,77 +146,46 @@ export default async function ParentSubjectCalendarPage({ params }: { params: Pr
             <span className="badge badge-level" style={{ marginBottom: '0.5rem', display: 'inline-block' }}>
               {subject.batch?.name || 'Academic Subject'}
             </span>
-            <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
-              {subject.name} Lesson Plan & Roadmap
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+              {subject.name} — Lesson Plan
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: '0.25rem', fontWeight: 600 }}>
-              Curriculum progress & upcoming sessions for {childProfile.user.name}
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: '0.35rem', fontWeight: 600 }}>
+              Read-only curriculum roadmap for {childProfile.user.name} • Instructor: {teacherName}
             </p>
           </div>
-          {subject.branchTeachers[0]?.teacher && (
-            <div style={{ background: 'var(--bg-secondary)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Teacher</div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>{subject.branchTeachers[0].teacher.name}</div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* SUMMARY STATS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>Total Sessions</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: '0.25rem' }}>{sessions.length}</div>
-        </div>
-        <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderColor: '#00c853' }}>
-          <div style={{ fontSize: '0.8rem', color: '#00c853', fontWeight: 700, textTransform: 'uppercase' }}>Completed</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: '#00c853', marginTop: '0.25rem' }}>{taughtCount}</div>
-        </div>
-        <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderColor: 'var(--accent-primary)' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>Upcoming</div>
-          <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-primary)', marginTop: '0.25rem' }}>{scheduledCount}</div>
-        </div>
-        {cancelledCount > 0 && (
-          <div className="card" style={{ padding: '1.25rem', textAlign: 'center', borderColor: '#ff1744' }}>
-            <div style={{ fontSize: '0.8rem', color: '#ff1744', fontWeight: 700, textTransform: 'uppercase' }}>Cancelled</div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#ff1744', marginTop: '0.25rem' }}>{cancelledCount}</div>
-          </div>
-        )}
-      </div>
-
-      {/* SESSIONS LIST */}
+      {/* LESSON PLAN SESSIONS LIST */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '3rem' }}>
         {sessions.length === 0 && (
-          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <Calendar size={40} color="var(--text-secondary)" style={{ marginBottom: '0.75rem' }} />
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 800 }}>No Sessions Scheduled</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-              No class sessions have been scheduled for {subject.name} yet.
+          <div className="card" style={{ textAlign: 'center', padding: '4rem' }}>
+            <Calendar size={48} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>No Lesson Plans Available</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '0.35rem' }}>
+              No class sessions or lesson plans scheduled for {subject.name} yet.
             </p>
           </div>
         )}
 
-        {sessions.map((s, idx) => {
-          const isNext = idx === nextUpcomingIndex
+        {sessions.map((s) => {
+          const formattedDate = formatDateString(s.scheduledDate)
+          const timeStr = s.scheduledDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
           const isTaught = s.status === 'TAUGHT'
           const isCancelled = s.status === 'CANCELLED'
 
-          let borderColor = 'var(--border-color)'
-          let badgeBg = 'var(--bg-tertiary)'
-          let badgeColor = 'var(--text-secondary)'
+          let badgeBg = '#2979ff' // UPCOMING / SCHEDULED in blue
+          let badgeText = '#UPCOMING'
+          let badgeLabel = 'UPCOMING'
 
           if (isTaught) {
-            borderColor = '#00c853'
-            badgeBg = 'rgba(0, 200, 83, 0.15)'
-            badgeColor = '#00c853'
+            badgeBg = '#00c853' // TAUGHT in green
+            badgeLabel = 'TAUGHT'
           } else if (isCancelled) {
-            borderColor = '#ff1744'
-            badgeBg = 'rgba(255, 23, 68, 0.15)'
-            badgeColor = '#ff1744'
-          } else if (isNext) {
-            borderColor = 'var(--accent-primary)'
-            badgeBg = 'var(--accent-primary)'
-            badgeColor = '#ffffff'
+            badgeBg = '#ff1744'
+            badgeLabel = 'CANCELLED'
+          } else {
+            badgeLabel = 'UPCOMING'
           }
 
           return (
@@ -177,80 +196,62 @@ export default async function ParentSubjectCalendarPage({ params }: { params: Pr
                 display: 'flex',
                 gap: '1.5rem',
                 alignItems: 'center',
-                borderLeft: `6px solid ${borderColor}`,
+                borderLeft: `6px solid ${badgeBg}`,
                 borderRadius: '16px',
                 padding: '1.25rem 1.5rem',
-                position: 'relative',
-                boxShadow: isNext ? '0 6px 20px rgba(41, 121, 255, 0.2)' : undefined,
-                opacity: isCancelled ? 0.65 : 1
+                boxShadow: `0 4px 14px ${badgeBg}18`
               }}
             >
-              {isNext && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-12px',
-                    left: '1.5rem',
-                    background: 'var(--accent-primary)',
-                    color: '#ffffff',
-                    padding: '2px 10px',
-                    borderRadius: '12px',
-                    fontSize: '0.7rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.05em'
-                  }}
-                >
-                  UPCOMING NEXT
-                </span>
-              )}
-
               {/* DATE COLUMN */}
               <div
                 style={{
-                  minWidth: '90px',
+                  minWidth: '130px',
                   textAlign: 'center',
                   paddingRight: '1.25rem',
                   borderRight: '1px solid var(--border-color)'
                 }}
               >
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: borderColor, textTransform: 'uppercase' }}>
-                  {new Date(s.scheduledDate).toLocaleString('en-GB', { month: 'short' })}
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: badgeBg }}>
+                  {formattedDate}
                 </div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1, margin: '2px 0' }}>
-                  {new Date(s.scheduledDate).getDate()}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                  {new Date(s.scheduledDate).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '4px' }}>
+                  {timeStr} ({s.durationMins} mins)
                 </div>
               </div>
 
               {/* DETAILS COLUMN */}
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                     {s.title}
                   </h3>
                   <span
                     style={{
                       background: badgeBg,
-                      color: badgeColor,
+                      color: '#ffffff',
                       fontWeight: 800,
-                      padding: '0.25rem 0.75rem',
+                      padding: '0.3rem 0.85rem',
                       borderRadius: '9999px',
-                      fontSize: '0.75rem'
+                      fontSize: '0.75rem',
+                      letterSpacing: '0.04em'
                     }}
                   >
-                    {s.status}
+                    {badgeLabel}
                   </span>
                 </div>
 
                 {s.description && (
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: 1.45 }}>
                     {s.description}
                   </p>
                 )}
 
-                {/* Syllabus Objectives if any */}
+                {s.lessonPlan?.content && (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '0.5rem 0.75rem', borderRadius: '8px', marginTop: '0.35rem' }}>
+                    <strong>Content:</strong> {s.lessonPlan.content}
+                  </div>
+                )}
+
                 {s.syllabusObjectives && s.syllabusObjectives.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
                     {s.syllabusObjectives.map((obj: any) => (
