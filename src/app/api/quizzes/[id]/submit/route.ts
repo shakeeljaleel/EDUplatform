@@ -30,14 +30,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'You have already submitted this quiz' }, { status: 400 })
     }
 
+    const totalQuestions = quiz.questions.length
+    const totalMarks = quiz.questions.reduce((sum: number, q: any) => sum + (q.maxMarks || q.points || 10), 0) || 100
+    // Standard MCQ scoring logic:
+    // Each correct answer = (totalMarks / totalQuestions) points (e.g. 10 questions, 100 marks total -> each correct = 10 points)
+    // Do NOT multiply by additional factors
+    const mcqPoints = totalQuestions > 0 ? (totalMarks / totalQuestions) : 10
+
     let hasPendingManualOrAI = false
     let initialTotalScore = 0
     let maxPossibleScore = 0
-
     const answerRecords: any[] = []
 
     for (const q of quiz.questions) {
-      const qMax = q.maxMarks || q.points || 10
+      const qMax = q.type === 'MCQ' ? mcqPoints : (q.maxMarks || q.points || 10)
       maxPossibleScore += qMax
       const ans = answers?.find((a: any) => a.questionId === q.id)
       const answerText = (ans?.answerText || ans?.shortAnswerText || '').trim()
@@ -58,7 +64,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         const selOpt = ans ? ans.selectedOption : null
         const isCorrect = (selOpt !== null && selOpt !== undefined && correctOpt !== null && correctOpt !== undefined && selOpt === correctOpt)
-        const marks = isCorrect ? qMax : 0
+        const marks = isCorrect ? mcqPoints : 0
         initialTotalScore += marks
 
         answerRecords.push({

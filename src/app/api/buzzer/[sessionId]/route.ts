@@ -37,7 +37,32 @@ export async function GET(request: Request, { params }: { params: Promise<{ sess
   })
 
   if (!buzzerSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
-  return NextResponse.json({ session: buzzerSession })
+
+  // Calculate clean teamScores, playerScores, and finalScores
+  const playerScores: Record<string, number> = {}
+  const teamScores: Record<string, number> = {}
+
+  for (const team of buzzerSession.teams) {
+    teamScores[team.id] = team.score
+    for (const m of team.members) {
+      playerScores[m.userId] = 0
+    }
+  }
+
+  for (const r of buzzerSession.rounds) {
+    if (r.status === 'JUDGED' && r.correct && r.winnerId) {
+      playerScores[r.winnerId] = (playerScores[r.winnerId] || 0) + (r.points || 10)
+    }
+  }
+
+  return NextResponse.json({
+    session: {
+      ...buzzerSession,
+      teamScores,
+      playerScores,
+      finalScores: teamScores
+    }
+  })
 }
 
 // Teacher actions: start session, open/close round, judge answer, end session
@@ -58,6 +83,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ se
   if (action === 'START') {
     await prisma.buzzerSession.update({ where: { id: sessionId }, data: { status: 'ACTIVE' } })
     
+    // BUG 2 FIX: Reset team score to 0 at session start
+    await prisma.buzzerTeam.updateMany({
+      where: { sessionId },
+      data: { score: 0 }
+    })
+
     // Notify students that live quiz is starting
     if (buzzerSession.subjectId) {
       try {
@@ -85,31 +116,44 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ se
     if (!round) return NextResponse.json({ error: 'Round not found' }, { status: 404 })
 
     const firstBuzz = round.buzzes[0]
+    const winnerId = (correct && firstBuzz) ? firstBuzz.userId : null
+
     await prisma.buzzerRound.update({
       where: { id: roundId },
-      data: { status: 'JUDGED', correct, winnerId: firstBuzz?.userId || null }
+      data: { status: 'JUDGED', correct: !!correct, winnerId }
     })
 
-    if (correct && firstBuzz) {
-      const team = await prisma.buzzerTeam.findFirst({
-        where: {
-          sessionId: sessionId,
-          members: { some: { userId: firstBuzz.userId } }
-        }
+    // BUG 2 FIX: Team score should only add points when that team's member answers correctly.
+    // Do NOT add points from other teams or from the question pool.
+    // Recalculate accurately from the session's judged rounds to completely prevent double-counting.
+    const sessionTeams = await prisma.buzzerTeam.findMany({
+      where: { sessionId },
+      include: { members: true }
+    })
+    const judgedRounds = await prisma.buzzerRound.findMany({
+      where: { sessionId, status: 'JUDGED', correct: true }
+    })
+
+    for (const team of sessionTeams) {
+      const memberUserIds = new Set(team.members.map(m => m.userId))
+      const teamScore = judgedRounds
+        .filter(r => r.winnerId && memberUserIds.has(r.winnerId))
+        .reduce((sum, r) => sum + (r.points || 10), 0)
+
+      await prisma.buzzerTeam.update({
+        where: { id: team.id },
+        data: { score: teamScore }
       })
-      if (team) {
-        await prisma.buzzerTeam.update({
-          where: { id: team.id },
-          data: { score: { increment: round.points || 10 } }
-        })
-      }
     }
   }
   else if (action === 'END') {
     await prisma.buzzerSession.update({ where: { id: sessionId }, data: { status: 'ENDED' } })
     
     // AWARD POINTS TO WINNING TEAM MEMBERS
-    const teams = buzzerSession.teams
+    const teams = await prisma.buzzerTeam.findMany({
+      where: { sessionId },
+      include: { members: true }
+    })
     if (teams.length > 0) {
       const topScore = Math.max(...teams.map(t => t.score))
       if (topScore > 0) {
@@ -133,7 +177,33 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ se
     }
   })
 
-  return NextResponse.json({ session: updated })
+  // Calculate clean teamScores and playerScores
+  const playerScores: Record<string, number> = {}
+  const teamScores: Record<string, number> = {}
+
+  if (updated) {
+    for (const team of updated.teams) {
+      teamScores[team.id] = team.score
+      for (const m of team.members) {
+        playerScores[m.userId] = 0
+      }
+    }
+
+    for (const r of updated.rounds) {
+      if (r.status === 'JUDGED' && r.correct && r.winnerId) {
+        playerScores[r.winnerId] = (playerScores[r.winnerId] || 0) + (r.points || 10)
+      }
+    }
+  }
+
+  return NextResponse.json({
+    session: updated ? {
+      ...updated,
+      teamScores,
+      playerScores,
+      finalScores: teamScores
+    } : null
+  })
 }
 
 // DELETE past session
@@ -171,12 +241,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
   const existing = await prisma.buzzerBuzz.findUnique({
     where: { roundId_userId: { roundId, userId: session.user.id } }
   })
-  if (existing) return NextResponse.json({ error: 'Already buzzed' }, { status: 400 })
+  if (existing) {
+    // If student already buzzed, return their status cleanly instead of 400 error
+    const firstBuzz = await prisma.buzzerBuzz.findFirst({
+      where: { roundId },
+      orderBy: { buzzedAt: 'asc' }
+    })
+    const isFirst = firstBuzz?.userId === session.user.id
+    return NextResponse.json({ buzz: existing, isFirst, alreadyBuzzed: true })
+  }
 
   const buzz = await prisma.buzzerBuzz.create({
     data: { roundId, userId: session.user.id, buzzedAt: new Date() },
     include: { user: { select: { id: true, name: true } } }
   })
 
-  return NextResponse.json({ buzz })
+  const firstBuzz = await prisma.buzzerBuzz.findFirst({
+    where: { roundId },
+    orderBy: { buzzedAt: 'asc' }
+  })
+  const isFirst = firstBuzz?.userId === session.user.id
+
+  return NextResponse.json({ buzz, isFirst })
 }

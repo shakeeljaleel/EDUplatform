@@ -21,12 +21,18 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
 
   // Host view
   const [liveSession, setLiveSession] = useState<any>(null)
+  const [openingRoundId, setOpeningRoundId] = useState<string | null>(null)
+  const [errorToast, setErrorToast] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetchSessions()
     fetchStudents()
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+    return () => { 
+      if (pollRef.current) clearInterval(pollRef.current)
+      if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current)
+    }
   }, [])
 
   const fetchSessions = async () => {
@@ -36,9 +42,13 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
     } finally { setLoading(false) }
   }
 
+  // BUG 3 FIX: Filter student pool by quiz/subject batchId
   const fetchStudents = async () => {
-    const res = await fetch(`/api/users?role=STUDENT`)
-    if (res.ok) setStudents((await res.json()).users || [])
+    const res = await fetch(`/api/subjects/${id}/students`)
+    if (res.ok) {
+      const data = await res.json()
+      setStudents(data.students || [])
+    }
   }
 
   const fetchLiveSession = useCallback(async (sessionId: string) => {
@@ -79,6 +89,49 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
       body: JSON.stringify({ action, roundId, correct })
     })
     if (res.ok) setLiveSession((await res.json()).session)
+  }
+
+  // PART 2 FIX: Opening questions with immediate disable, 3s timeout fallback & error toast
+  const handleOpenRound = async (roundId: string) => {
+    if (!liveSession || openingRoundId) return
+    setOpeningRoundId(roundId)
+
+    if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current)
+    openTimeoutRef.current = setTimeout(() => {
+      setOpeningRoundId(null)
+      setErrorToast('Could not open question in time. Please try again.')
+      setTimeout(() => setErrorToast(null), 4000)
+    }, 3000)
+
+    try {
+      const res = await fetch(`/api/buzzer/${liveSession.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'OPEN_ROUND', roundId })
+      })
+
+      if (openTimeoutRef.current) {
+        clearTimeout(openTimeoutRef.current)
+        openTimeoutRef.current = null
+      }
+      setOpeningRoundId(null)
+
+      if (res.ok) {
+        const data = await res.json()
+        setLiveSession(data.session)
+      } else {
+        setErrorToast('Failed to open question. Please try again.')
+        setTimeout(() => setErrorToast(null), 4000)
+      }
+    } catch {
+      if (openTimeoutRef.current) {
+        clearTimeout(openTimeoutRef.current)
+        openTimeoutRef.current = null
+      }
+      setOpeningRoundId(null)
+      setErrorToast('Network error opening question. Please try again.')
+      setTimeout(() => setErrorToast(null), 4000)
+    }
   }
 
   const openExistingSession = async (s: any) => {
@@ -201,8 +254,18 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
                       )}
                     </div>
                     {liveSession.status === 'ACTIVE' && round.status === 'PENDING' && (
-                      <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.35rem 1rem' }} onClick={() => hostAction('OPEN_ROUND', round.id)}>
-                        Open
+                      <button
+                        className="btn-primary"
+                        disabled={openingRoundId === round.id}
+                        style={{
+                          fontSize: '0.8rem',
+                          padding: '0.35rem 1rem',
+                          opacity: openingRoundId === round.id ? 0.6 : 1,
+                          cursor: openingRoundId === round.id ? 'not-allowed' : 'pointer'
+                        }}
+                        onClick={() => handleOpenRound(round.id)}
+                      >
+                        {openingRoundId === round.id ? 'Opening...' : 'Open'}
                       </button>
                     )}
                   </div>
@@ -210,6 +273,42 @@ export default function TeacherBuzzerPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           </>
+        )}
+
+        {errorToast && (
+          <div style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#f50057',
+            color: '#ffffff',
+            padding: '1rem 1.5rem',
+            borderRadius: '12px',
+            border: '3px solid #1a1a2e',
+            boxShadow: '4px 4px 0px #1a1a2e',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem'
+          }}>
+            <span>⚠️</span>
+            <span>{errorToast}</span>
+            <button
+              onClick={() => setErrorToast(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: 900
+              }}
+            >
+              ✕
+            </button>
+          </div>
         )}
       </div>
     )

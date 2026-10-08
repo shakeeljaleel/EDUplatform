@@ -58,8 +58,17 @@ export async function recalculateQuizAttempt(attemptId: string) {
   let shortEssayPointsSum = 0
   let hasPendingAIOrTeacher = false
 
+  const totalQuestions = attempt.quiz.questions.length
+  const totalMarks = attempt.quiz.questions.reduce((sum, q: any) => sum + (q.maxMarks || q.points || 10), 0) || 100
+  // Standard MCQ scoring logic:
+  // Each correct answer = (totalMarks / totalQuestions) points
+  // e.g., 10 questions, 100 marks total -> each correct = 10 points
+  // Do NOT multiply by additional factors
+  const mcqPoints = totalQuestions > 0 ? (totalMarks / totalQuestions) : 10
+
   for (const q of attempt.quiz.questions) {
-    maxPossibleScore += q.maxMarks || 10
+    const qMax = q.type === 'MCQ' ? mcqPoints : (q.maxMarks || 10)
+    maxPossibleScore += qMax
 
     const ans = attempt.answers.find(a => a.questionId === q.id)
     if (!ans) continue
@@ -85,14 +94,14 @@ export async function recalculateQuizAttempt(attemptId: string) {
         isCorrect = ans.selectedOption === correctOpt
       }
 
-      const marks = isCorrect ? (q.maxMarks || 10) : 0
+      const marks = isCorrect ? mcqPoints : 0
       if (isCorrect) mcqCorrectCount += 1
       totalScore += marks
 
       // Update Answer record
       await prisma.answer.update({
         where: { id: ans.id },
-        data: { isCorrect, marksAwarded: marks, gradingMethod: 'auto' }
+        data: { isCorrect, marksAwarded: marks, pointsAwarded: marks, gradingMethod: 'auto' }
       })
     } else {
       // Short answer or Essay

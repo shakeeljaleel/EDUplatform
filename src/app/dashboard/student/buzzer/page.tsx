@@ -2,97 +2,135 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { BuzzerConnection } from '@/lib/buzzer-socket'
 
 export default function StudentBuzzerPage() {
   const [sessions, setSessions] = useState<any[]>([])
   const [activeSession, setActiveSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [buzzed, setBuzzed] = useState(false)
+  const [buzzPending, setBuzzPending] = useState(false)
   const [buzzResult, setBuzzResult] = useState<'first' | 'late' | null>(null)
   const [lastRoundId, setLastRoundId] = useState<string | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
+  
+  // WebSocket / Connection Reliability State
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const buzzerConnRef = useRef<BuzzerConnection | null>(null)
 
-  // Find active sessions I'm enrolled in
   useEffect(() => {
     fetchMySessions()
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+    return () => {
+      if (buzzerConnRef.current) {
+        buzzerConnRef.current.destroy()
+        buzzerConnRef.current = null
+      }
+    }
   }, [])
 
   const fetchMySessions = async () => {
     try {
-      // Students see sessions via their subject. We'll fetch all active sessions.
-      // In practice, a student would navigate here from their subject page.
-      // For now, we show a UI to enter a session ID or scan a code.
       setLoading(false)
-    } catch { setLoading(false) }
+    } catch {
+      setLoading(false)
+    }
   }
 
   const [sessionIdInput, setSessionIdInput] = useState('')
 
+  const initBuzzerConnection = (sessionId: string) => {
+    if (buzzerConnRef.current) {
+      buzzerConnRef.current.destroy()
+    }
+
+    const conn = new BuzzerConnection(sessionId, {
+      onStateUpdate: (state) => {
+        if (!state.session) return
+        setActiveSession(state.session)
+
+        const currentRound = state.currentRound
+        if (currentRound && currentRound.id !== lastRoundId) {
+          setLastRoundId(currentRound.id)
+          setBuzzed(false)
+          setBuzzPending(false)
+          setBuzzResult(null)
+        }
+      },
+      onReconnecting: (attempt, max) => {
+        setIsReconnecting(true)
+        setReconnectAttempt(attempt)
+      },
+      onReconnected: () => {
+        setIsReconnecting(false)
+        setReconnectAttempt(0)
+      },
+      onDisconnected: (reason) => {
+        setIsReconnecting(false)
+      }
+    })
+
+    buzzerConnRef.current = conn
+  }
+
   const joinSession = async () => {
     if (!sessionIdInput.trim()) return
-    const res = await fetch(`/api/buzzer/${sessionIdInput.trim()}`)
+    const id = sessionIdInput.trim()
+    const res = await fetch(`/api/buzzer/${id}`)
     if (res.ok) {
       const data = await res.json()
       setActiveSession(data.session)
-      startPolling(data.session.id)
+      initBuzzerConnection(data.session.id)
     } else {
       alert('Session not found. Check the ID.')
     }
   }
 
-  const pollSession = useCallback(async (sessionId: string) => {
-    try {
-      const res = await fetch(`/api/buzzer/${sessionId}`)
-      if (res.ok) {
-        const data = await res.json()
-        const s = data.session
-        setActiveSession(s)
-
-        // Auto-stop polling when session ends
-        if (s.status === 'ENDED' && pollRef.current) {
-          clearInterval(pollRef.current)
-          pollRef.current = null
-        }
-
-        const currentRound = s.rounds?.find((r: any) => r.status === 'OPEN')
-        if (currentRound && currentRound.id !== lastRoundId) {
-          setLastRoundId(currentRound.id)
-          setBuzzed(false)
-          setBuzzResult(null)
-        }
-      }
-    } catch (err) {
-      console.error('Polling error:', err)
-    }
-  }, [lastRoundId])
-
-  const startPolling = (sessionId: string) => {
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(() => pollSession(sessionId), 1000)
-  }
-
+  // Direct, immediate buzz action with instant visual feedback and no delays
   const handleBuzz = async () => {
     if (!activeSession || buzzed) return
     const currentRound = activeSession.rounds?.find((r: any) => r.status === 'OPEN')
     if (!currentRound) return
 
+    // Immediate visual feedback on click
     setIsAnimating(true)
     setBuzzed(true)
+    setBuzzPending(true)
 
-    const res = await fetch(`/api/buzzer/${activeSession.id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roundId: currentRound.id })
-    })
+    // Direct, immediate send via WebSocket / connection manager
+    const conn = buzzerConnRef.current
+    if (conn) {
+      const result = await conn.sendBuzz(currentRound.id)
+      setIsAnimating(false)
+      setBuzzPending(false)
 
-    setTimeout(() => setIsAnimating(false), 600)
-
-    if (res.ok) {
-      setBuzzResult('first')
+      if (result.ok) {
+        setBuzzResult(result.isFirst ? 'first' : 'late')
+      } else {
+        setBuzzResult('late')
+      }
     } else {
-      setBuzzResult('late')
+      // Fallback direct fetch
+      try {
+        const res = await fetch(`/api/buzzer/${activeSession.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roundId: currentRound.id })
+        })
+        const data = await res.json()
+        setIsAnimating(false)
+        setBuzzPending(false)
+
+        if (res.ok) {
+          setBuzzResult(data.isFirst ? 'first' : 'late')
+        } else {
+          setBuzzResult('late')
+        }
+      } catch {
+        setIsAnimating(false)
+        setBuzzPending(false)
+        setBuzzResult('late')
+      }
     }
   }
 
@@ -257,6 +295,28 @@ export default function StudentBuzzerPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#1a1a2e' }}>
+      {/* PART 3: Reconnecting Banner */}
+      {isReconnecting && (
+        <div style={{
+          background: '#ff6d00',
+          color: '#ffffff',
+          padding: '0.85rem 1.5rem',
+          textAlign: 'center',
+          fontWeight: 900,
+          fontSize: '1rem',
+          borderBottom: '3px solid #1a1a2e',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.6rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+          zIndex: 50
+        }}>
+          <span style={{ fontSize: '1.2rem', animation: 'spin 1.5s linear infinite' }}>🔄</span>
+          <span>Reconnecting... (Attempt {reconnectAttempt} of 5)</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #ffffff' }}>
         <div>
@@ -309,7 +369,7 @@ export default function StudentBuzzerPage() {
               <p style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1a1a2e', lineHeight: 1.4 }}>{currentRound.question}</p>
             </div>
 
-            {/* Big Enormous Buzzer Button */}
+            {/* PART 1: Immediate Buzz Button with immediate visual feedback */}
             <div style={{ position: 'relative' }}>
               {isAnimating && (
                 <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', background: 'rgba(255,23,68,0.4)', animation: 'ping 0.6s ease-out forwards' }} />
@@ -318,29 +378,54 @@ export default function StudentBuzzerPage() {
                 onClick={handleBuzz}
                 disabled={buzzed}
                 style={{
-                  width: '250px', height: '250px', borderRadius: '50%', border: '4px solid #1a1a2e', cursor: buzzed ? 'default' : 'pointer',
+                  width: '250px',
+                  height: '250px',
+                  borderRadius: '50%',
+                  border: '4px solid #1a1a2e',
+                  cursor: buzzed ? 'default' : 'pointer',
                   background: buzzed
-                    ? buzzResult === 'first' ? '#00c853' : '#757575'
+                    ? buzzPending
+                      ? '#ff9100'
+                      : buzzResult === 'first' ? '#00c853' : '#757575'
                     : '#f50057',
-                  boxShadow: buzzed ? 'none' : '6px 6px 0px #1a1a2e',
-                  animation: buzzed ? 'none' : 'pulse 1.5s ease-in-out infinite',
+                  boxShadow: buzzed && !buzzPending ? 'none' : '6px 6px 0px #1a1a2e',
+                  animation: buzzed && !buzzPending ? 'none' : 'pulse 1.5s ease-in-out infinite',
                   transform: isAnimating ? 'scale(0.93)' : 'scale(1)',
                   transition: 'all 0.15s ease',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '8px'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  gap: '8px'
                 }}>
-                <span style={{ fontSize: '4rem' }}>{buzzed ? (buzzResult === 'first' ? '⚡' : '❌') : '🔔'}</span>
-                <span style={{ color: '#ffffff', fontWeight: 900, fontSize: '1.4rem', letterSpacing: '0.08em', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                  {buzzed ? (buzzResult === 'first' ? 'YOU BUZZED!' : 'TOO LATE') : 'BUZZ!'}
+                <span style={{ fontSize: '4rem' }}>
+                  {buzzed
+                    ? buzzPending
+                      ? '⚡'
+                      : buzzResult === 'first' ? '🏆' : '⏱'
+                    : '🔔'}
+                </span>
+                <span style={{ color: '#ffffff', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.08em', textShadow: '0 2px 8px rgba(0,0,0,0.3)', textAlign: 'center', padding: '0 10px' }}>
+                  {buzzed
+                    ? buzzPending
+                      ? 'BUZZ SENT! ⚡'
+                      : buzzResult === 'first' ? 'YOU BUZZED!' : 'TOO LATE'
+                    : 'BUZZ!'}
                 </span>
               </button>
             </div>
 
-            {buzzResult === 'first' && (
+            {buzzPending && (
+              <div style={{ background: '#ff9100', color: '#1a1a2e', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '0.75rem 1.5rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e', fontWeight: 900 }}>
+                ⚡ Buzz sent! Checking who buzzed first...
+              </div>
+            )}
+            {buzzResult === 'first' && !buzzPending && (
               <div style={{ background: '#00c853', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1rem 2rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e' }}>
                 <div style={{ fontWeight: 900, fontSize: '1.25rem' }}>🎉 First buzz! Waiting for teacher's call...</div>
               </div>
             )}
-            {buzzResult === 'late' && (
+            {buzzResult === 'late' && !buzzPending && (
               <div style={{ background: '#757575', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '16px', padding: '1rem 2rem', textAlign: 'center', boxShadow: '4px 4px 0px #1a1a2e' }}>
                 <div style={{ fontWeight: 800, fontSize: '1rem' }}>Someone buzzed first. Better luck next round!</div>
               </div>
@@ -356,6 +441,7 @@ export default function StudentBuzzerPage() {
 
       <style>{`
         @keyframes ping { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   )
