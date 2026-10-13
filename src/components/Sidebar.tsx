@@ -229,6 +229,7 @@ export default function Sidebar({ role, isOpen = false, onClose }: SidebarProps)
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
           {role === 'SUPER_ADMIN' && (<>
             <NavLink href="/dashboard/super-admin" label="Overview" icon={<LayoutDashboard size={20} />} exact />
+            <NavLink href="/dashboard/admin/enrollments" label="Enrolments" icon={<CheckSquare size={20} />} />
             <NavLink href="/dashboard/super-admin/users" label="User Management" icon={<Users size={20} />} />
             <NavLink href="/dashboard/super-admin/batches" label="Batches" icon={<Layers size={20} />} />
             <NavLink href="/dashboard/super-admin/branches" label="Branches" icon={<Building2 size={20} />} />

@@ -24,6 +24,16 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   })
 
+// Alias prisma.enrollment to prisma.studentEnrollment for compatibility
+if (prisma && !(prisma as any).enrollment) {
+  Object.defineProperty(prisma, 'enrollment', {
+    get() {
+      return (this as any).studentEnrollment
+    },
+    configurable: true
+  })
+}
+
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }

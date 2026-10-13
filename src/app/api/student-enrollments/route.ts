@@ -14,7 +14,13 @@ export async function GET(req: Request) {
 
   const whereClause: any = {}
 
-  if (status) whereClause.status = status
+  if (status) {
+    if (status.toLowerCase() === 'pending') {
+      whereClause.status = { in: ['pending', 'PENDING'] }
+    } else {
+      whereClause.status = status
+    }
+  }
   if (batchId) whereClause.batchId = batchId
   if (branchId) whereClause.branchId = branchId
   if (studentId) whereClause.studentId = studentId
@@ -74,7 +80,49 @@ export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { batchId, branchId, subjectIds, isImport, studentId: targetStudentId } = await req.json()
+  const body = await req.json()
+  const { action, selectedIds, ids } = body
+
+  // Check if POST was used for bulk approval
+  if (action === 'BULK_APPROVE' || action === 'BULK_ADMIN_APPROVE' || (selectedIds && Array.isArray(selectedIds))) {
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Only admins can bulk approve enrolments' }, { status: 403 })
+    }
+
+    const targetIds: string[] = selectedIds || ids || []
+    if (targetIds.length === 0) {
+      return NextResponse.json({ error: 'selectedIds array is required' }, { status: 400 })
+    }
+
+    const now = new Date()
+    const result = await prisma.studentEnrollment.updateMany({
+      where: {
+        id: { in: targetIds },
+        status: { in: ['pending', 'PENDING'] }
+      },
+      data: {
+        status: 'ACTIVE',
+        adminApprovedAt: now
+      }
+    })
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorId: session.user.id,
+          actorRole: session.user.role,
+          action: 'BULK_ADMIN_APPROVE_ENROLLMENTS',
+          targetType: 'STUDENT_ENROLLMENT',
+          targetId: targetIds.join(','),
+          details: JSON.stringify({ count: result.count, ids: targetIds })
+        }
+      }).catch(() => {})
+    } catch {}
+
+    return NextResponse.json({ success: true, count: result.count })
+  }
+
+  const { batchId, branchId, subjectIds, isImport, studentId: targetStudentId } = body
 
   const studentId = (session.user.role === 'SUPER_ADMIN' || session.user.role === 'ADMIN') && targetStudentId
     ? targetStudentId
@@ -198,7 +246,73 @@ export async function PATCH(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id, action, rejectionReason, newBranchId } = await req.json()
+  const body = await req.json()
+  const { id, action, rejectionReason, newBranchId, selectedIds, ids } = body
+  const targetIds: string[] = selectedIds || ids || (id && action?.includes('BULK') ? [id] : [])
+
+  // Bulk Approval: Single database transaction processing all selected IDs
+  if (action === 'BULK_APPROVE' || action === 'BULK_ADMIN_APPROVE' || (Array.isArray(selectedIds) && selectedIds.length > 0)) {
+    if (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Only admins can approve enrolments' }, { status: 403 })
+    }
+
+    const idsToProcess = Array.isArray(selectedIds) ? selectedIds : targetIds
+    if (!idsToProcess || idsToProcess.length === 0) {
+      return NextResponse.json({ error: 'selectedIds array is required' }, { status: 400 })
+    }
+
+    const now = new Date()
+
+    // 4. One database transaction updating all selected IDs
+    const updateResult = await prisma.studentEnrollment.updateMany({
+      where: {
+        id: { in: idsToProcess },
+        status: { in: ['pending', 'PENDING'] }
+      },
+      data: {
+        status: 'ACTIVE',
+        adminApprovedAt: now
+      }
+    })
+
+    try {
+      const approvedEnrollments = await prisma.studentEnrollment.findMany({
+        where: { id: { in: idsToProcess } },
+        include: { student: true, subject: true, batch: true, branch: true }
+      })
+
+      for (const e of approvedEnrollments) {
+        if (e.studentId) {
+          await prisma.notification.create({
+            data: {
+              userId: e.studentId,
+              type: 'ENROLLMENT_ADMIN_APPROVED',
+              title: 'Enrolment Approved',
+              message: `Your enrolment in ${e.subject?.name || 'Subject'} — ${e.batch?.name || 'Batch'} has been approved!`,
+              link: '/dashboard/student'
+            }
+          }).catch(() => {})
+        }
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: session.user.id,
+          actorRole: session.user.role,
+          action: 'BULK_ADMIN_APPROVE_ENROLLMENTS',
+          targetType: 'STUDENT_ENROLLMENT',
+          targetId: idsToProcess.join(','),
+          details: JSON.stringify({ count: updateResult.count, ids: idsToProcess })
+        }
+      }).catch(() => {})
+    } catch {}
+
+    return NextResponse.json({
+      success: true,
+      count: updateResult.count,
+      message: `Successfully approved ${updateResult.count} enrolments`
+    })
+  }
 
   if (!id || !action) {
     return NextResponse.json({ error: 'Enrollment ID and action are required' }, { status: 400 })
