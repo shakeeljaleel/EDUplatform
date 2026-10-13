@@ -51,6 +51,11 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
   const [showPublishModal, setShowPublishModal] = useState(false)
 
   useEffect(() => {
+    const quizIdParam = searchParams.get('quizId')
+    if (quizIdParam) {
+      router.replace(`/dashboard/teacher/quizzes/${quizIdParam}/edit`)
+      return
+    }
     fetchSessions()
   }, [])
 

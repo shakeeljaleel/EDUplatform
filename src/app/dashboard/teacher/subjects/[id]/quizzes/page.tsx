@@ -160,11 +160,16 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
   }
 
   const handleEditAttempt = (quiz: any) => {
+    if (quiz.status === 'PUBLISHED') {
+      setWarningMsg('Unpublish the quiz first to edit it.')
+      setTimeout(() => setWarningMsg(''), 5000)
+      return
+    }
     if (quiz._count?.attempts > 0 || quiz.attempts?.length > 0) {
       setWarningMsg(`Cannot edit "${quiz.title}" because student submissions exist. Locked to ensure assessment fairness.`)
       setTimeout(() => setWarningMsg(''), 5000)
     } else {
-      window.location.href = `/dashboard/teacher/subjects/${subjectId}/quizzes/builder?quizId=${quiz.id}`
+      window.location.href = `/dashboard/teacher/quizzes/${quiz.id}/edit`
     }
   }
 
@@ -429,12 +434,23 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => handleEditAttempt(q)}
-                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
+                  <Link
+                    href={`/dashboard/teacher/quizzes/${q.id}/edit`}
+                    onClick={(e) => {
+                      if (q.status === 'PUBLISHED') {
+                        e.preventDefault()
+                        setWarningMsg('Unpublish the quiz first to edit it.')
+                        setTimeout(() => setWarningMsg(''), 5000)
+                      } else if (q._count?.attempts > 0 || q.attempts?.length > 0) {
+                        e.preventDefault()
+                        setWarningMsg(`Cannot edit "${q.title}" because student submissions exist. Locked to ensure assessment fairness.`)
+                        setTimeout(() => setWarningMsg(''), 5000)
+                      }
+                    }}
+                    style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'inline-block' }}
                   >
                     Edit
-                  </button>
+                  </Link>
                   <button
                     onClick={() => handlePublishToggle(q)}
                     style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
