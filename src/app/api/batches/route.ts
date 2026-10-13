@@ -57,7 +57,8 @@ export async function GET() {
       subjectsCount: batch.subjects.length,
       teachersCount: teacherIds.size,
       assistantsCount: assistantIds.size,
-      branches: batch.batchBranches.map(bb => bb.branch)
+      branches: batch.batchBranches.map(bb => bb.branch),
+      subjects: batch.subjects
     }
   })
 

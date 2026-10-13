@@ -31,6 +31,7 @@ const SINGLE_STATUS_BADGE: Record<string, { label: string; bg: string; color: st
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([])
   const [branches, setBranches] = useState<any[]>([])
+  const [batches, setBatches] = useState<any[]>([])
   const [activeRole, setActiveRole] = useState('TEACHER')
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -58,17 +59,32 @@ export default function UsersPage() {
   const [modalRejectState, setModalRejectState] = useState<Record<string, { open: boolean; reason: string; loading: boolean }>>({})
   const [modalActionLoading, setModalActionLoading] = useState<Record<string, boolean>>({})
 
+  // Assign to batch modal state
+  const [assignBatchUserTarget, setAssignBatchUserTarget] = useState<any | null>(null)
+  const [selectedBatchId, setSelectedBatchId] = useState('')
+  const [assignLoading, setAssignLoading] = useState(false)
+
   useEffect(() => { 
     fetchUsers() 
   }, [activeRole])
 
   useEffect(() => {
     fetchBranches()
+    fetchBatches()
   }, [])
 
   const fetchBranches = async () => {
-    const res = await fetch('/api/branches')
-    if (res.ok) setBranches((await res.json()).branches || [])
+    try {
+      const res = await fetch('/api/branches')
+      if (res.ok) setBranches((await res.json()).branches || [])
+    } catch {}
+  }
+
+  const fetchBatches = async () => {
+    try {
+      const res = await fetch('/api/batches')
+      if (res.ok) setBatches((await res.json()).batches || [])
+    } catch {}
   }
 
   // Close dropdown on click outside
@@ -123,6 +139,65 @@ export default function UsersPage() {
     if (res.ok) {
       showToast(`Payment status updated to ${newStatus}`, 'success')
       fetchUsers()
+    }
+  }
+
+  const handleAssignBatch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!assignBatchUserTarget || !selectedBatchId) {
+      showToast('Please select a batch', 'error')
+      return
+    }
+
+    const targetBatch = batches.find((b: any) => b.id === selectedBatchId)
+    const batchName = targetBatch?.name || 'Selected batch'
+
+    setAssignLoading(true)
+    try {
+      const res = await fetch('/api/admin/users/assign-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: assignBatchUserTarget.id,
+          batchId: selectedBatchId
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        showToast(`Student assigned to ${batchName}`, 'success')
+
+        // Optimistically update the student's row so the batch name updates immediately
+        setUsers(prevUsers => prevUsers.map(u => {
+          if (u.id === assignBatchUserTarget.id) {
+            const newEnrollment = data.enrollment || {
+              id: 'temp-' + Date.now(),
+              status: 'ACTIVE',
+              batch: { id: selectedBatchId, name: batchName }
+            }
+            const existingEnrollments = u.studentEnrollments || u.enrollments || []
+            const filtered = existingEnrollments.filter((en: any) => en.batchId !== selectedBatchId && en.batch?.id !== selectedBatchId)
+            const updatedEnrollments = [newEnrollment, ...filtered]
+            return {
+              ...u,
+              studentEnrollments: updatedEnrollments,
+              enrollments: updatedEnrollments
+            }
+          }
+          return u
+        }))
+
+        setAssignBatchUserTarget(null)
+        setSelectedBatchId('')
+        fetchUsers()
+      } else {
+        const err = await res.json()
+        showToast(err.error || 'Failed to assign batch', 'error')
+      }
+    } catch {
+      showToast('Network error while assigning batch', 'error')
+    } finally {
+      setAssignLoading(false)
     }
   }
 
@@ -310,35 +385,80 @@ export default function UsersPage() {
                     fontWeight: 800, backgroundColor: badgeConfig.bg, color: badgeConfig.color, 
                     border: `1px solid ${badgeConfig.border}` 
                   }}
+                  title={badgeConfig.label === 'Pending' ? 'User registration approval is pending' : `Account: ${badgeConfig.label}`}
                 >
                   {badgeConfig.label}
                 </span>
 
                 {activeRole === 'STUDENT' && (
                   <>
+                    {/* Batch Name next to status */}
+                    {(() => {
+                      const enrollments = user.studentEnrollments || user.enrollments || []
+                      const activeEnr = enrollments.find((e: any) => e.status?.toUpperCase() === 'ACTIVE' || e.status === 'active') || enrollments[0]
+                      const batchName = activeEnr?.batch?.name
+
+                      return batchName ? (
+                        <span 
+                          style={{ 
+                            padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
+                            fontWeight: 800, backgroundColor: '#eff6ff', color: '#1d4ed8', 
+                            border: '1px solid #bfdbfe', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' 
+                          }}
+                          title={`Assigned batch: ${batchName}`}
+                        >
+                          🎓 {batchName}
+                        </span>
+                      ) : (
+                        <span 
+                          style={{ 
+                            padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
+                            fontWeight: 700, backgroundColor: '#f8fafc', color: '#94a3b8', 
+                            border: '1px dashed #cbd5e1' 
+                          }}
+                          title="No batch currently assigned"
+                        >
+                          No batch
+                        </span>
+                      )
+                    })()}
+
                     {(user.studentEnrollments?.some((e: any) => e.status === 'pending') || user.enrollments?.some((e: any) => e.status === 'pending')) && (
-                      <StatusBadge status="pending" size="sm" />
+                      <span title="Student has a pending batch enrollment request">
+                        <StatusBadge status="pending" size="sm" />
+                      </span>
                     )}
 
-                    {user.enrollments && user.enrollments.length > 0 && user.enrollments[0]?.batch?.branch ? (
-                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
-                        📍 {user.enrollments[0].batch.branch.name}
-                      </span>
-                    ) : (
-                      <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }}>
-                        Global
-                      </span>
-                    )}
+                    {(() => {
+                      const enrollments = user.studentEnrollments || user.enrollments || []
+                      const branchName = enrollments[0]?.branch?.name || enrollments[0]?.batch?.branch?.name
+                      return branchName ? (
+                        <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                          📍 {branchName}
+                        </span>
+                      ) : (
+                        <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, backgroundColor: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }}>
+                          Global
+                        </span>
+                      )
+                    })()}
 
                     <span 
                       style={{ 
                         padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', 
                         fontWeight: 800, backgroundColor: paymentStatus === 'Paid' ? '#f0fdf4' : '#fffbeb', 
                         color: paymentStatus === 'Paid' ? '#059669' : '#b45309',
-                        border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}` 
+                        border: `1px solid ${paymentStatus === 'Paid' ? '#10b981' : '#f59e0b'}`,
+                        cursor: 'help',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
                       }}
+                      title={paymentStatus === 'Paid' 
+                        ? 'Payment completed' 
+                        : 'Payment is pending: Student has not completed fee payment'}
                     >
-                      💳 {paymentStatus}
+                      💳 {paymentStatus} {paymentStatus !== 'Paid' && <span style={{ fontSize: '0.7rem', opacity: 0.85 }}>ℹ️</span>}
                     </span>
                   </>
                 )}
@@ -364,7 +484,7 @@ export default function UsersPage() {
                     ref={menuRef}
                     style={{
                       position: 'absolute', right: 0, top: '44px', zIndex: 100,
-                      width: '180px', backgroundColor: '#ffffff', borderRadius: '10px',
+                      width: '200px', backgroundColor: '#ffffff', borderRadius: '10px',
                       border: '1px solid #e2e8f0', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
                       padding: '0.4rem 0', display: 'flex', flexDirection: 'column'
                     }}
@@ -394,6 +514,26 @@ export default function UsersPage() {
                     >
                       <Lock size={14} /> Password reset
                     </button>
+
+                    {activeRole === 'STUDENT' && (
+                      <button
+                        onClick={() => {
+                          setAssignBatchUserTarget(user)
+                          const currentEnrollment = (user.studentEnrollments || user.enrollments || [])[0]
+                          setSelectedBatchId(currentEnrollment?.batch?.id || (batches[0]?.id || ''))
+                          setOpenMenuUserId(null)
+                        }}
+                        style={{
+                          padding: '0.55rem 1rem', textAlign: 'left', background: 'none', border: 'none',
+                          fontSize: '0.85rem', fontWeight: 700, color: '#1d4ed8', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        🎓 Assign to batch
+                      </button>
+                    )}
 
                     {activeRole === 'STUDENT' && (
                       <button
@@ -846,6 +986,122 @@ export default function UsersPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN TO BATCH MODAL */}
+      {assignBatchUserTarget && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '460px', padding: 0, overflow: 'hidden', border: '2px solid #1a1a2e', boxShadow: '8px 8px 0px #1a1a2e', borderRadius: '16px' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderBottom: '2px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                  Assign Student to Batch
+                </h3>
+                <p style={{ fontSize: '0.825rem', color: '#64748b', fontWeight: 600, margin: '0.2rem 0 0 0' }}>
+                  {assignBatchUserTarget.name} ({assignBatchUserTarget.email})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignBatchUserTarget(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignBatch} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  Select Batch
+                </label>
+                {batches.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>
+                    No batches available. Please create a batch first in Batches management.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedBatchId}
+                    onChange={e => setSelectedBatchId(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '2px solid #1a1a2e',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      backgroundColor: '#ffffff',
+                      color: '#0f172a',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="" disabled>-- Select an active batch --</option>
+                    {batches
+                      .filter((b: any) => !b.status || b.status.toLowerCase() === 'active')
+                      .map((batch: any) => (
+                        <option key={batch.id} value={batch.id}>
+                          {batch.name} {batch.academicLevel ? `(${batch.academicLevel})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                )}
+              </div>
+
+              {selectedBatchId && (() => {
+                const b = batches.find((item: any) => item.id === selectedBatchId)
+                if (!b) return null
+                return (
+                  <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem', marginBottom: '1.25rem', fontSize: '0.825rem', color: '#166534' }}>
+                    <div style={{ fontWeight: 800, marginBottom: '0.2rem' }}>🎓 {b.name}</div>
+                    <div>Level: {b.academicLevel || 'Standard'} • Subjects: {b.subjectsCount || b.subjects?.length || 0}</div>
+                  </div>
+                )
+              })()}
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setAssignBatchUserTarget(null)}
+                  style={{
+                    padding: '0.55rem 1.25rem',
+                    borderRadius: '50px',
+                    border: '2px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={assignLoading || !selectedBatchId || batches.length === 0}
+                  style={{
+                    padding: '0.55rem 1.4rem',
+                    borderRadius: '50px',
+                    border: '2px solid #1a1a2e',
+                    background: '#00c853',
+                    color: '#ffffff',
+                    boxShadow: '3px 3px 0px #1a1a2e',
+                    fontSize: '0.85rem',
+                    fontWeight: 900,
+                    cursor: assignLoading || !selectedBatchId ? 'not-allowed' : 'pointer',
+                    opacity: assignLoading || !selectedBatchId ? 0.7 : 1
+                  }}
+                >
+                  {assignLoading ? 'Assigning...' : 'Assign to Batch'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
