@@ -125,7 +125,18 @@ export class BuzzerConnection {
         this.reconnectAttempts = 0
         this.callbacks.onReconnected?.()
 
-        // Re-send last state upon successful reconnection
+        // Re-send last state (current question, current scores) upon successful reconnection
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          try {
+            this.ws.send(JSON.stringify({
+              type: 'STATE_RESYNC',
+              currentQuestion: this.lastKnownState.currentRound?.question,
+              roundId: this.lastKnownState.currentRound?.id,
+              teamScores: this.lastKnownState.teamScores,
+              playerScores: this.lastKnownState.playerScores
+            }))
+          } catch {}
+        }
         this.updateStateFromSession(data.session)
       } else {
         this.handleConnectionDrop('HTTP check failed during reconnect')
@@ -204,11 +215,11 @@ export class BuzzerConnection {
   }
 
   // Direct, immediate buzz action with NO delays
-  public async sendBuzz(roundId: string): Promise<{ ok: boolean; isFirst: boolean; alreadyBuzzed?: boolean; error?: string }> {
+  public async sendBuzz(roundId: string, studentId?: string): Promise<{ ok: boolean; isFirst: boolean; alreadyBuzzed?: boolean; error?: string }> {
     // Immediate WebSocket message transmission if socket is open
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
-        this.ws.send(JSON.stringify({ type: 'BUZZ', roundId }))
+        this.ws.send(JSON.stringify({ type: 'BUZZ', roundId, studentId }))
       } catch {}
     }
 

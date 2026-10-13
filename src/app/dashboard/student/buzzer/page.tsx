@@ -17,10 +17,20 @@ export default function StudentBuzzerPage() {
   // WebSocket / Connection Reliability State
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const [studentId, setStudentId] = useState<string | null>(null)
   const buzzerConnRef = useRef<BuzzerConnection | null>(null)
 
   useEffect(() => {
     fetchMySessions()
+    fetch('/api/student/profile')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.user?.id || data?.profile?.userId) {
+          setStudentId(data?.user?.id || data?.profile?.userId)
+        }
+      })
+      .catch(() => {})
+
     return () => {
       if (buzzerConnRef.current) {
         buzzerConnRef.current.destroy()
@@ -100,7 +110,7 @@ export default function StudentBuzzerPage() {
     // Direct, immediate send via WebSocket / connection manager
     const conn = buzzerConnRef.current
     if (conn) {
-      const result = await conn.sendBuzz(currentRound.id)
+      const result = await conn.sendBuzz(currentRound.id, studentId || undefined)
       setIsAnimating(false)
       setBuzzPending(false)
 
