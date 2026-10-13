@@ -75,8 +75,9 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
         } catch (e) {}
 
         // Set time limit countdown if specified
-        if (data.quiz.timeLimitMins && !data.quiz.attempts?.length) {
-          setSecondsRemaining(data.quiz.timeLimitMins * 60)
+        const timeLimit = data.quiz.timeLimitMinutes ?? data.quiz.timeLimitMins ?? data.quiz.timeLimit
+        if (timeLimit && Number(timeLimit) > 0 && !data.quiz.attempts?.length) {
+          setSecondsRemaining(Number(timeLimit) * 60)
         }
 
         if (data.quiz.attempts && data.quiz.attempts.length > 0) {

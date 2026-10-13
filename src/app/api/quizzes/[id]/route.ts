@@ -42,11 +42,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const data = await request.json()
-    const { status, dueDate } = data
+    const { status, dueDate, timeLimitMins, timeLimitMinutes } = data
 
     const updateData: any = {}
     if (status) updateData.status = status
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null
+    if (timeLimitMinutes !== undefined || timeLimitMins !== undefined) {
+      const val = timeLimitMinutes !== undefined ? (timeLimitMinutes ? Number(timeLimitMinutes) : null) : (timeLimitMins ? Number(timeLimitMins) : null)
+      updateData.timeLimitMins = val
+      updateData.timeLimitMinutes = val
+    }
 
     const quiz = await prisma.quiz.update({
       where: { id },
@@ -94,6 +99,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       description,
       dueDate,
       timeLimitMins,
+      timeLimitMinutes,
       allowOneAttempt,
       showAnswersAfterSubmission,
       markingMode,
@@ -111,6 +117,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       where: { quizId: id }
     })
 
+    const timeLimit = timeLimitMinutes !== undefined
+      ? (timeLimitMinutes ? Number(timeLimitMinutes) : null)
+      : timeLimitMins !== undefined
+      ? (timeLimitMins ? Number(timeLimitMins) : null)
+      : (existing.timeLimitMinutes ?? existing.timeLimitMins)
+
     const updated = await prisma.quiz.update({
       where: { id },
       data: {
@@ -118,7 +130,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         topic: topic !== undefined ? (topic?.trim() || null) : existing.topic,
         description: description !== undefined ? (description?.trim() || null) : existing.description,
         dueDate: dueDate ? new Date(dueDate) : null,
-        timeLimitMins: timeLimitMins !== undefined ? (timeLimitMins ? Number(timeLimitMins) : null) : existing.timeLimitMins,
+        timeLimitMins: timeLimit,
+        timeLimitMinutes: timeLimit,
         allowOneAttempt: allowOneAttempt !== undefined ? !!allowOneAttempt : existing.allowOneAttempt,
         showAnswersAfterSubmission: showAnswersAfterSubmission !== undefined ? !!showAnswersAfterSubmission : existing.showAnswersAfterSubmission,
         markingMode: markingMode || existing.markingMode,

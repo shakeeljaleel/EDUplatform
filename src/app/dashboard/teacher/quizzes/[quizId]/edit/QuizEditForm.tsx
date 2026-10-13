@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toLocalDatetimeInput } from '@/lib/date'
 
 interface QuizEditFormProps {
   quiz: any
@@ -24,10 +25,10 @@ export default function QuizEditForm({ quiz, initialQuestions, sessions }: QuizE
   const [description, setDescription] = useState(quiz.description || '')
   const [linkedSessionId, setLinkedSessionId] = useState(quiz.linkedSessionId || '')
   const [dueDate, setDueDate] = useState(
-    quiz.dueDate ? new Date(quiz.dueDate).toISOString().slice(0, 16) : ''
+    quiz.dueDate ? toLocalDatetimeInput(quiz.dueDate) : ''
   )
-  const [hasTimeLimit, setHasTimeLimit] = useState(!!quiz.timeLimitMins)
-  const [timeLimitMins, setTimeLimitMins] = useState(quiz.timeLimitMins || 30)
+  const [hasTimeLimit, setHasTimeLimit] = useState(!!(quiz.timeLimitMinutes || quiz.timeLimitMins))
+  const [timeLimitMins, setTimeLimitMins] = useState(quiz.timeLimitMinutes || quiz.timeLimitMins || 30)
   const [allowOneAttempt, setAllowOneAttempt] = useState(quiz.allowOneAttempt ?? true)
   const [showAnswersAfterSubmission, setShowAnswersAfterSubmission] = useState(
     quiz.showAnswersAfterSubmission ?? true
@@ -174,6 +175,7 @@ export default function QuizEditForm({ quiz, initialQuestions, sessions }: QuizE
         linkedSessionId: linkedSessionId || null,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         timeLimitMins: hasTimeLimit ? Number(timeLimitMins) : null,
+        timeLimitMinutes: hasTimeLimit ? Number(timeLimitMins) : null,
         allowOneAttempt,
         showAnswersAfterSubmission,
         markingMode,
@@ -199,6 +201,14 @@ export default function QuizEditForm({ quiz, initialQuestions, sessions }: QuizE
 
       const data = await res.json()
       if (res.ok) {
+        // Verify returned date matches what was submitted
+        if (data.quiz?.dueDate && dueDate) {
+          const returnedLocal = toLocalDatetimeInput(data.quiz.dueDate)
+          const submittedLocal = toLocalDatetimeInput(dueDate)
+          if (returnedLocal !== submittedLocal) {
+            console.warn(`Timezone mismatch: submitted ${submittedLocal}, returned ${returnedLocal}`)
+          }
+        }
         setSuccessMsg('Quiz updated successfully!')
         setTimeout(() => {
           router.push(backUrl)

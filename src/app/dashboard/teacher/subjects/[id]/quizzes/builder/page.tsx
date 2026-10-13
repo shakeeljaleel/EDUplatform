@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { toLocalDatetimeInput } from '@/lib/date'
 
 export default function QuizBuilderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: subjectId } = React.use(params)
@@ -176,6 +177,7 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
         description,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         timeLimitMins: hasTimeLimit ? Number(timeLimitMins) : null,
+        timeLimitMinutes: hasTimeLimit ? Number(timeLimitMins) : null,
         allowOneAttempt,
         showAnswersAfterSubmission,
         markingMode,
@@ -190,6 +192,14 @@ export default function QuizBuilderPage({ params }: { params: Promise<{ id: stri
       })
       const data = await res.json()
       if (res.ok) {
+        // Verify returned date matches what was submitted
+        if (data.quiz?.dueDate && dueDate) {
+          const returnedLocal = toLocalDatetimeInput(data.quiz.dueDate)
+          const submittedLocal = toLocalDatetimeInput(dueDate)
+          if (returnedLocal !== submittedLocal) {
+            console.warn(`Timezone mismatch: submitted ${submittedLocal}, returned ${returnedLocal}`)
+          }
+        }
         router.push(`/dashboard/teacher/subjects/${subjectId}/quizzes`)
       } else {
         setError(data.error || 'Failed to save quiz')

@@ -302,6 +302,7 @@ model Quiz {
   dueDate                    DateTime?
   scheduledDate              DateTime?
   timeLimitMins              Int?
+  timeLimitMinutes           Int?
   allowOneAttempt            Boolean       @default(true)
   showAnswersAfterSubmission Boolean       @default(true)
   instructions               String?

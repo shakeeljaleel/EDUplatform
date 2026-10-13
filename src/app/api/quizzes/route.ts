@@ -84,6 +84,8 @@ export async function POST(request: Request) {
       topic,
       description,
       dueDate,
+      timeLimitMins,
+      timeLimitMinutes,
       showAnswersAfterSubmission = true,
       status = 'DRAFT',
       questions = []
@@ -92,6 +94,12 @@ export async function POST(request: Request) {
     if (!title) {
       return NextResponse.json({ error: 'Quiz title is required' }, { status: 400 })
     }
+
+    const timeLimit = timeLimitMinutes !== undefined
+      ? (timeLimitMinutes ? Number(timeLimitMinutes) : null)
+      : timeLimitMins !== undefined
+      ? (timeLimitMins ? Number(timeLimitMins) : null)
+      : null
 
     const quiz = await prisma.quiz.create({
       data: {
@@ -104,6 +112,8 @@ export async function POST(request: Request) {
         topic: topic || null,
         description: description || null,
         dueDate: dueDate ? new Date(dueDate) : null,
+        timeLimitMins: timeLimit,
+        timeLimitMinutes: timeLimit,
         showAnswersAfterSubmission: !!showAnswersAfterSubmission,
         status: status || 'DRAFT',
         questions: {

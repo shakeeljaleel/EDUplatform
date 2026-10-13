@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { toLocalDatetimeInput } from '@/lib/date'
 
 export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: subjectId } = React.use(params)
@@ -148,9 +149,17 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
       const res = await fetch(`/api/quizzes/${quizId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dueDate: newDueDate })
+        body: JSON.stringify({ dueDate: newDueDate ? new Date(newDueDate).toISOString() : null })
       })
       if (res.ok) {
+        const data = await res.json()
+        if (data.quiz?.dueDate && newDueDate) {
+          const returnedLocal = toLocalDatetimeInput(data.quiz.dueDate)
+          const submittedLocal = toLocalDatetimeInput(newDueDate)
+          if (returnedLocal !== submittedLocal) {
+            console.warn(`Timezone mismatch: submitted ${submittedLocal}, returned ${returnedLocal}`)
+          }
+        }
         setDueDateModalQuiz(null)
         fetchQuizzes()
       }
@@ -466,7 +475,7 @@ export default function TeacherQuizzesPage({ params }: { params: Promise<{ id: s
                     </button>
                   )}
                   <button
-                    onClick={() => { setDueDateModalQuiz(q); setNewDueDate(q.dueDate ? new Date(q.dueDate).toISOString().slice(0, 16) : ''); }}
+                    onClick={() => { setDueDateModalQuiz(q); setNewDueDate(toLocalDatetimeInput(q.dueDate)); }}
                     style={{ flex: 1, background: '#ffffff', color: '#1a1a2e', border: '1.5px solid #1a1a2e', borderRadius: '50px', padding: '0.35rem', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer' }}
                   >
                     Extend
