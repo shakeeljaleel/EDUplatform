@@ -23,9 +23,14 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
 
   // Timer state
   const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null)
+  const [timeSpentSeconds, setTimeSpentSeconds] = useState(0)
 
   useEffect(() => {
     fetchQuiz()
+    const timeTracker = setInterval(() => {
+      setTimeSpentSeconds(prev => prev + 1)
+    }, 1000)
+    return () => clearInterval(timeTracker)
   }, [])
 
   // Auto-save draft every 30 seconds
@@ -75,19 +80,8 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
         }
 
         if (data.quiz.attempts && data.quiz.attempts.length > 0) {
-          const att = data.quiz.attempts[0]
-          setSubmissionResult({
-            score: att.score,
-            maxPossibleScore: att.maxPossibleScore,
-            percentage: att.percentageScore,
-            starsEarned: att.starsAwarded,
-            helixPointsEarned: att.helixPointsAwarded,
-            medalEarned: att.medalAwarded
-          })
-          if (att.medalAwarded && att.medalAwarded !== 'none') {
-            setShowConfetti(true)
-            setTimeout(() => setShowConfetti(false), 3000)
-          }
+          router.replace(`/dashboard/student/quizzes/${quizId}/results`)
+          return
         }
       } else {
         setError('Failed to load quiz')
@@ -135,12 +129,8 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
       const data = await res.json()
       if (res.ok) {
         localStorage.removeItem(`quiz_draft_${quizId}`)
-        setSubmissionResult(data)
-        if (data.medalEarned && data.medalEarned !== 'none') {
-          setShowConfetti(true)
-          setTimeout(() => setShowConfetti(false), 3000)
-        }
-        fetchQuiz()
+        router.push(`/dashboard/student/quizzes/${quizId}/results`)
+        return
       } else {
         setError(data.error || 'Failed to submit quiz')
       }
@@ -151,12 +141,29 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
     }
   }
 
+  const answeredCount = (quiz?.questions || []).filter((q: any) => {
+    const ans = answers[q.id]
+    return ans && (ans.selectedOption !== undefined || (ans.answerText && ans.answerText.trim() !== ''))
+  }).length
+  const totalQuestions = quiz?.questions?.length || 0
+  const unansweredCount = Math.max(0, totalQuestions - answeredCount)
+  const canShowSubmit = timeSpentSeconds >= 30 || answeredCount >= 1
+
+  const handleRequestSubmit = () => {
+    if (unansweredCount > 0) {
+      const confirmed = window.confirm(
+        `You have ${unansweredCount} unanswered question${unansweredCount === 1 ? '' : 's'}. Submit anyway?`
+      )
+      if (!confirmed) return
+    }
+    handleSubmitQuiz()
+  }
+
   if (loading) return <div className="pulse">Loading quiz runner...</div>
   if (error && !quiz) return <div className="card" style={{ padding: '2rem', color: '#d32f2f', fontWeight: 800 }}>⚠️ {error}</div>
 
   const questions = quiz.questions || []
   const currentQ = questions[currentIndex]
-  const totalQuestions = questions.length
   const progressPct = totalQuestions > 0 ? Math.round(((currentIndex + 1) / totalQuestions) * 100) : 0
 
   const formatTimer = (secs: number) => {
@@ -403,10 +410,11 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
               ← Back to questions
             </button>
             <button
-              onClick={() => setShowConfirmModal(true)}
-              style={{ flex: 2, background: '#f50057', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.85rem', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}
+              onClick={handleRequestSubmit}
+              disabled={submitting}
+              style={{ flex: 2, background: '#f50057', color: '#ffffff', border: '3px solid #1a1a2e', borderRadius: '50px', boxShadow: '4px 4px 0px #1a1a2e', padding: '0.85rem', fontWeight: 900, fontSize: '1rem', cursor: submitting ? 'not-allowed' : 'pointer' }}
             >
-              Submit quiz
+              {submitting ? 'Submitting...' : 'Submit quiz'}
             </button>
           </div>
         </div>
@@ -602,7 +610,7 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
       </div>
 
       {/* Footer Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <button
           type="button"
           onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
@@ -621,43 +629,66 @@ export default function StudentQuizRunnerPage({ params }: { params: Promise<{ qu
           ← Previous
         </button>
 
-        {currentIndex < totalQuestions - 1 ? (
-          <button
-            type="button"
-            onClick={() => setCurrentIndex(prev => prev + 1)}
-            style={{
-              background: '#00c853',
-              color: '#ffffff',
-              border: '3px solid #1a1a2e',
-              borderRadius: '50px',
-              boxShadow: '4px 4px 0px #1a1a2e',
-              padding: '0.65rem 1.8rem',
-              fontWeight: 900,
-              fontSize: '0.95rem',
-              cursor: 'pointer'
-            }}
-          >
-            Next →
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsReviewing(true)}
-            style={{
-              background: '#2979ff',
-              color: '#ffffff',
-              border: '3px solid #1a1a2e',
-              borderRadius: '50px',
-              boxShadow: '4px 4px 0px #1a1a2e',
-              padding: '0.65rem 1.8rem',
-              fontWeight: 900,
-              fontSize: '0.95rem',
-              cursor: 'pointer'
-            }}
-          >
-            Review answers →
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {canShowSubmit && (
+            <button
+              type="button"
+              onClick={handleRequestSubmit}
+              disabled={submitting}
+              style={{
+                background: '#f50057',
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.65rem 1.8rem',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: submitting ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {submitting ? 'Submitting...' : 'Submit quiz'}
+            </button>
+          )}
+
+          {currentIndex < totalQuestions - 1 ? (
+            <button
+              type="button"
+              onClick={() => setCurrentIndex(prev => prev + 1)}
+              style={{
+                background: '#00c853',
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.65rem 1.8rem',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              Next →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsReviewing(true)}
+              style={{
+                background: '#2979ff',
+                color: '#ffffff',
+                border: '3px solid #1a1a2e',
+                borderRadius: '50px',
+                boxShadow: '4px 4px 0px #1a1a2e',
+                padding: '0.65rem 1.8rem',
+                fontWeight: 900,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              Review answers →
+            </button>
+          )}
+        </div>
       </div>
 
     </div>

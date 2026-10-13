@@ -219,7 +219,7 @@ export default function StudentQuizzesPage() {
                 )}
 
                 <Link
-                  href={`/dashboard/student/quizzes/${quiz.id}`}
+                  href={isCompleted ? `/dashboard/student/quizzes/${quiz.id}/results` : `/dashboard/student/quizzes/${quiz.id}`}
                   style={{
                     background: isCompleted ? '#ffffff' : '#00c853',
                     color: isCompleted ? '#1a1a2e' : '#ffffff',
